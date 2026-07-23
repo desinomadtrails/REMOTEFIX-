@@ -1,0 +1,1940 @@
+{
+  "version": "2",
+  "dialect": "mssql",
+  "id": "b9f7c619-7da0-4bfb-bc05-9650b9c21ea3",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "ddl": [
+    {
+      "name": "audit_logs",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "blog_posts",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "booking_images",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "bookings",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "customers",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "engineers",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "faqs",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "invoices",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "payments",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "reviews",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "services",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "ticket_messages",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "tickets",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "name": "users",
+      "entityType": "tables",
+      "schema": "dbo"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "audit_logs"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "audit_logs"
+    },
+    {
+      "type": "varchar(100)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "action",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "audit_logs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "details",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "audit_logs"
+    },
+    {
+      "type": "varchar(45)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "ip_address",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "audit_logs"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "audit_logs"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "title",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "slug",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "content",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "author_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "datetime2",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "published_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "bit",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "is_published",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "blog_posts"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "booking_images"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "booking_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "booking_images"
+    },
+    {
+      "type": "varchar(500)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "image_url",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "booking_images"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "booking_images"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "customer_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "service_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "phone",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "company",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(500)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "address",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "problem_description",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(10)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "preferred_date",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(5)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "preferred_time",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(50)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "operating_system",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "engineer_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "bookings"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "phone",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "company_name",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "varchar(500)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "billing_address",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "customers"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "phone",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "bio",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "specialities",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "engineers"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "varchar(500)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "question",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "answer",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "varchar(100)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "category",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "bit",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "is_active",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "faqs"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "booking_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "varchar(50)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "invoice_number",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "decimal(10,2)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "varchar(500)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "pdf_url",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "invoices"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "invoice_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "varchar(50)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "payment_method",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "varchar(100)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "transaction_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "decimal(10,2)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "amount",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "payments"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "reviews"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "booking_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "reviews"
+    },
+    {
+      "type": "int",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "rating",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "reviews"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "comment",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "reviews"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "reviews"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "varchar(100)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "varchar(50)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "category",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "decimal(10,2)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "price",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "int",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "estimated_duration_minutes",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "bit",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "is_active",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "services"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "ticket_messages"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "ticket_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "ticket_messages"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "sender_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "ticket_messages"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "message",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "ticket_messages"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "ticket_messages"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "booking_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "customer_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "subject",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "priority",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "engineer_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "tickets"
+    },
+    {
+      "type": "varchar(36)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "password_hash",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "full_name",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "role",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(20)",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "google_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "varchar(255)",
+      "notNull": false,
+      "generated": null,
+      "identity": null,
+      "name": "microsoft_id",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "type": "datetime2",
+      "notNull": true,
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "schema": "dbo",
+      "entityType": "columns",
+      "table": "users"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "audit_logs_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "audit_logs",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "author_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "blog_posts_author_id_users_id_fk",
+      "entityType": "fks",
+      "table": "blog_posts",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "booking_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "bookings",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "booking_images_booking_id_bookings_id_fk",
+      "entityType": "fks",
+      "table": "booking_images",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "customer_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "customers",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "bookings_customer_id_customers_id_fk",
+      "entityType": "fks",
+      "table": "bookings",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "service_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "services",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "bookings_service_id_services_id_fk",
+      "entityType": "fks",
+      "table": "bookings",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "engineer_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "engineers",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "bookings_engineer_id_engineers_id_fk",
+      "entityType": "fks",
+      "table": "bookings",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "customers_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "customers",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "engineers_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "engineers",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "booking_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "bookings",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "invoices_booking_id_bookings_id_fk",
+      "entityType": "fks",
+      "table": "invoices",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "invoice_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "invoices",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "payments_invoice_id_invoices_id_fk",
+      "entityType": "fks",
+      "table": "payments",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "booking_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "bookings",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "reviews_booking_id_bookings_id_fk",
+      "entityType": "fks",
+      "table": "reviews",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "ticket_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "tickets",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "ticket_messages_ticket_id_tickets_id_fk",
+      "entityType": "fks",
+      "table": "ticket_messages",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "sender_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "ticket_messages_sender_id_users_id_fk",
+      "entityType": "fks",
+      "table": "ticket_messages",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "booking_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "bookings",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "tickets_booking_id_bookings_id_fk",
+      "entityType": "fks",
+      "table": "tickets",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "customer_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "customers",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "tickets_customer_id_customers_id_fk",
+      "entityType": "fks",
+      "table": "tickets",
+      "schema": "dbo"
+    },
+    {
+      "columns": [
+        "engineer_id"
+      ],
+      "nameExplicit": false,
+      "schemaTo": "dbo",
+      "tableTo": "engineers",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "tickets_engineer_id_engineers_id_fk",
+      "entityType": "fks",
+      "table": "tickets",
+      "schema": "dbo"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "audit_logs_pkey",
+      "table": "audit_logs",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "blog_posts_pkey",
+      "table": "blog_posts",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "booking_images_pkey",
+      "table": "booking_images",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "bookings_pkey",
+      "table": "bookings",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "customers_pkey",
+      "table": "customers",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "engineers_pkey",
+      "table": "engineers",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "faqs_pkey",
+      "table": "faqs",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "invoices_pkey",
+      "table": "invoices",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "payments_pkey",
+      "table": "payments",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "reviews_pkey",
+      "table": "reviews",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "services_pkey",
+      "table": "services",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "ticket_messages_pkey",
+      "table": "ticket_messages",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "tickets_pkey",
+      "table": "tickets",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "id"
+      ],
+      "name": "users_pkey",
+      "table": "users",
+      "schema": "dbo",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "slug"
+      ],
+      "name": "blog_posts_slug_key",
+      "schema": "dbo",
+      "table": "blog_posts",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "invoice_number"
+      ],
+      "name": "invoices_invoice_number_key",
+      "schema": "dbo",
+      "table": "invoices",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "email"
+      ],
+      "name": "users_email_key",
+      "schema": "dbo",
+      "table": "users",
+      "entityType": "uniques"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "audit_logs_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "audit_logs"
+    },
+    {
+      "column": "is_published",
+      "nameExplicit": false,
+      "default": "((0))",
+      "name": "blog_posts_is_published_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "blog_posts"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "blog_posts_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "blog_posts"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "blog_posts_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "blog_posts"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "booking_images_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "booking_images"
+    },
+    {
+      "column": "status",
+      "nameExplicit": false,
+      "default": "('pending')",
+      "name": "bookings_status_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "bookings"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "bookings_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "bookings"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "bookings_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "bookings"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "customers_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "customers"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "customers_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "customers"
+    },
+    {
+      "column": "status",
+      "nameExplicit": false,
+      "default": "('available')",
+      "name": "engineers_status_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "engineers"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "engineers_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "engineers"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "engineers_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "engineers"
+    },
+    {
+      "column": "is_active",
+      "nameExplicit": false,
+      "default": "((1))",
+      "name": "faqs_is_active_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "faqs"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "faqs_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "faqs"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "faqs_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "faqs"
+    },
+    {
+      "column": "status",
+      "nameExplicit": false,
+      "default": "('unpaid')",
+      "name": "invoices_status_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "invoices"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "invoices_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "invoices"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "invoices_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "invoices"
+    },
+    {
+      "column": "status",
+      "nameExplicit": false,
+      "default": "('pending')",
+      "name": "payments_status_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "payments"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "payments_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "payments"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "reviews_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "reviews"
+    },
+    {
+      "column": "is_active",
+      "nameExplicit": false,
+      "default": "((1))",
+      "name": "services_is_active_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "services"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "services_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "services"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "services_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "services"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "ticket_messages_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "ticket_messages"
+    },
+    {
+      "column": "priority",
+      "nameExplicit": false,
+      "default": "('medium')",
+      "name": "tickets_priority_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "tickets"
+    },
+    {
+      "column": "status",
+      "nameExplicit": false,
+      "default": "('open')",
+      "name": "tickets_status_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "tickets"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "tickets_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "tickets"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "tickets_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "tickets"
+    },
+    {
+      "column": "status",
+      "nameExplicit": false,
+      "default": "('active')",
+      "name": "users_status_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "users"
+    },
+    {
+      "column": "created_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "users_created_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "users"
+    },
+    {
+      "column": "updated_at",
+      "nameExplicit": false,
+      "default": "(getdate())",
+      "name": "users_updated_at_default",
+      "entityType": "defaults",
+      "schema": "dbo",
+      "table": "users"
+    }
+  ],
+  "renames": []
+}

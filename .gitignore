@@ -1,0 +1,29 @@
+# Node
+node_modules/
+.npm/
+dist/
+build/
+.cache/
+.env
+.env.local
+.env.*.local
+*.log
+
+# IDE & Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build outputs
+dist/
+.wrangler/
+.turbo/
+out/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+name = "remotefix-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+DATABASE_URL = "Server=localhost,1433;Database=remotefix;User Id=sa;Password=YourPassword123;Encrypt=false;TrustServerCertificate=true;"
+JWT_SECRET = "super_secret_remotefix_jwt_key_123!"
+AZURE_STORAGE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=remotefixstore;AccountKey=mock_key;EndpointSuffix=core.windows.net"
+AZURE_STORAGE_CONTAINER = "booking-images"
