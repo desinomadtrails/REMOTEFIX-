@@ -76,7 +76,10 @@ export const logger = {
     console.error(`[ERROR] [${new Date().toISOString()}] ${message}`, error || "", ...args);
   },
   debug(message: string, ...args: any[]) {
-    if (process.env.NODE_ENV !== "production") {
+    const isProd = typeof process !== "undefined"
+      ? process.env.NODE_ENV === "production"
+      : (import.meta as any)?.env?.PROD === true;
+    if (!isProd) {
       console.log(`[DEBUG] [${new Date().toISOString()}] ${message}`, ...args);
     }
   },
