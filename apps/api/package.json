@@ -10,15 +10,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.6.14",
-    "@remotefix/types": "*",
-    "@remotefix/database": "*",
     "@remotefix/auth": "*",
-    "@remotefix/utils": "*"
+    "@remotefix/database": "*",
+    "@remotefix/types": "*",
+    "@remotefix/utils": "*",
+    "hono": "^4.6.14"
   },
   "devDependencies": {
-    "wrangler": "^3.101.0",
     "@cloudflare/workers-types": "^4.20241218.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "wrangler": "^4.113.0"
   }
 }

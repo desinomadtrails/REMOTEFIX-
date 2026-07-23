@@ -41,6 +41,28 @@ app.use(
 // 3. Security headers (Helmet-equivalent)
 app.use("*", securityHeaders);
 
+// 3.5. Database Connection Warmup
+app.use("*", async (c, next) => {
+  if (c.req.path.startsWith("/api")) {
+    if (c.env && c.env.DATABASE_URL) {
+      try {
+        const db = getDb(c.env.DATABASE_URL);
+        const pool = db.$client;
+        if (pool.connecting && !pool.connected) {
+          while (pool.connecting && !pool.connected) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+        } else if (!pool.connected && !pool.connecting) {
+          await pool.connect();
+        }
+      } catch (err) {
+        console.error("❌ Failed to warm up database pool:", err);
+      }
+    }
+  }
+  await next();
+});
+
 // 4. Global Rate Limiter (150 requests per minute)
 app.use("*", rateLimiter(150, 60000));
 
@@ -56,6 +78,21 @@ app.route("/api/invoices", invoicesRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/admin/analytics", analyticsRouter);
 app.route("/api/admin/logs", logsRouter);
+
+app.get("/api/test-db", async (c) => {
+  try {
+    const db = await getDb(c.env.DATABASE_URL);
+    const result = await db.$client.request().query("SELECT 1 as ping");
+    return c.json({ success: true, message: "Azure SQL Connection Succeeded!", result: result.recordset });
+  } catch (err: any) {
+    return c.json({
+      success: false,
+      error: err.message || err,
+      code: err.code,
+      stack: err.stack,
+    });
+  }
+});
 
 // ==========================================
 // SEEDING & SYSTEM STATUS ENDPOINTS
