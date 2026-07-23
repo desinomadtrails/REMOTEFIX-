@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../utils.js";
+import { cn } from "../utils";
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
