@@ -12,17 +12,22 @@ export const connectionConfig: mssql.config = {
   user: env.DB_USER || "",
   password: env.DB_PASSWORD || "",
   options: {
-    encrypt: true, // Required for Azure SQL
-    trustServerCertificate: false, // Strict certificate validation
+    encrypt: true,
+    trustServerCertificate: true,
+    cryptoCredentialsDetails: {
+      minVersion: "TLSv1.2"
+    }
   },
 };
 
-// Robust ADO.NET connection string parser to prevent special character bugs (like '@' in passwords)
 export function parseConnectionString(connectionString: string): mssql.config {
   const config: any = {
     options: {
       encrypt: true,
-      trustServerCertificate: false,
+      trustServerCertificate: true,
+      cryptoCredentialsDetails: {
+        minVersion: "TLSv1.2"
+      }
     }
   };
 
@@ -80,7 +85,6 @@ export function createDb(connectionStringOrConfig?: string | mssql.config) {
   });
 }
 
-// Helper to get a fully connected database client for scripts
 export async function getConnectedDbClient() {
   if (!connectionConfig.server || !connectionConfig.database || !connectionConfig.user || !connectionConfig.password) {
     throw new Error("❌ Database configuration properties are missing in process.env!");
