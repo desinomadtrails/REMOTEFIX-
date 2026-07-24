@@ -38,5 +38,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'remotefix-api'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE || secrets.AZUREAPPSERVICE_PUBLISHPROFILE || secrets.AZURE_WEBAPP_PUBLISH_PROFILE_REMOTEFIX_API }}
           package: 'api-deployment.zip'
