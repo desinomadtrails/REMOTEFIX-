@@ -9,6 +9,7 @@ dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config();
 
 const port = Number(process.env.PORT) || 8787;
+const hostname = process.env.HOST || "0.0.0.0";
 
 const dbHost = process.env.DB_HOST || "remotefix-sql.database.windows.net";
 const dbPort = process.env.DB_PORT || "1433";
@@ -16,9 +17,9 @@ const dbName = process.env.DB_NAME || "remotefix";
 const dbUser = process.env.DB_USER || "adminremotefix";
 const dbPassword = process.env.DB_PASSWORD || "Ashoka@123";
 
-const databaseUrl = `Server=${dbHost},${dbPort};Database=${dbName};User Id=${dbUser};Password=${dbPassword};Encrypt=true;TrustServerCertificate=false;`;
+const databaseUrl = `Server=${dbHost},${dbPort};Database=${dbName};User Id=${dbUser};Password=${dbPassword};Encrypt=true;TrustServerCertificate=true;`;
 
-console.log(`🚀 RemoteFix Node API Server running on http://localhost:${port}`);
+console.log(`🚀 RemoteFix Node API Server running on http://${hostname}:${port}`);
 
 serve({
   fetch: (req) => {
@@ -30,5 +31,6 @@ serve({
     };
     return app.fetch(req, env);
   },
+  hostname,
   port,
 });
