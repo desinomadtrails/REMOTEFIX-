@@ -29,7 +29,7 @@ app.use("*", honoLogger());
 app.use(
   "*",
   cors({
-    origin: "*", // In production, customize to specific frontend domains
+    origin: (origin) => origin || "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
