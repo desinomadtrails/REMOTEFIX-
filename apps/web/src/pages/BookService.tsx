@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import { User, Cpu, Calendar, CheckCircle2, FileImage } from "lucide-react";
 import { Button, Card, Input, Select } from "@remotefix/ui";
-import { api } from "../api.js";
+import { api } from "../services/api.js";
 
 const DEVICE_TYPES = [
   { value: "Laptop", label: "Laptop" },

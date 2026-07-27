@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Search, MapPin, Calendar, Clock, User, CheckCircle2, ShieldAlert } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
-import { api } from "../api.js";
+import { api } from "../services/api.js";
 
 export const TrackService: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();

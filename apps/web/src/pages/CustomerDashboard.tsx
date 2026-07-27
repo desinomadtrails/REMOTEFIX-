@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { Calendar, CreditCard, LifeBuoy, FileText, Send, User, Trash2, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
-import { api } from "../api.js";
+import { api } from "../services/api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
 
 export const CustomerDashboard: React.FC = () => {

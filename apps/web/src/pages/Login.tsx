@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router";
 import { useMutation } from "@tanstack/react-query";
 import { Shield, Key, Mail, ArrowRight } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
-import { api } from "../api.js";
+import { api } from "../services/api.js";
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState("");

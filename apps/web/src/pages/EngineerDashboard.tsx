@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Wrench, Phone, Mail, MapPin, CheckCircle, ArrowRight, Shield, FileText, Image as ImageIcon } from "lucide-react";
 import { Button, Card, Badge, Input, GlowDivider } from "@remotefix/ui";
-import { api } from "../api.js";
+import { api } from "../services/api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
 
 export const EngineerDashboard: React.FC = () => {

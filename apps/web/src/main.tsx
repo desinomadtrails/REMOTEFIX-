@@ -2,8 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Header } from "./components/Header.js";
-import { Footer } from "./components/Footer.js";
+import { MainLayout } from "./layouts/MainLayout.js";
 import { Home } from "./pages/Home.js";
 import { Services } from "./pages/Services.js";
 import { BookService } from "./pages/BookService.js";
@@ -58,29 +57,25 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="flex flex-col min-h-screen bg-[#030712] text-[#F9FAFB] selection:bg-[#00E5FF]/30 selection:text-[#00E5FF]">
-          <Header />
-          <main className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/book" element={<BookService />} />
-              <Route path="/book/success" element={<BookSuccess />} />
-              <Route path="/track" element={<TrackService />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/customer" element={<CustomerDashboard />} />
-              <Route path="/engineer" element={<EngineerDashboard />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/terms" element={<TermsOfService />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
+        <MainLayout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/book" element={<BookService />} />
+            <Route path="/book/success" element={<BookSuccess />} />
+            <Route path="/track" element={<TrackService />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/customer" element={<CustomerDashboard />} />
+            <Route path="/engineer" element={<EngineerDashboard />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+          </Routes>
+        </MainLayout>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>

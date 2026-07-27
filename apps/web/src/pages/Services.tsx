@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Tag, Search, ArrowRight } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
-import { api } from "../api.js";
+import { api } from "../services/api.js";
 import { formatCurrency } from "@remotefix/utils";
 
 // Local fallback services in case the database is empty or connection is offline
