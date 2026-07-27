@@ -17,7 +17,14 @@ import {
   UserCheck, 
   DollarSign, 
   Plus, 
-  AlertCircle 
+  AlertCircle,
+  Search,
+  Filter,
+  CheckSquare,
+  Square,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal
 } from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../api.js";
@@ -39,6 +46,18 @@ export const Dashboard: React.FC = () => {
   const [serviceCategory, setServiceCategory] = useState("Support");
   const [serviceDuration, setServiceDuration] = useState("60");
   const [seedingSuccess, setSeedingSuccess] = useState(false);
+
+  // Search, Filters & Pagination States
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Bulk Selection State
+  const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
+  const [bulkActionType, setBulkActionType] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("rf_token");
@@ -187,6 +206,91 @@ export const Dashboard: React.FC = () => {
 
   // Get recent 4 bookings
   const recentJobs = (bookingsData || []).slice(0, 4);
+
+  // Search & Filtering logic for the Booking Queue
+  const filteredBookings = (bookingsData || []).filter((b: any) => {
+    // 1. Search term match
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      (b.ticketId || "").toLowerCase().includes(searchLower) ||
+      b.name.toLowerCase().includes(searchLower) ||
+      b.email.toLowerCase().includes(searchLower) ||
+      b.phone.includes(searchLower) ||
+      (b.problemDescription || "").toLowerCase().includes(searchLower);
+
+    // 2. Status match
+    const matchesStatus = statusFilter === "all" || b.status === statusFilter;
+
+    // 3. Priority match
+    const matchesPriority = priorityFilter === "all" || b.priority === priorityFilter;
+
+    // 4. Type match
+    const matchesType = typeFilter === "all" || b.type === typeFilter;
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesType;
+  });
+
+  // Pagination calculation
+  const totalItems = filteredBookings.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, priorityFilter, typeFilter]);
+
+  // Bulk selection handlers
+  const handleToggleSelectAll = () => {
+    if (selectedBookingIds.length === paginatedBookings.length) {
+      setSelectedBookingIds([]);
+    } else {
+      setSelectedBookingIds(paginatedBookings.map((b: any) => b.id));
+    }
+  };
+
+  const handleToggleSelectOne = (id: string) => {
+    if (selectedBookingIds.includes(id)) {
+      setSelectedBookingIds(selectedBookingIds.filter(item => item !== id));
+    } else {
+      setSelectedBookingIds([...selectedBookingIds, id]);
+    }
+  };
+
+  const handleApplyBulkAction = async () => {
+    if (selectedBookingIds.length === 0 || !bulkActionType) return;
+
+    let targetStatus = "";
+    let targetEngineerId: string | undefined = undefined;
+
+    if (bulkActionType === "complete") {
+      targetStatus = "completed";
+    } else if (bulkActionType === "cancel") {
+      targetStatus = "cancelled";
+    } else if (bulkActionType === "assign-elena") {
+      targetStatus = "assigned";
+      targetEngineerId = "eng-1"; // Elena Vance
+    } else if (bulkActionType === "assign-john") {
+      targetStatus = "assigned";
+      targetEngineerId = "eng-2"; // John Freeman
+    }
+
+    if (!targetStatus) return;
+
+    // Execute sequential status updates for selected items
+    for (const bookingId of selectedBookingIds) {
+      await updateBookingMutation.mutateAsync({
+        id: bookingId,
+        status: targetStatus,
+        engineerId: targetEngineerId
+      });
+    }
+
+    setSelectedBookingIds([]);
+    setBulkActionType("");
+  };
 
   if (!isAuthenticated) {
     return (
@@ -358,18 +462,15 @@ export const Dashboard: React.FC = () => {
                         <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
                       </linearGradient>
                     </defs>
-                    {/* Background Grid Lines */}
                     <line x1="0" y1="30" x2="400" y2="30" stroke="#1f2937" strokeWidth="1" strokeDasharray="4" />
                     <line x1="0" y1="75" x2="400" y2="75" stroke="#1f2937" strokeWidth="1" strokeDasharray="4" />
                     <line x1="0" y1="120" x2="400" y2="120" stroke="#1f2937" strokeWidth="1" strokeDasharray="4" />
                     
-                    {/* Graph Area */}
                     <path
                       d="M 10 150 L 10 130 Q 90 90 130 110 T 250 50 T 390 30 L 390 150 Z"
                       fill="url(#gradient-area)"
                     />
                     
-                    {/* Graph Line */}
                     <path
                       d="M 10 130 Q 90 90 130 110 T 250 50 T 390 30"
                       fill="none"
@@ -377,7 +478,6 @@ export const Dashboard: React.FC = () => {
                       strokeWidth="3.5"
                     />
 
-                    {/* Nodes */}
                     <circle cx="10" cy="130" r="4.5" fill="#a78bfa" />
                     <circle cx="130" cy="110" r="4.5" fill="#a78bfa" />
                     <circle cx="250" cy="50" r="4.5" fill="#a78bfa" />
@@ -488,86 +588,230 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* BOOKING QUEUE */}
+      {/* BOOKING QUEUE (SERVICE MANAGEMENT) */}
       {activeTab === "bookings" && (
-        <div>
+        <div className="space-y-6 font-body">
+          {/* Controls Panel: Search & Filters */}
+          <Card glowColor="none" className="p-6">
+            <div className="flex items-center gap-2 text-sm font-bold font-display text-text uppercase tracking-wider mb-4 border-b border-border/30 pb-2.5">
+              <SlidersHorizontal size={16} className="text-secondary" />
+              Service Queue Filters & Search
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Input
+                  placeholder="Search Ticket, Client..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 text-xs"
+                />
+                <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
+              </div>
+
+              <div>
+                <select
+                  className="w-full h-10 px-3 bg-[#111827]/60 border border-border text-xs text-text rounded-lg outline-none focus:border-primary"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Workflow States</option>
+                  <option value="pending">Pending</option>
+                  <option value="assigned">Assigned</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <select
+                  className="w-full h-10 px-3 bg-[#111827]/60 border border-border text-xs text-text rounded-lg outline-none focus:border-primary"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                >
+                  <option value="all">All Priority Levels</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="emergency">Emergency</option>
+                </select>
+              </div>
+
+              <div>
+                <select
+                  className="w-full h-10 px-3 bg-[#111827]/60 border border-border text-xs text-text rounded-lg outline-none focus:border-primary"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                >
+                  <option value="all">All Service Classes</option>
+                  <option value="remote">Remote support</option>
+                  <option value="onsite">On-Site dispatch</option>
+                  <option value="emergency">Emergency SLA</option>
+                  <option value="amc">Corporate AMC</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Bulk actions and Select All row */}
+            {paginatedBookings.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6 border-t border-border/25 pt-4">
+                <button 
+                  onClick={handleToggleSelectAll}
+                  className="flex items-center gap-2 text-xs font-semibold text-muted hover:text-text transition-colors cursor-pointer"
+                >
+                  {selectedBookingIds.length === paginatedBookings.length && paginatedBookings.length > 0 ? (
+                    <CheckSquare size={16} className="text-secondary" />
+                  ) : (
+                    <Square size={16} />
+                  )}
+                  Select All on Page ({selectedBookingIds.length} selected)
+                </button>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <select
+                    className="bg-[#111827]/60 border border-border text-xs text-text rounded p-1.5 outline-none"
+                    value={bulkActionType}
+                    onChange={(e) => setBulkActionType(e.target.value)}
+                  >
+                    <option value="">-- Choose Bulk Action --</option>
+                    <option value="complete">Mark Selected Completed</option>
+                    <option value="cancel">Mark Selected Cancelled</option>
+                    <option value="assign-elena">Assign to Elena Vance</option>
+                    <option value="assign-john">Assign to John Freeman</option>
+                  </select>
+                  <Button 
+                    variant="cyber" 
+                    size="sm" 
+                    className="py-1 px-3 text-xs" 
+                    onClick={handleApplyBulkAction}
+                    disabled={selectedBookingIds.length === 0 || !bulkActionType}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Bookings Queue Grid */}
           {bookingsLoading ? (
             <div>Loading booking registers...</div>
-          ) : !bookingsData || bookingsData.length === 0 ? (
-            <Card className="text-center py-12 text-muted font-body">No bookings found.</Card>
+          ) : paginatedBookings.length === 0 ? (
+            <Card className="text-center py-12 text-muted">No matching bookings found.</Card>
           ) : (
             <div className="flex flex-col gap-4">
-              {bookingsData.map((b: any) => (
-                <Card key={b.id} glowColor="none" className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="font-body text-sm space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
-                        {b.ticketId || "INCIDENT"}
-                      </span>
-                      <span className="font-display font-bold text-base text-text">{b.name}</span>
-                      <Badge variant={b.priority === "emergency" ? "danger" : b.priority === "high" ? "warning" : "info"}>
-                        {b.priority || "normal"}
-                      </Badge>
-                      <Badge variant={b.status === "completed" ? "success" : b.status === "cancelled" ? "danger" : "warning"}>
-                        {b.status}
-                      </Badge>
-                    </div>
-                    <div>Email: <span className="text-text font-semibold">{b.email}</span> | Phone: <span className="text-text font-semibold">{b.phone}</span></div>
-                    <div>
-                      Device: <span className="text-text font-semibold">{b.brand ? `${b.brand} ${b.model} (${b.deviceType})` : b.operatingSystem}</span>
-                      {b.serialNumber && <span> | S/N: <span className="text-text font-semibold">{b.serialNumber}</span></span>}
-                    </div>
-                    <div>
-                      Scheduled: <span className="text-text font-semibold">{b.preferredDate} ({b.preferredTime})</span> | Created: <span className="text-text font-semibold">{formatDateTime(b.createdAt)}</span>
-                    </div>
-                    {b.address && <div>Address: <span className="text-text font-semibold">{b.address}</span></div>}
-                    <div className="text-xs text-muted max-w-xl truncate mt-1">Faults: {b.problemDescription}</div>
-                    
-                    {/* Render Remarks if completed */}
-                    {b.remarks && (
-                      <div className="text-xs text-primary mt-1 border-t border-border/20 pt-1">
-                        Technician Remarks: <span className="text-text">{b.remarks}</span>
-                        {b.partsUsed && <span> | Parts: <span className="text-text">{b.partsUsed}</span></span>}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full sm:w-auto mt-2 md:mt-0">
-                    {/* Engineer assignment simulator */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-muted font-body">Assign:</span>
-                      <select
-                        className="bg-[#111827]/60 border border-border text-xs text-text font-semibold rounded p-1"
-                        value={b.engineerId || ""}
-                        onChange={(e) =>
-                          updateBookingMutation.mutate({
-                            id: b.id,
-                            status: e.target.value ? "assigned" : "pending",
-                            engineerId: e.target.value || undefined,
-                          })
-                        }
-                      >
-                        <option value="">-- Unassigned --</option>
-                        <option value="eng-1">Elena Vance (Security Specialist)</option>
-                        <option value="eng-2">John Freeman (Network Lead)</option>
-                      </select>
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      {b.status !== "completed" && b.status !== "cancelled" && (
-                        <>
-                          <Button variant="ghost" size="sm" className="text-xs text-success hover:bg-success/15" onClick={() => updateBookingMutation.mutate({ id: b.id, status: "completed" })}>
-                            Complete
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-xs text-danger hover:bg-danger/15" onClick={() => updateBookingMutation.mutate({ id: b.id, status: "cancelled" })}>
-                            Cancel
-                          </Button>
-                        </>
+              {paginatedBookings.map((b: any) => {
+                const isSelected = selectedBookingIds.includes(b.id);
+                return (
+                  <Card key={b.id} glowColor="none" className={`p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative transition-all ${isSelected ? "border-secondary/40 bg-secondary/5" : ""}`}>
+                    {/* Checkbox */}
+                    <div className="absolute top-5 left-5 md:static shrink-0 cursor-pointer text-muted hover:text-text" onClick={() => handleToggleSelectOne(b.id)}>
+                      {isSelected ? (
+                        <CheckSquare size={18} className="text-secondary" />
+                      ) : (
+                        <Square size={18} />
                       )}
                     </div>
-                  </div>
-                </Card>
-              ))}
+
+                    {/* Booking Details */}
+                    <div className="font-body text-xs space-y-1 pl-7 md:pl-0 flex-grow">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
+                          {b.ticketId || "INCIDENT"}
+                        </span>
+                        <span className="font-display font-bold text-sm text-text">{b.name}</span>
+                        <Badge variant={b.priority === "emergency" ? "danger" : b.priority === "high" ? "warning" : "info"}>
+                          {b.priority || "normal"}
+                        </Badge>
+                        <Badge variant={b.status === "completed" ? "success" : b.status === "cancelled" ? "danger" : "warning"}>
+                          {b.status}
+                        </Badge>
+                      </div>
+                      <div>Email: <span className="text-text font-semibold">{b.email}</span> | Phone: <span className="text-text font-semibold">{b.phone}</span></div>
+                      <div>
+                        Device: <span className="text-text font-semibold">{b.brand ? `${b.brand} ${b.model} (${b.deviceType})` : b.operatingSystem}</span>
+                        {b.serialNumber && <span> | S/N: <span className="text-text font-semibold">{b.serialNumber}</span></span>}
+                      </div>
+                      <div>
+                        Scheduled: <span className="text-text font-semibold">{b.preferredDate} ({b.preferredTime})</span> | Created: <span className="text-text font-semibold">{formatDateTime(b.createdAt)}</span>
+                      </div>
+                      {b.address && <div>Address: <span className="text-text font-semibold">{b.address}</span></div>}
+                      <div className="text-xs text-muted max-w-xl truncate mt-1">Faults: {b.problemDescription}</div>
+                      
+                      {/* Remarks Log */}
+                      {(b.remarks || b.partsUsed) && (
+                        <div className="text-[11px] text-primary mt-2 border-t border-border/20 pt-2 flex flex-col gap-0.5">
+                          {b.remarks && <div>Remarks: <span className="text-text">{b.remarks}</span></div>}
+                          {b.partsUsed && <div>Parts Consumed: <span className="text-text">{b.partsUsed}</span></div>}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full md:w-auto pl-7 md:pl-0 mt-2 md:mt-0">
+                      {/* Technician Assignment */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted font-body">Assign:</span>
+                        <select
+                          className="bg-[#111827]/60 border border-border text-[11px] text-text font-semibold rounded p-1 outline-none"
+                          value={b.engineerId || ""}
+                          onChange={(e) =>
+                            updateBookingMutation.mutate({
+                              id: b.id,
+                              status: e.target.value ? "assigned" : "pending",
+                              engineerId: e.target.value || undefined,
+                            })
+                          }
+                        >
+                          <option value="">-- Unassigned --</option>
+                          <option value="eng-1">Elena Vance (Security Specialist)</option>
+                          <option value="eng-2">John Freeman (Network Lead)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        {b.status !== "completed" && b.status !== "cancelled" && (
+                          <>
+                            <Button variant="ghost" size="sm" className="text-[11px] py-1 text-success hover:bg-success/15" onClick={() => updateBookingMutation.mutate({ id: b.id, status: "completed" })}>
+                              Complete
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-[11px] py-1 text-danger hover:bg-danger/15" onClick={() => updateBookingMutation.mutate({ id: b.id, status: "cancelled" })}>
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-6 text-xs text-muted">
+              <span>Showing {startIndex + 1} - {endIndex} of {totalItems} incidents</span>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="p-2 h-8"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft size={16} />
+                </Button>
+                <span className="font-semibold text-text">Page {currentPage} of {totalPages}</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="p-2 h-8"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
             </div>
           )}
         </div>
