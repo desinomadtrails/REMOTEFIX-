@@ -62,7 +62,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Resources */}
+          {/* Company & Resources */}
           <div>
             <h4 className="text-sm font-semibold font-display text-text uppercase tracking-wider mb-4">
               Resources
@@ -74,13 +74,18 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-muted hover:text-text transition-colors">
-                  Knowledge Base
-                </a>
+                <Link to="/about" className="text-muted hover:text-text transition-colors">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/careers" className="text-muted hover:text-text transition-colors">
+                  Careers
+                </Link>
               </li>
               <li>
                 <a href="#" className="text-muted hover:text-text transition-colors">
-                  System Status
+                  Knowledge Base
                 </a>
               </li>
             </ul>
