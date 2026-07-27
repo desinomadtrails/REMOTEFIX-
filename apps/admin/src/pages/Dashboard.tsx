@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, Key, Mail, Terminal, LayoutDashboard, Calendar, ClipboardList, Database, LogOut, CheckCircle, RefreshCcw } from "lucide-react";
+import { 
+  Shield, 
+  Key, 
+  Mail, 
+  Terminal, 
+  LayoutDashboard, 
+  Calendar, 
+  ClipboardList, 
+  Database, 
+  LogOut, 
+  CheckCircle, 
+  RefreshCcw, 
+  TrendingUp, 
+  Clock, 
+  UserCheck, 
+  DollarSign, 
+  Plus, 
+  AlertCircle 
+} from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
@@ -164,6 +182,12 @@ export const Dashboard: React.FC = () => {
 
   const completedJobsCount = (bookingsData || []).filter((b: any) => b.status === "completed").length;
 
+  // Filter pending / unassigned bookings
+  const pendingRequests = (bookingsData || []).filter((b: any) => b.status === "pending");
+
+  // Get recent 4 bookings
+  const recentJobs = (bookingsData || []).slice(0, 4);
+
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto px-4 py-24">
@@ -283,39 +307,184 @@ export const Dashboard: React.FC = () => {
 
       {/* OVERVIEW & ANALYTICS */}
       {activeTab === "overview" && (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-8 font-body">
+          {/* Top stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card glowColor="purple">
-              <span className="text-xs text-muted font-body uppercase">Consolidated Revenue</span>
-              <div className="text-3xl font-black font-display text-text mt-2">{formatCurrency(totalRevenue)}</div>
+              <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Total Revenue</span>
+              <div className="flex items-center gap-2 mt-1">
+                <DollarSign className="text-secondary w-5 h-5" />
+                <div className="text-2xl font-black font-display text-text">{formatCurrency(totalRevenue)}</div>
+              </div>
             </Card>
             <Card glowColor="purple">
-              <span className="text-xs text-muted font-body uppercase">Active Dispatches</span>
-              <div className="text-3xl font-black font-display text-text mt-2">{activeBookingsCount}</div>
+              <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Active Dispatches</span>
+              <div className="flex items-center gap-2 mt-1">
+                <TrendingUp className="text-secondary w-5 h-5" />
+                <div className="text-2xl font-black font-display text-text">{activeBookingsCount}</div>
+              </div>
             </Card>
             <Card glowColor="purple">
-              <span className="text-xs text-muted font-body uppercase">Completed Repairs</span>
-              <div className="text-3xl font-black font-display text-text mt-2">{completedJobsCount}</div>
+              <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Pending Allocations</span>
+              <div className="flex items-center gap-2 mt-1">
+                <AlertCircle className="text-secondary w-5 h-5" />
+                <div className="text-2xl font-black font-display text-text">{pendingRequests.length}</div>
+              </div>
+            </Card>
+            <Card glowColor="purple">
+              <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Completed Repairs</span>
+              <div className="flex items-center gap-2 mt-1">
+                <CheckCircle className="text-secondary w-5 h-5" />
+                <div className="text-2xl font-black font-display text-text">{completedJobsCount}</div>
+              </div>
             </Card>
           </div>
 
-          <Card glowColor="none" className="p-6">
-            <h3 className="text-lg font-bold font-display text-text mb-4">Database Operations</h3>
-            <p className="text-sm text-muted font-body leading-relaxed max-w-xl mb-4">
-              Need to populate the database schema with active services and test support tickets? Use the seed utility below.
-            </p>
-            {seedingSuccess ? (
-              <div className="bg-success/15 border border-success/30 text-success text-sm rounded-lg p-4 flex items-center gap-2 max-w-md">
-                <CheckCircle size={18} />
-                Initial service catalog successfully injected into Azure SQL!
-              </div>
-            ) : (
-              <Button variant="cyber" className="flex items-center gap-2" onClick={() => seedDatabaseMutation.mutate()} isLoading={seedDatabaseMutation.isPending}>
-                <RefreshCcw size={16} />
-                Seed Initial Services Catalog
-              </Button>
-            )}
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* SVG Charts Column */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              <Card glowColor="purple" className="p-6">
+                <h3 className="text-sm font-bold font-display text-text mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <TrendingUp size={16} className="text-secondary" />
+                  Monthly Revenue Trend (SaaS Analytics)
+                </h3>
+                
+                {/* SVG Line Graph */}
+                <div className="relative w-full h-[200px] border-b border-l border-border/60 bg-[#111827]/40 rounded p-4 flex items-end">
+                  <svg className="w-full h-full overflow-visible" viewBox="0 0 400 150">
+                    <defs>
+                      <linearGradient id="gradient-area" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    {/* Background Grid Lines */}
+                    <line x1="0" y1="30" x2="400" y2="30" stroke="#1f2937" strokeWidth="1" strokeDasharray="4" />
+                    <line x1="0" y1="75" x2="400" y2="75" stroke="#1f2937" strokeWidth="1" strokeDasharray="4" />
+                    <line x1="0" y1="120" x2="400" y2="120" stroke="#1f2937" strokeWidth="1" strokeDasharray="4" />
+                    
+                    {/* Graph Area */}
+                    <path
+                      d="M 10 150 L 10 130 Q 90 90 130 110 T 250 50 T 390 30 L 390 150 Z"
+                      fill="url(#gradient-area)"
+                    />
+                    
+                    {/* Graph Line */}
+                    <path
+                      d="M 10 130 Q 90 90 130 110 T 250 50 T 390 30"
+                      fill="none"
+                      stroke="#8B5CF6"
+                      strokeWidth="3.5"
+                    />
+
+                    {/* Nodes */}
+                    <circle cx="10" cy="130" r="4.5" fill="#a78bfa" />
+                    <circle cx="130" cy="110" r="4.5" fill="#a78bfa" />
+                    <circle cx="250" cy="50" r="4.5" fill="#a78bfa" />
+                    <circle cx="390" cy="30" r="4.5" fill="#a78bfa" />
+                  </svg>
+                </div>
+                <div className="flex justify-between text-[10px] text-muted mt-2 px-1">
+                  <span>Q1 2026</span>
+                  <span>Q2 2026</span>
+                  <span>Q3 2026</span>
+                  <span>Q4 2026 (Est.)</span>
+                </div>
+              </Card>
+            </div>
+
+            {/* Quick Actions Card */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
+              <Card glowColor="purple" className="p-6">
+                <h3 className="text-sm font-bold font-display text-text mb-4 uppercase tracking-wider">Quick Actions Center</h3>
+                <div className="flex flex-col gap-3">
+                  <Button variant="cyber" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setNewServiceOpen(true)}>
+                    <Plus size={14} />
+                    Add Service Catalog Item
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setActiveTab("bookings")}>
+                    <UserCheck size={14} className="text-secondary" />
+                    Assign Pending Bookings ({pendingRequests.length})
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setActiveTab("logs")}>
+                    <Terminal size={14} className="text-secondary" />
+                    Review Audit Logs
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Seed status card */}
+              <Card glowColor="none" className="p-6">
+                <h3 className="text-sm font-bold font-display text-text mb-2">Seed Utility</h3>
+                {seedingSuccess ? (
+                  <div className="bg-success/15 border border-success/30 text-success text-xs rounded p-2.5 flex items-center gap-1.5">
+                    <CheckCircle size={14} />
+                    Database successfully injected!
+                  </div>
+                ) : (
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-secondary border border-secondary/20 hover:bg-secondary/10 flex items-center justify-center gap-1.5" onClick={() => seedDatabaseMutation.mutate()} isLoading={seedDatabaseMutation.isPending}>
+                    <RefreshCcw size={12} />
+                    Inject Mock Datasets
+                  </Button>
+                )}
+              </Card>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Unassigned / Pending Bookings */}
+            <Card glowColor="none">
+              <h3 className="text-sm font-bold font-display text-text mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-border/40 pb-3">
+                <Clock size={16} className="text-secondary" />
+                Unassigned Pending Incidents ({pendingRequests.length})
+              </h3>
+              {pendingRequests.length === 0 ? (
+                <p className="text-xs text-muted italic">All active customer requests have been assigned to technicians.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {pendingRequests.slice(0, 3).map((b: any) => (
+                    <div key={b.id} className="bg-[#111827]/40 border border-border/50 rounded-xl p-3 flex justify-between items-center text-xs">
+                      <div>
+                        <span className="font-mono text-primary font-bold block">{b.ticketId}</span>
+                        <span className="text-text font-semibold block mt-0.5">{b.name} ({b.deviceType || b.operatingSystem})</span>
+                      </div>
+                      <Button variant="cyber" size="sm" className="text-[10px] py-1 px-3" onClick={() => setActiveTab("bookings")}>
+                        Assign Now
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Recent Jobs list */}
+            <Card glowColor="none">
+              <h3 className="text-sm font-bold font-display text-text mb-4 uppercase tracking-wider flex items-center gap-2 border-b border-border/40 pb-3">
+                <ClipboardList size={16} className="text-secondary" />
+                Recent Operations Log
+              </h3>
+              {recentJobs.length === 0 ? (
+                <p className="text-xs text-muted italic">No bookings logged in platform.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {recentJobs.map((b: any) => (
+                    <div key={b.id} className="bg-[#111827]/40 border border-border/50 rounded-xl p-3 flex justify-between items-center text-xs">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-muted">{b.ticketId || "GUEST"}</span>
+                          <Badge variant={b.status === "completed" ? "success" : b.status === "cancelled" ? "danger" : "warning"} className="py-0 text-[9px]">
+                            {b.status}
+                          </Badge>
+                        </div>
+                        <span className="text-text font-semibold block mt-1">{b.name} - {b.preferredDate}</span>
+                      </div>
+                      <span className="text-muted text-[10px]">{b.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
         </div>
       )}
 
@@ -333,7 +502,7 @@ export const Dashboard: React.FC = () => {
                   <div className="font-body text-sm space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono font-bold text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
-                        {b.ticketId || "LEGACY"}
+                        {b.ticketId || "INCIDENT"}
                       </span>
                       <span className="font-display font-bold text-base text-text">{b.name}</span>
                       <Badge variant={b.priority === "emergency" ? "danger" : b.priority === "high" ? "warning" : "info"}>
@@ -353,6 +522,14 @@ export const Dashboard: React.FC = () => {
                     </div>
                     {b.address && <div>Address: <span className="text-text font-semibold">{b.address}</span></div>}
                     <div className="text-xs text-muted max-w-xl truncate mt-1">Faults: {b.problemDescription}</div>
+                    
+                    {/* Render Remarks if completed */}
+                    {b.remarks && (
+                      <div className="text-xs text-primary mt-1 border-t border-border/20 pt-1">
+                        Technician Remarks: <span className="text-text">{b.remarks}</span>
+                        {b.partsUsed && <span> | Parts: <span className="text-text">{b.partsUsed}</span></span>}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full sm:w-auto mt-2 md:mt-0">
