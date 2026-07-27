@@ -79,11 +79,20 @@ export const bookings = mssqlTable("bookings", {
   email: varchar("email", { length: 255 }).notNull(),
   company: varchar("company", { length: 255 }),
   address: varchar("address", { length: 500 }), // Optional for Remote IT Support
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  pinCode: varchar("pin_code", { length: 20 }),
+  deviceType: varchar("device_type", { length: 50 }),
+  brand: varchar("brand", { length: 100 }),
+  model: varchar("model", { length: 100 }),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  priority: varchar("priority", { length: 20 }).notNull().default("normal"), // 'normal' | 'high' | 'emergency'
   problemDescription: text("problem_description").notNull(),
   preferredDate: varchar("preferred_date", { length: 10 }).notNull(), // YYYY-MM-DD
   preferredTime: varchar("preferred_time", { length: 5 }).notNull(), // HH:MM
-  operatingSystem: varchar("operating_system", { length: 50 }).notNull(),
+  operatingSystem: varchar("operating_system", { length: 50 }),
   engineerId: varchar("engineer_id", { length: 36 }).references(() => engineers.id),
+  ticketId: varchar("ticket_id", { length: 50 }).unique(),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
   updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
 });

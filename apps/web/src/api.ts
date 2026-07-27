@@ -180,4 +180,16 @@ export const api = {
   async seedDatabase() {
     return request<any>("/api/seed", { method: "POST" });
   },
+
+  // Service Requests
+  async createServiceRequest(body: any) {
+    return request<any>("/api/service-request", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async trackServiceRequest(ticketId: string, phone: string) {
+    return request<any>(`/api/service-request/track?ticketId=${encodeURIComponent(ticketId)}&phone=${encodeURIComponent(phone)}`);
+  },
 };

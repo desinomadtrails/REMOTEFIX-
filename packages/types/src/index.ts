@@ -115,13 +115,34 @@ export const PaymentCreateSchema = z.object({
 });
 export type PaymentCreateInput = z.infer<typeof PaymentCreateSchema>;
 
-// Review Schema
 export const ReviewCreateSchema = z.object({
   bookingId: z.string().uuid(),
   rating: z.number().int().min(1).max(5),
   comment: z.string().optional(),
 });
 export type ReviewCreateInput = z.infer<typeof ReviewCreateSchema>;
+
+export const ServiceRequestCreateSchema = z.object({
+  fullName: z.string().min(2, "Name is required"),
+  phone: z.string().min(10, "Phone number is required"),
+  email: z.string().email("Invalid email"),
+  companyName: z.string().optional(),
+  address: z.string().min(5, "Address is required"),
+  city: z.string().min(2, "City is required"),
+  state: z.string().min(2, "State is required"),
+  pinCode: z.string().min(5, "PIN Code is required"),
+  deviceType: z.string().min(2, "Device Type is required"),
+  brand: z.string().min(1, "Brand is required"),
+  model: z.string().min(1, "Model is required"),
+  serialNumber: z.string().optional(),
+  problemDescription: z.string().min(10, "Problem description must be at least 10 characters"),
+  priority: z.enum(["normal", "high", "emergency"]).default("normal"),
+  preferredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  preferredTime: z.string().min(2, "Preferred Time Slot is required"),
+  images: z.array(z.string()).optional(), // Base64 strings
+});
+export type ServiceRequestCreateInput = z.infer<typeof ServiceRequestCreateSchema>;
+
 
 // FAQ & Blog Schemas
 export const FaqSchema = z.object({

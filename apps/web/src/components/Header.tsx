@@ -56,6 +56,9 @@ export const Header: React.FC = () => {
           <Link to="/services" className="text-sm font-medium text-muted hover:text-text transition-colors">
             Services
           </Link>
+          <Link to="/track" className="text-sm font-medium text-muted hover:text-text transition-colors">
+            Track Service
+          </Link>
           <Link to="/pricing" className="text-sm font-medium text-muted hover:text-text transition-colors">
             Pricing
           </Link>
@@ -130,6 +133,13 @@ export const Header: React.FC = () => {
             className="text-base font-medium text-muted hover:text-text transition-colors"
           >
             Services
+          </Link>
+          <Link
+            to="/track"
+            onClick={() => setIsOpen(false)}
+            className="text-base font-medium text-muted hover:text-text transition-colors"
+          >
+            Track Service
           </Link>
           <Link
             to="/pricing"

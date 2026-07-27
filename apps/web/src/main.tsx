@@ -15,6 +15,8 @@ import { Login } from "./pages/Login.js";
 import { Register } from "./pages/Register.js";
 import { CustomerDashboard } from "./pages/CustomerDashboard.js";
 import { EngineerDashboard } from "./pages/EngineerDashboard.js";
+import { BookSuccess } from "./pages/BookSuccess.js";
+import { TrackService } from "./pages/TrackService.js";
 import { Card } from "@remotefix/ui";
 import "./index.css";
 
@@ -63,6 +65,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/" element={<Home />} />
               <Route path="/services" element={<Services />} />
               <Route path="/book" element={<BookService />} />
+              <Route path="/book/success" element={<BookSuccess />} />
+              <Route path="/track" element={<TrackService />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/blog" element={<Blog />} />
