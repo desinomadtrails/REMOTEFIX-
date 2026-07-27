@@ -331,14 +331,27 @@ export const Dashboard: React.FC = () => {
               {bookingsData.map((b: any) => (
                 <Card key={b.id} glowColor="none" className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div className="font-body text-sm space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-xs text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
+                        {b.ticketId || "LEGACY"}
+                      </span>
                       <span className="font-display font-bold text-base text-text">{b.name}</span>
+                      <Badge variant={b.priority === "emergency" ? "danger" : b.priority === "high" ? "warning" : "info"}>
+                        {b.priority || "normal"}
+                      </Badge>
                       <Badge variant={b.status === "completed" ? "success" : b.status === "cancelled" ? "danger" : "warning"}>
                         {b.status}
                       </Badge>
                     </div>
                     <div>Email: <span className="text-text font-semibold">{b.email}</span> | Phone: <span className="text-text font-semibold">{b.phone}</span></div>
-                    <div>OS: <span className="text-text font-semibold">{b.operatingSystem}</span> | Scheduled: <span className="text-text font-semibold">{b.preferredDate} ({b.preferredTime})</span></div>
+                    <div>
+                      Device: <span className="text-text font-semibold">{b.brand ? `${b.brand} ${b.model} (${b.deviceType})` : b.operatingSystem}</span>
+                      {b.serialNumber && <span> | S/N: <span className="text-text font-semibold">{b.serialNumber}</span></span>}
+                    </div>
+                    <div>
+                      Scheduled: <span className="text-text font-semibold">{b.preferredDate} ({b.preferredTime})</span> | Created: <span className="text-text font-semibold">{formatDateTime(b.createdAt)}</span>
+                    </div>
+                    {b.address && <div>Address: <span className="text-text font-semibold">{b.address}</span></div>}
                     <div className="text-xs text-muted max-w-xl truncate mt-1">Faults: {b.problemDescription}</div>
                   </div>
 
