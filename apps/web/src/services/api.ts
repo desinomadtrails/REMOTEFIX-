@@ -192,4 +192,11 @@ export const api = {
   async trackServiceRequest(ticketId: string, phone: string) {
     return request<any>(`/api/service-request/track?ticketId=${encodeURIComponent(ticketId)}&phone=${encodeURIComponent(phone)}`);
   },
+
+  async linkGuestBooking(ticketId: string, phone: string) {
+    return request<any>("/api/bookings/link", {
+      method: "POST",
+      body: JSON.stringify({ ticketId, phone }),
+    });
+  },
 };

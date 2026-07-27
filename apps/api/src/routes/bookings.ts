@@ -431,4 +431,67 @@ bookingsRouter.post("/:id/images", requireAuth, async (c) => {
   }
 });
 
+// ==========================================
+// 6. LINK GUEST BOOKING TO LOGGED-IN CUSTOMER (Auth Required)
+// ==========================================
+bookingsRouter.post("/link", requireAuth, async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const user = c.get("user")!;
+  
+  if (user.role !== "customer") {
+    return c.json({ success: false, error: "Only customer accounts can link previous guest bookings." }, 403);
+  }
+  
+  try {
+    const { ticketId, phone } = await c.req.json();
+    
+    if (!ticketId || !phone) {
+      return c.json({ success: false, error: "Missing ticketId or phone coordinates" }, 400);
+    }
+    
+    // Find customer record for current user
+    const custRecord = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.userId, user.id));
+      
+    if (custRecord.length === 0) {
+      return c.json({ success: false, error: "Customer profile not found." }, 404);
+    }
+    
+    const customerId = custRecord[0].id;
+    
+    // Find the guest booking
+    const bookingList = await db
+      .select()
+      .from(bookings)
+      .where(and(eq(bookings.ticketId, ticketId), eq(bookings.phone, phone)));
+      
+    if (bookingList.length === 0) {
+      return c.json({ success: false, error: "No guest booking found matching the provided Ticket ID and Mobile Number." }, 404);
+    }
+    
+    const booking = bookingList[0];
+    
+    // Check if already linked
+    if (booking.customerId === customerId) {
+      return c.json({ success: false, error: "This booking is already linked to your account." }, 400);
+    }
+    
+    // Link it!
+    await db
+      .update(bookings)
+      .set({ customerId, updatedAt: new Date() })
+      .where(eq(bookings.id, booking.id));
+      
+    return c.json({
+      success: true,
+      message: "Guest booking successfully linked to your profile!",
+    });
+    
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
 export { bookingsRouter };

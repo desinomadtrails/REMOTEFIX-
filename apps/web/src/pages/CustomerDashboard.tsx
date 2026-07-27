@@ -1,13 +1,27 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { Calendar, CreditCard, LifeBuoy, FileText, Send, User, Trash2, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { 
+  Calendar, 
+  CreditCard, 
+  LifeBuoy, 
+  FileText, 
+  Send, 
+  User, 
+  Trash2, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Bell, 
+  MapPin, 
+  Plus, 
+  Link as LinkIcon 
+} from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../services/api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
 
 export const CustomerDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"bookings" | "invoices" | "tickets">("bookings");
+  const [activeTab, setActiveTab] = useState<"bookings" | "invoices" | "tickets" | "notifications" | "profile" | "link">("bookings");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -26,6 +40,20 @@ export const CustomerDashboard: React.FC = () => {
   const [ticketDescription, setTicketDescription] = useState("");
   const [ticketPriority, setTicketPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
   const [ticketBookingId, setTicketBookingId] = useState("");
+
+  // Saved Addresses State
+  const [savedAddresses, setSavedAddresses] = useState<string[]>([
+    "100 Enterprise Way, Suite 300, Azure City",
+    "404 Silicon Boulevard, Flat 4B, Cyber Valley"
+  ]);
+  const [newAddress, setNewAddress] = useState("");
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+
+  // Link Guest Booking Form State
+  const [linkTicketId, setLinkTicketId] = useState("");
+  const [linkPhone, setLinkPhone] = useState("");
+  const [linkSuccess, setLinkSuccess] = useState("");
+  const [linkError, setLinkError] = useState("");
 
   // Queries
   const { data: userProfile } = useQuery({
@@ -107,6 +135,24 @@ export const CustomerDashboard: React.FC = () => {
     },
   });
 
+  const linkBookingMutation = useMutation({
+    mutationFn: (payload: { ticketId: string; phone: string }) =>
+      api.linkGuestBooking(payload.ticketId, payload.phone),
+    onSuccess: (data: any) => {
+      setLinkSuccess(data.message || "Booking successfully linked to your account!");
+      setLinkTicketId("");
+      setLinkPhone("");
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      setTimeout(() => setLinkSuccess(""), 4000);
+    },
+    onError: (err: any) => {
+      setLinkError(err.message || "Failed to link booking. Verify Ticket ID and Mobile Number.");
+      setTimeout(() => setLinkError(""), 4000);
+    }
+  });
+
   // Helpers
   const handlePayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +183,37 @@ export const CustomerDashboard: React.FC = () => {
     });
   };
 
+  const handleAddAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAddress.trim()) return;
+    setSavedAddresses([...savedAddresses, newAddress]);
+    setNewAddress("");
+    setAddressModalOpen(false);
+  };
+
+  const handleLinkBooking = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkTicketId || !linkPhone) return;
+    linkBookingMutation.mutate({ ticketId: linkTicketId, phone: linkPhone });
+  };
+
+  // Compile real notifications based on active booking state
+  const notifications: string[] = [];
+  if (bookingsData) {
+    bookingsData.forEach((b: any) => {
+      const ticketRef = b.ticketId || "Incident";
+      if (b.status === "pending") {
+        notifications.push(`Your IT support request ${ticketRef} has been received. Our team is allocating a technician.`);
+      } else if (b.status === "assigned") {
+        notifications.push(`Technician assigned to booking ${ticketRef}. Scheduling coordinators will contact you shortly.`);
+      } else if (b.status === "in_progress") {
+        notifications.push(`Diagnostic session started for booking ${ticketRef}.`);
+      } else if (b.status === "completed") {
+        notifications.push(`Booking ${ticketRef} has been marked completed. Thank you for choosing RemoteFix!`);
+      }
+    });
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Profile Header */}
@@ -149,16 +226,16 @@ export const CustomerDashboard: React.FC = () => {
             Account: <span className="font-semibold text-text">{userProfile?.user?.email}</span> (Role: {userProfile?.user?.role})
           </p>
         </div>
-        <Button variant="primary" onClick={() => navigate("/book")}>
+        <Button variant="primary" onClick={() => navigate("/book")} glow>
           Book New Incident
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-border/40 pb-4 mb-8 justify-start sm:justify-start">
+      <div className="flex gap-4 border-b border-border/40 pb-4 mb-8 justify-start overflow-x-auto flex-nowrap">
         <button
           onClick={() => setActiveTab("bookings")}
-          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all ${
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
             activeTab === "bookings"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text"
@@ -169,7 +246,7 @@ export const CustomerDashboard: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("invoices")}
-          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all ${
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
             activeTab === "invoices"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text"
@@ -180,7 +257,7 @@ export const CustomerDashboard: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("tickets")}
-          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all ${
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
             activeTab === "tickets"
               ? "border-primary text-primary"
               : "border-transparent text-muted hover:text-text"
@@ -188,6 +265,42 @@ export const CustomerDashboard: React.FC = () => {
         >
           <LifeBuoy size={16} />
           Support Tickets
+        </button>
+        <button
+          onClick={() => setActiveTab("notifications")}
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
+            activeTab === "notifications"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          <Bell size={16} />
+          Notifications
+          {notifications.length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("profile")}
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
+            activeTab === "profile"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          <User size={16} />
+          Profile & Addresses
+        </button>
+        <button
+          onClick={() => setActiveTab("link")}
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
+            activeTab === "link"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          <LinkIcon size={16} />
+          Link Guest Booking
         </button>
       </div>
 
@@ -198,7 +311,7 @@ export const CustomerDashboard: React.FC = () => {
             <div className="text-center py-12">Loading appointments...</div>
           ) : !bookingsData || bookingsData.length === 0 ? (
             <Card className="text-center py-12 text-muted font-body">
-              No appointments registered. Click "Book New Incident" to start.
+              No appointments registered. Click "Book New Incident" or go to "Link Guest Booking" to claim orders.
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -206,33 +319,35 @@ export const CustomerDashboard: React.FC = () => {
                 <Card key={booking.id} glowColor="none" className="flex flex-col gap-4">
                   <div className="flex justify-between items-start gap-4">
                     <div>
-                      <span className="text-xs text-muted font-body block uppercase tracking-wider">
-                        Type: {booking.type}
-                      </span>
-                      <h3 className="text-lg font-bold font-display text-text mt-0.5">
-                        {booking.problemDescription.slice(0, 50)}...
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-mono font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
+                          {booking.ticketId || "INCIDENT"}
+                        </span>
+                        <Badge
+                          variant={
+                            booking.status === "completed"
+                              ? "success"
+                              : booking.status === "cancelled"
+                              ? "danger"
+                              : booking.status === "in_progress"
+                              ? "info"
+                              : "warning"
+                          }
+                          glow
+                        >
+                          {booking.status}
+                        </Badge>
+                      </div>
+                      <h3 className="text-base font-bold font-display text-text mt-2">
+                        {booking.brand ? `${booking.brand} ${booking.model} (${booking.deviceType})` : "General Diagnostics"}
                       </h3>
                     </div>
-                    <Badge
-                      variant={
-                        booking.status === "completed"
-                          ? "success"
-                          : booking.status === "cancelled"
-                          ? "danger"
-                          : booking.status === "in_progress"
-                          ? "info"
-                          : "warning"
-                      }
-                      glow
-                    >
-                      {booking.status}
-                    </Badge>
                   </div>
 
                   <div className="font-body text-xs text-muted space-y-1">
                     <div>Date: <span className="text-text font-semibold">{booking.preferredDate}</span></div>
                     <div>Time slot: <span className="text-text font-semibold">{booking.preferredTime}</span></div>
-                    <div>Operating System: <span className="text-text font-semibold">{booking.operatingSystem}</span></div>
+                    <div>Fault Description: <span className="text-text">{booking.problemDescription}</span></div>
                     {booking.address && <div>Location: <span className="text-text font-semibold">{booking.address}</span></div>}
                   </div>
 
@@ -352,6 +467,134 @@ export const CustomerDashboard: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* NOTIFICATIONS TAB */}
+      {activeTab === "notifications" && (
+        <div className="max-w-3xl">
+          <Card>
+            <h3 className="text-lg font-bold font-display text-text border-b border-border/50 pb-3 mb-6 flex items-center gap-2">
+              <Bell size={18} className="text-primary" />
+              Notifications
+            </h3>
+            {notifications.length === 0 ? (
+              <p className="text-sm text-muted font-body">No active notifications.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {notifications.map((notif, idx) => (
+                  <div key={idx} className="flex gap-3 bg-[#111827]/40 p-4 border border-border/50 rounded-xl items-start font-body text-xs leading-relaxed text-muted">
+                    <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
+                    <span>{notif}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* PROFILE & ADDRESSES TAB */}
+      {activeTab === "profile" && (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+          {/* Profile Cards */}
+          <div className="md:col-span-5 flex flex-col gap-6">
+            <Card glowColor="cyan">
+              <h3 className="text-lg font-bold font-display text-text border-b border-border/50 pb-3 mb-4">
+                Customer Information
+              </h3>
+              <div className="font-body text-sm space-y-4 text-muted">
+                <div>
+                  <span className="text-xs text-muted block">Full Name</span>
+                  <span className="font-semibold text-text">{userProfile?.user?.fullName}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted block">Email Address</span>
+                  <span className="font-semibold text-text">{userProfile?.user?.email}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-muted block">Account Role</span>
+                  <span className="font-semibold text-text uppercase text-primary text-xs">{userProfile?.user?.role}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Saved Addresses Card */}
+          <div className="md:col-span-7">
+            <Card>
+              <div className="flex justify-between items-center border-b border-border/50 pb-3 mb-4">
+                <h3 className="text-lg font-bold font-display text-text">
+                  Saved Dispatch Addresses
+                </h3>
+                <Button variant="cyber" size="sm" className="flex items-center gap-1" onClick={() => setAddressModalOpen(true)}>
+                  <Plus size={14} />
+                  Add Address
+                </Button>
+              </div>
+
+              <div className="flex flex-col gap-4 font-body text-xs text-muted">
+                {savedAddresses.map((addr, idx) => (
+                  <div key={idx} className="flex items-start gap-3 bg-[#111827]/40 border border-border/50 p-4 rounded-xl">
+                    <MapPin size={16} className="text-primary shrink-0 mt-0.5" />
+                    <span>{addr}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* LINK GUEST BOOKING TAB */}
+      {activeTab === "link" && (
+        <div className="max-w-md">
+          <Card glowColor="cyan">
+            <h3 className="text-lg font-bold font-display text-text border-b border-border/50 pb-3 mb-4 flex items-center gap-2">
+              <LinkIcon size={18} className="text-primary" />
+              Link Guest Booking
+            </h3>
+            <p className="text-xs text-muted font-body leading-relaxed mb-6">
+              Enter the Ticket ID and registered mobile number of a booking submitted as a guest to link it permanently to your profile history.
+            </p>
+
+            {linkSuccess && (
+              <div className="bg-success/15 border border-success/30 text-success text-xs rounded-lg p-3.5 mb-4 font-body">
+                {linkSuccess}
+              </div>
+            )}
+            {linkError && (
+              <div className="bg-danger/10 border border-danger/30 text-danger text-xs rounded-lg p-3.5 mb-4 font-body">
+                {linkError}
+              </div>
+            )}
+
+            <form onSubmit={handleLinkBooking} className="flex flex-col gap-4">
+              <Input
+                label="Ticket ID"
+                placeholder="e.g. RF-20260727-000127"
+                value={linkTicketId}
+                onChange={(e) => setLinkTicketId(e.target.value)}
+                required
+              />
+              <Input
+                label="Mobile Number"
+                placeholder="e.g. 9876543210"
+                value={linkPhone}
+                onChange={(e) => setLinkPhone(e.target.value)}
+                required
+              />
+              <Button
+                variant="primary"
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 mt-2"
+                isLoading={linkBookingMutation.isPending}
+                glow
+              >
+                Verify &amp; Link Booking
+              </Button>
+            </form>
+          </Card>
         </div>
       )}
 
@@ -505,6 +748,22 @@ export const CustomerDashboard: React.FC = () => {
             </Button>
           </form>
         </div>
+      </Modal>
+
+      {/* ADD ADDRESS MODAL */}
+      <Modal isOpen={addressModalOpen} onClose={() => setAddressModalOpen(false)} title="Add Dispatch Address">
+        <form onSubmit={handleAddAddress} className="flex flex-col gap-4 font-body">
+          <Input
+            label="Street Address"
+            placeholder="e.g. 100 Enterprise Way, Suite 300, Azure City"
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+            required
+          />
+          <Button variant="primary" type="submit" className="w-full mt-4">
+            Save Address
+          </Button>
+        </form>
       </Modal>
     </div>
   );
