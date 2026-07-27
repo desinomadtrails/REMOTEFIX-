@@ -91,4 +91,29 @@ export const api = {
   async seedDatabase() {
     return request<any>("/api/seed", { method: "POST" });
   },
+
+  // Customer Management APIs
+  async getCustomers() {
+    return request<any>("/api/admin/customers");
+  },
+
+  async createCustomer(body: any) {
+    return request<any>("/api/admin/customers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async updateCustomer(id: string, body: any) {
+    return request<any>(`/api/admin/customers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async deleteCustomer(id: string) {
+    return request<any>(`/api/admin/customers/${id}`, {
+      method: "DELETE",
+    });
+  },
 };

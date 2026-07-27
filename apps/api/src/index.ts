@@ -12,6 +12,7 @@ import { paymentsRouter } from "./routes/payments.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { logsRouter } from "./routes/logs.js";
 import { serviceRequestRouter } from "./routes/serviceRequest.js";
+import { customersRouter } from "./routes/customers.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -80,6 +81,7 @@ app.route("/api/invoices", invoicesRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/admin/analytics", analyticsRouter);
 app.route("/api/admin/logs", logsRouter);
+app.route("/api/admin/customers", customersRouter);
 
 app.get("/api/test-db", async (c) => {
   try {
