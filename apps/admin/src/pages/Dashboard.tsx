@@ -34,7 +34,11 @@ import {
   History,
   Wrench,
   Activity,
-  Award
+  Award,
+  Package,
+  ShoppingCart,
+  AlertTriangle,
+  FileSpreadsheet
 } from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../api.js";
@@ -45,7 +49,7 @@ export const Dashboard: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "services" | "logs" | "customers" | "technicians">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "services" | "logs" | "customers" | "technicians" | "inventory">("overview");
   const queryClient = useQueryClient();
 
   // Dialog State
@@ -96,8 +100,105 @@ export const Dashboard: React.FC = () => {
   const [techFormPhone, setTechFormPhone] = useState("");
   const [techFormBio, setTechFormBio] = useState("");
   const [techFormSpecialities, setTechFormSpecialities] = useState("");
-  const [techFormStatus, setTechFormStatus] = useState("available"); // 'available' | 'busy' | 'offline'
-  const [techFormUserStatus, setTechFormUserStatus] = useState("active"); // 'active' | 'suspended'
+  const [techFormStatus, setTechFormStatus] = useState("available");
+  const [techFormUserStatus, setTechFormUserStatus] = useState("active");
+
+  // ==========================================
+  // INVENTORY MANAGEMENT STATE ENGINE (Persisted in LocalStorage)
+  // ==========================================
+  const [products, setProducts] = useState<any[]>(() => {
+    const saved = localStorage.getItem("rf_inv_products");
+    if (saved) return JSON.parse(saved);
+    return [
+      { sku: "SSD-1TB", name: "Crucial 1TB NVMe SSD", category: "Storage", stock: 4, threshold: 5, unitCost: 85.00 },
+      { sku: "CAT6-100", name: "Cat6 Ethernet Cable 100m", category: "Networking", stock: 12, threshold: 5, unitCost: 45.00 },
+      { sku: "SW-8P", name: "Netgear 8-Port Gigabit Switch", category: "Networking", stock: 2, threshold: 3, unitCost: 35.00 },
+      { sku: "RJ45-100", name: "RJ45 Connectors (Pack of 100)", category: "Accessories", stock: 25, threshold: 10, unitCost: 15.00 }
+    ];
+  });
+
+  const [suppliers, setSuppliers] = useState<any[]>(() => {
+    const saved = localStorage.getItem("rf_inv_suppliers");
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: "sup-1", name: "StarTech Distribution", contact: "sales@startech.com", phone: "800-265-1844" },
+      { id: "sup-2", name: "Cisco Systems Direct", contact: "orders@cisco.com", phone: "800-553-6387" },
+      { id: "sup-3", name: "Prime IT Wholesale", contact: "info@primeit.com", phone: "555-019-2830" }
+    ];
+  });
+
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>(() => {
+    const saved = localStorage.getItem("rf_inv_pos");
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: "PO-20260727-001", sku: "SSD-1TB", qty: 10, supplier: "StarTech Distribution", status: "ordered", createdAt: "2026-07-27" }
+    ];
+  });
+
+  const [materialIssues, setMaterialIssues] = useState<any[]>(() => {
+    const saved = localStorage.getItem("rf_inv_issues");
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: "ISS-001", ticketId: "RF-100247", sku: "CAT6-100", qty: 1, createdAt: "2026-07-27" }
+    ];
+  });
+
+  // Sync inventory states to LocalStorage
+  useEffect(() => {
+    localStorage.setItem("rf_inv_products", JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem("rf_inv_suppliers", JSON.stringify(suppliers));
+  }, [suppliers]);
+
+  useEffect(() => {
+    localStorage.setItem("rf_inv_pos", JSON.stringify(purchaseOrders));
+  }, [purchaseOrders]);
+
+  useEffect(() => {
+    localStorage.setItem("rf_inv_issues", JSON.stringify(materialIssues));
+  }, [materialIssues]);
+
+  // Inventory Search and Modals
+  const [invSearchTerm, setInvSearchTerm] = useState("");
+  const [inventorySubTab, setInventorySubTab] = useState<"products" | "suppliers" | "pos" | "issues">("products");
+  
+  const [newProductOpen, setNewProductOpen] = useState(false);
+  const [newSupplierOpen, setNewSupplierOpen] = useState(false);
+  const [newPoOpen, setNewPoOpen] = useState(false);
+  const [newIssueOpen, setNewIssueOpen] = useState(false);
+
+  // Form States for Inventory
+  const [prodFormSku, setProdFormSku] = useState("");
+  const [prodFormName, setProdFormName] = useState("");
+  const [prodFormCategory, setProdFormCategory] = useState("Storage");
+  const [prodFormStock, setProdFormStock] = useState("");
+  const [prodFormThreshold, setProdFormThreshold] = useState("");
+  const [prodFormUnitCost, setProdFormUnitCost] = useState("");
+
+  const [supFormName, setSupFormName] = useState("");
+  const [supFormContact, setSupFormContact] = useState("");
+  const [supFormPhone, setSupFormPhone] = useState("");
+
+  const [poFormSku, setPoFormSku] = useState("");
+  const [poFormQty, setPoFormQty] = useState("");
+  const [poFormSupplier, setPoFormSupplier] = useState("");
+
+  const [issueFormTicketId, setIssueFormTicketId] = useState("");
+  const [issueFormSku, setIssueFormSku] = useState("");
+  const [issueFormQty, setIssueFormQty] = useState("");
+
+  // Default dropdown setups
+  useEffect(() => {
+    if (products.length > 0) {
+      setPoFormSku(products[0].sku);
+      setIssueFormSku(products[0].sku);
+    }
+    if (suppliers.length > 0) {
+      setPoFormSupplier(suppliers[0].name);
+    }
+  }, [products, suppliers]);
 
   useEffect(() => {
     const token = localStorage.getItem("rf_token");
@@ -239,7 +340,7 @@ export const Dashboard: React.FC = () => {
     },
   });
 
-  // Customer Management Mutations
+  // Customer Mutations
   const createCustomerMutation = useMutation({
     mutationFn: (payload: any) => api.createCustomer(payload),
     onSuccess: () => {
@@ -277,7 +378,7 @@ export const Dashboard: React.FC = () => {
     }
   });
 
-  // Technician Management Mutations
+  // Technician Mutations
   const createEngineerMutation = useMutation({
     mutationFn: (payload: any) => api.createEngineer(payload),
     onSuccess: () => {
@@ -411,6 +512,119 @@ export const Dashboard: React.FC = () => {
       estimatedDurationMinutes: parseInt(serviceDuration),
       isActive: true,
     });
+  };
+
+  // Inventory logic handlers
+  const handleAddProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prodFormSku || !prodFormName || !prodFormStock) return;
+    
+    // Check if SKU already exists
+    if (products.some(p => p.sku.toLowerCase() === prodFormSku.toLowerCase())) {
+      alert("A product with this SKU code already exists!");
+      return;
+    }
+
+    const newProd = {
+      sku: prodFormSku.toUpperCase(),
+      name: prodFormName,
+      category: prodFormCategory,
+      stock: parseInt(prodFormStock),
+      threshold: parseInt(prodFormThreshold || "5"),
+      unitCost: parseFloat(prodFormUnitCost || "0.00")
+    };
+
+    setProducts([...products, newProd]);
+    setNewProductOpen(false);
+    
+    // Reset Form
+    setProdFormSku("");
+    setProdFormName("");
+    setProdFormStock("");
+    setProdFormThreshold("");
+    setProdFormUnitCost("");
+  };
+
+  const handleDeleteProduct = (sku: string) => {
+    if (window.confirm(`Are you sure you want to remove item SKU: ${sku}?`)) {
+      setProducts(products.filter(p => p.sku !== sku));
+    }
+  };
+
+  const handleAddSupplier = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supFormName || !supFormContact) return;
+
+    const newSup = {
+      id: `sup-${Date.now().toString().slice(-4)}`,
+      name: supFormName,
+      contact: supFormContact,
+      phone: supFormPhone || "N/A"
+    };
+
+    setSuppliers([...suppliers, newSup]);
+    setNewSupplierOpen(false);
+    setSupFormName("");
+    setSupFormContact("");
+    setSupFormPhone("");
+  };
+
+  const handleAddPo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!poFormSku || !poFormQty || !poFormSupplier) return;
+
+    const newPo = {
+      id: `PO-${new Date().toISOString().split("T")[0].replace(/-/g, "")}-${Math.floor(100 + Math.random() * 900)}`,
+      sku: poFormSku,
+      qty: parseInt(poFormQty),
+      supplier: poFormSupplier,
+      status: "ordered",
+      createdAt: new Date().toISOString().split("T")[0]
+    };
+
+    setPurchaseOrders([newPo, ...purchaseOrders]);
+    setNewPoOpen(false);
+    setPoFormQty("");
+  };
+
+  const handleGoodsReceipt = (poId: string) => {
+    const po = purchaseOrders.find(o => o.id === poId);
+    if (!po || po.status === "received") return;
+
+    // Update PO status to received
+    setPurchaseOrders(purchaseOrders.map(o => o.id === poId ? { ...o, status: "received" } : o));
+
+    // Refill Product stock level
+    setProducts(products.map(p => p.sku === po.sku ? { ...p, stock: p.stock + po.qty } : p));
+  };
+
+  const handleAddIssue = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!issueFormTicketId || !issueFormSku || !issueFormQty) return;
+    const issueQty = parseInt(issueFormQty);
+
+    const targetProduct = products.find(p => p.sku === issueFormSku);
+    if (!targetProduct) return;
+
+    if (targetProduct.stock < issueQty) {
+      alert(`Insufficient stock! SKU ${issueFormSku} currently has only ${targetProduct.stock} units available.`);
+      return;
+    }
+
+    const newIssue = {
+      id: `ISS-${new Date().toISOString().split("T")[0].replace(/-/g, "")}-${Math.floor(100 + Math.random() * 900)}`,
+      ticketId: issueFormTicketId,
+      sku: issueFormSku,
+      qty: issueQty,
+      createdAt: new Date().toISOString().split("T")[0]
+    };
+
+    // Deduct stock level
+    setProducts(products.map(p => p.sku === issueFormSku ? { ...p, stock: p.stock - issueQty } : p));
+    setMaterialIssues([newIssue, ...materialIssues]);
+    setNewIssueOpen(false);
+    setIssueFormTicketId("");
+    setIssueFormQty("");
   };
 
   // Metrics calculations
@@ -571,6 +785,82 @@ export const Dashboard: React.FC = () => {
 
   const selectedEngineer = (engineersData || []).find((eng: any) => eng.id === selectedEngineerId);
 
+  // Inventory Search & Valuation
+  const lowStockProducts = products.filter(p => p.stock <= p.threshold);
+  const totalInventoryAssetValue = products.reduce((sum, p) => sum + (p.stock * p.unitCost), 0);
+
+  const filteredInventoryProducts = products.filter(p => {
+    const searchLower = invSearchTerm.toLowerCase();
+    return (
+      p.sku.toLowerCase().includes(searchLower) ||
+      p.name.toLowerCase().includes(searchLower) ||
+      p.category.toLowerCase().includes(searchLower)
+    );
+  });
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-24">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary/15 rounded-full border border-secondary/20 text-xs font-semibold uppercase tracking-wider text-secondary mb-4">
+            <Shield className="w-3.5 h-3.5" />
+            Administrative Control Panel
+          </div>
+          <h1 className="text-3xl font-black font-display text-text">RemoteFix Admin</h1>
+          <p className="text-xs text-muted font-body mt-2">
+            Secure sign-in for platform managers.
+          </p>
+        </div>
+
+        {loginError && (
+          <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-lg p-4 mb-6 font-body">
+            {loginError}
+          </div>
+        )}
+
+        <form onSubmit={handleLoginSubmit}>
+          <Card className="flex flex-col gap-5" glowColor="purple">
+            <div className="relative">
+              <Input
+                label="Administrator Email"
+                type="email"
+                placeholder="admin@remotefix.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="pl-10"
+              />
+              <Mail className="absolute left-3.5 top-10.5 text-muted w-4.5 h-4.5" />
+            </div>
+
+            <div className="relative">
+              <Input
+                label="Admin Password"
+                type="password"
+                placeholder="adminpassword"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="pl-10"
+              />
+              <Key className="absolute left-3.5 top-10.5 text-muted w-4.5 h-4.5" />
+            </div>
+
+            <Button variant="primary" type="submit" className="w-full mt-2" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+              Authenticate Credentials
+            </Button>
+
+            <div className="bg-[#111827]/40 border border-border/80 rounded-lg p-4 font-body text-xs text-muted leading-relaxed mt-2">
+              <span className="block font-semibold text-text mb-1">Developer Credentials Checklist:</span>
+              Email: <code className="text-primary font-mono select-all">admin@remotefix.com</code><br />
+              Password: <code className="text-primary font-mono select-all">adminpassword</code>
+            </div>
+          </Card>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Admin Header */}
@@ -622,6 +912,15 @@ export const Dashboard: React.FC = () => {
         >
           <Wrench size={16} />
           Technicians
+        </button>
+        <button
+          onClick={() => setActiveTab("inventory")}
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
+            activeTab === "inventory" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          <Package size={16} />
+          Inventory Control
         </button>
         <button
           onClick={() => setActiveTab("services")}
@@ -737,9 +1036,9 @@ export const Dashboard: React.FC = () => {
                     <UserCheck size={14} className="text-secondary" />
                     Assign Pending Bookings ({pendingRequests.length})
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setActiveTab("customers")}>
-                    <Users size={14} className="text-secondary" />
-                    Manage Customers ({customersData?.length || 0})
+                  <Button variant="outline" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setActiveTab("inventory")}>
+                    <Package size={14} className="text-secondary" />
+                    Verify Stock levels ({lowStockProducts.length} low)
                   </Button>
                 </div>
               </Card>
@@ -820,7 +1119,6 @@ export const Dashboard: React.FC = () => {
       {/* BOOKING QUEUE */}
       {activeTab === "bookings" && (
         <div className="space-y-6 font-body">
-          {/* Controls Panel: Search & Filters */}
           <Card glowColor="none" className="p-6">
             <div className="flex items-center gap-2 text-sm font-bold font-display text-text uppercase tracking-wider mb-4 border-b border-border/30 pb-2.5">
               <SlidersHorizontal size={16} className="text-secondary" />
@@ -1238,7 +1536,6 @@ export const Dashboard: React.FC = () => {
       {/* TECHNICIAN MANAGEMENT TAB (CRM) */}
       {activeTab === "technicians" && (
         <div className="space-y-6 font-body">
-          {/* Controls: Search & Add */}
           <Card glowColor="none" className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 border-b border-border/30 pb-3">
               <div className="flex items-center gap-2 text-sm font-bold font-display text-text uppercase tracking-wider">
@@ -1263,7 +1560,6 @@ export const Dashboard: React.FC = () => {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Tech sidebar list */}
             <div className="lg:col-span-1 flex flex-col gap-4">
               <h3 className="text-sm font-bold font-display text-text uppercase tracking-wider">Staff Roster</h3>
               
@@ -1315,11 +1611,9 @@ export const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Inspect Panel */}
             <div className="lg:col-span-2">
               {selectedEngineer ? (
                 <div className="flex flex-col gap-6">
-                  {/* Stats & Profile */}
                   <Card>
                     <div className="flex justify-between items-start border-b border-border/40 pb-4 mb-4">
                       <div>
@@ -1394,7 +1688,6 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </Card>
 
-                  {/* Performance Indicators */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card glowColor="purple" className="p-4 flex items-center gap-3">
                       <Activity size={24} className="text-secondary shrink-0" />
@@ -1419,7 +1712,6 @@ export const Dashboard: React.FC = () => {
                     </Card>
                   </div>
 
-                  {/* Assigned Jobs */}
                   <Card>
                     <h4 className="text-sm font-bold font-display text-text uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-border/40 pb-2">
                       <ClipboardList size={16} className="text-secondary" />
@@ -1454,6 +1746,283 @@ export const Dashboard: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* INVENTORY CONTROL TAB */}
+      {activeTab === "inventory" && (
+        <div className="space-y-6 font-body">
+          {/* Low Stock Alerts */}
+          {lowStockProducts.length > 0 && (
+            <div className="bg-danger/10 border border-danger/30 text-danger rounded-xl p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
+              <div>
+                <span className="text-sm font-bold font-display block">Critical Low Stock Warning!</span>
+                <span className="text-xs mt-1 block">
+                  The following items have fallen below safety inventory levels:{" "}
+                  <strong className="text-text">
+                    {lowStockProducts.map(p => `${p.sku} (${p.stock} left)`).join(", ")}
+                  </strong>
+                  . Please compile Purchase Orders.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Valuation Summary & Global Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card glowColor="purple" className="flex items-center justify-between p-5">
+              <div>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Total Asset Valuation</span>
+                <div className="text-2xl font-black font-display text-text mt-1">
+                  {formatCurrency(totalInventoryAssetValue)}
+                </div>
+              </div>
+              <DollarSign className="text-secondary w-8 h-8 opacity-70" />
+            </Card>
+
+            <Card glowColor="purple" className="flex items-center justify-between p-5">
+              <div>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Safety Alerts</span>
+                <div className="text-2xl font-black font-display text-text mt-1 text-danger">
+                  {lowStockProducts.length} SKU{lowStockProducts.length !== 1 ? "s" : ""} Low
+                </div>
+              </div>
+              <AlertTriangle className="text-danger w-8 h-8 opacity-70" />
+            </Card>
+
+            <Card glowColor="purple" className="flex items-center justify-between p-5">
+              <div>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Registered Products</span>
+                <div className="text-2xl font-black font-display text-text mt-1">
+                  {products.length} Items
+                </div>
+              </div>
+              <Package className="text-secondary w-8 h-8 opacity-70" />
+            </Card>
+          </div>
+
+          {/* Sub Navigation for Inventory Tab */}
+          <div className="flex gap-4 border-b border-border/25 pb-3">
+            <button
+              onClick={() => setInventorySubTab("products")}
+              className={`text-xs font-bold font-display pb-1 border-b-2 cursor-pointer transition-all ${
+                inventorySubTab === "products" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+              }`}
+            >
+              Stock Sheets
+            </button>
+            <button
+              onClick={() => setInventorySubTab("suppliers")}
+              className={`text-xs font-bold font-display pb-1 border-b-2 cursor-pointer transition-all ${
+                inventorySubTab === "suppliers" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+              }`}
+            >
+              Suppliers Registry
+            </button>
+            <button
+              onClick={() => setInventorySubTab("pos")}
+              className={`text-xs font-bold font-display pb-1 border-b-2 cursor-pointer transition-all ${
+                inventorySubTab === "pos" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+              }`}
+            >
+              Purchase Orders
+            </button>
+            <button
+              onClick={() => setInventorySubTab("issues")}
+              className={`text-xs font-bold font-display pb-1 border-b-2 cursor-pointer transition-all ${
+                inventorySubTab === "issues" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+              }`}
+            >
+              Material Dispatches
+            </button>
+          </div>
+
+          {/* Render Inventory Sub Tabs */}
+          {inventorySubTab === "products" && (
+            <div className="space-y-4">
+              {/* Product control row */}
+              <div className="flex flex-col sm:flex-row justify-between gap-4">
+                <div className="relative flex-grow max-w-md">
+                  <Input
+                    placeholder="Search SKU or Product Name..."
+                    value={invSearchTerm}
+                    onChange={(e) => setInvSearchTerm(e.target.value)}
+                    className="pl-9 text-xs"
+                  />
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
+                </div>
+                <Button variant="cyber" size="sm" className="flex items-center gap-1.5 text-xs w-full sm:w-auto" onClick={() => setNewProductOpen(true)}>
+                  <Plus size={14} />
+                  Add SKU Product
+                </Button>
+              </div>
+
+              {/* Products Table */}
+              <Card glowColor="none" className="p-4 overflow-x-auto">
+                <table className="w-full text-xs text-left text-muted border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50 text-text font-semibold uppercase font-display">
+                      <th className="pb-3 pr-4">SKU</th>
+                      <th className="pb-3 pr-4">Product Name</th>
+                      <th className="pb-3 pr-4">Category</th>
+                      <th className="pb-3 pr-4 text-right">Stock Level</th>
+                      <th className="pb-3 pr-4 text-right">Safety Limit</th>
+                      <th className="pb-3 pr-4 text-right">Unit Cost</th>
+                      <th className="pb-3 pr-4 text-right">Asset Value</th>
+                      <th className="pb-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInventoryProducts.map((p) => {
+                      const isLow = p.stock <= p.threshold;
+                      return (
+                        <tr key={p.sku} className="border-b border-border/30 hover:bg-[#111827]/30 transition-colors">
+                          <td className="py-3 pr-4 font-mono font-bold text-primary">{p.sku}</td>
+                          <td className="py-3 pr-4 text-text font-semibold">{p.name}</td>
+                          <td className="py-3 pr-4">{p.category}</td>
+                          <td className={`py-3 pr-4 text-right font-bold ${isLow ? "text-danger" : "text-text"}`}>
+                            {p.stock}
+                          </td>
+                          <td className="py-3 pr-4 text-right font-mono">{p.threshold}</td>
+                          <td className="py-3 pr-4 text-right">{formatCurrency(p.unitCost)}</td>
+                          <td className="py-3 pr-4 text-right text-text font-bold">
+                            {formatCurrency(p.stock * p.unitCost)}
+                          </td>
+                          <td className="py-3 text-center">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-[10px] text-danger hover:bg-danger/10 py-1"
+                              onClick={() => handleDeleteProduct(p.sku)}
+                            >
+                              Delete
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Card>
+            </div>
+          )}
+
+          {inventorySubTab === "suppliers" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold font-display text-text uppercase">Suppliers Registry</h3>
+                <Button variant="cyber" size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setNewSupplierOpen(true)}>
+                  <Plus size={14} />
+                  Add Supplier
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {suppliers.map(s => (
+                  <Card key={s.id} glowColor="none" className="p-4 flex flex-col gap-2 text-xs">
+                    <h4 className="text-sm font-bold text-text font-display">{s.name}</h4>
+                    <div>Email: <span className="text-text font-semibold">{s.contact}</span></div>
+                    <div>Phone: <span className="text-text font-semibold">{s.phone}</span></div>
+                    <span className="text-muted block mt-2 text-[10px] font-mono">SUP-ID: {s.id}</span>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {inventorySubTab === "pos" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold font-display text-text uppercase">Purchase Orders (Refills)</h3>
+                <Button variant="cyber" size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setNewPoOpen(true)}>
+                  <Plus size={14} />
+                  Compile Purchase Order
+                </Button>
+              </div>
+
+              <Card glowColor="none" className="p-4 overflow-x-auto">
+                <table className="w-full text-xs text-left text-muted border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50 text-text font-semibold uppercase font-display">
+                      <th className="pb-3 pr-4">PO Code</th>
+                      <th className="pb-3 pr-4">SKU Product</th>
+                      <th className="pb-3 pr-4 text-right">Quantity</th>
+                      <th className="pb-3 pr-4">Supplier</th>
+                      <th className="pb-3 pr-4">Created Date</th>
+                      <th className="pb-3 pr-4">Workflow Status</th>
+                      <th className="pb-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {purchaseOrders.map((po) => (
+                      <tr key={po.id} className="border-b border-border/30 hover:bg-[#111827]/30 transition-colors">
+                        <td className="py-3 pr-4 font-mono font-bold text-primary">{po.id}</td>
+                        <td className="py-3 pr-4 text-text font-semibold">{po.sku}</td>
+                        <td className="py-3 pr-4 text-right font-bold text-text">{po.qty}</td>
+                        <td className="py-3 pr-4">{po.supplier}</td>
+                        <td className="py-3 pr-4 font-mono">{po.createdAt}</td>
+                        <td className="py-3 pr-4">
+                          <Badge variant={po.status === "received" ? "success" : "warning"}>
+                            {po.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3 text-center">
+                          {po.status === "ordered" && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-[10px] text-success hover:bg-success/15 py-1 px-3"
+                              onClick={() => handleGoodsReceipt(po.id)}
+                            >
+                              Goods Receipt
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            </div>
+          )}
+
+          {inventorySubTab === "issues" && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold font-display text-text uppercase">Material Issue logs (Usage logs)</h3>
+                <Button variant="cyber" size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setNewIssueOpen(true)}>
+                  <Plus size={14} />
+                  Issue Parts to Booking
+                </Button>
+              </div>
+
+              <Card glowColor="none" className="p-4 overflow-x-auto">
+                <table className="w-full text-xs text-left text-muted border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/50 text-text font-semibold uppercase font-display">
+                      <th className="pb-3 pr-4">Issue Code</th>
+                      <th className="pb-3 pr-4">Ticket / Booking ID</th>
+                      <th className="pb-3 pr-4">SKU Product</th>
+                      <th className="pb-3 pr-4 text-right">Quantity issued</th>
+                      <th className="pb-3">Issued Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {materialIssues.map((issue) => (
+                      <tr key={issue.id} className="border-b border-border/30 hover:bg-[#111827]/30 transition-colors">
+                        <td className="py-3 pr-4 font-mono font-bold text-primary">{issue.id}</td>
+                        <td className="py-3 pr-4 font-mono text-text">{issue.ticketId}</td>
+                        <td className="py-3 pr-4 text-text font-semibold">{issue.sku}</td>
+                        <td className="py-3 pr-4 text-right font-bold text-text">{issue.qty}</td>
+                        <td className="py-3 font-mono">{issue.createdAt}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            </div>
+          )}
         </div>
       )}
 
@@ -1729,6 +2298,154 @@ export const Dashboard: React.FC = () => {
 
           <Button variant="primary" type="submit" isLoading={createEngineerMutation.isPending || updateEngineerMutation.isPending} className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
             {editingEngineerId ? "Save Technician Changes" : "Register Technician"}
+          </Button>
+        </form>
+      </Modal>
+
+      {/* CREATE NEW PRODUCT SKU MODAL */}
+      <Modal isOpen={newProductOpen} onClose={() => setNewProductOpen(false)} title="Create New Product SKU">
+        <form onSubmit={handleAddProduct} className="flex flex-col gap-4 font-body">
+          <Input
+            label="SKU Code (Unique ID) *"
+            placeholder="e.g. CAT6-100"
+            value={prodFormSku}
+            onChange={(e) => setProdFormSku(e.target.value)}
+            required
+          />
+          <Input
+            label="Product Name *"
+            placeholder="e.g. Cat6 Ethernet Cable 100m spool"
+            value={prodFormName}
+            onChange={(e) => setProdFormName(e.target.value)}
+            required
+          />
+          <Select
+            label="Product Category"
+            options={[
+              { label: "Storage", value: "Storage" },
+              { label: "Networking", value: "Networking" },
+              { label: "Accessories", value: "Accessories" },
+              { label: "Tools", value: "Tools" },
+            ]}
+            value={prodFormCategory}
+            onChange={(e: any) => setProdFormCategory(e.target.value)}
+          />
+          <div className="grid grid-cols-3 gap-4">
+            <Input
+              label="Initial Stock *"
+              type="number"
+              placeholder="10"
+              value={prodFormStock}
+              onChange={(e) => setProdFormStock(e.target.value)}
+              required
+            />
+            <Input
+              label="Safety Limit *"
+              type="number"
+              placeholder="5"
+              value={prodFormThreshold}
+              onChange={(e) => setProdFormThreshold(e.target.value)}
+              required
+            />
+            <Input
+              label="Unit Cost ($) *"
+              placeholder="45.00"
+              value={prodFormUnitCost}
+              onChange={(e) => setProdFormUnitCost(e.target.value)}
+              required
+            />
+          </div>
+          <Button variant="primary" type="submit" className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+            Register Product SKU
+          </Button>
+        </form>
+      </Modal>
+
+      {/* CREATE NEW SUPPLIER MODAL */}
+      <Modal isOpen={newSupplierOpen} onClose={() => setNewSupplierOpen(false)} title="Add Supplier Profile">
+        <form onSubmit={handleAddSupplier} className="flex flex-col gap-4 font-body">
+          <Input
+            label="Supplier Corporate Name *"
+            placeholder="e.g. Cisco Systems Direct"
+            value={supFormName}
+            onChange={(e) => setSupFormName(e.target.value)}
+            required
+          />
+          <Input
+            label="Contact Email Address *"
+            type="email"
+            placeholder="e.g. orders@cisco.com"
+            value={supFormContact}
+            onChange={(e) => setSupFormContact(e.target.value)}
+            required
+          />
+          <Input
+            label="Corporate Phone Number"
+            placeholder="e.g. 800-553-6387"
+            value={supFormPhone}
+            onChange={(e) => setSupFormPhone(e.target.value)}
+          />
+          <Button variant="primary" type="submit" className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+            Add Supplier Profile
+          </Button>
+        </form>
+      </Modal>
+
+      {/* CREATE NEW PURCHASE ORDER MODAL */}
+      <Modal isOpen={newPoOpen} onClose={() => setNewPoOpen(false)} title="Compile Purchase Order (Stock Refill)">
+        <form onSubmit={handleAddPo} className="flex flex-col gap-4 font-body">
+          <Select
+            label="Refill Product SKU"
+            options={products.map(p => ({ label: `${p.sku} - ${p.name}`, value: p.sku }))}
+            value={poFormSku}
+            onChange={(e: any) => setPoFormSku(e.target.value)}
+          />
+          <Input
+            label="Refill Quantity *"
+            type="number"
+            placeholder="e.g. 10"
+            value={poFormQty}
+            onChange={(e) => setPoFormQty(e.target.value)}
+            required
+          />
+          <Select
+            label="Supplier Vendor"
+            options={suppliers.map(s => ({ label: s.name, value: s.name }))}
+            value={poFormSupplier}
+            onChange={(e: any) => setPoFormSupplier(e.target.value)}
+          />
+          <Button variant="primary" type="submit" className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+            Authorize Purchase Order
+          </Button>
+        </form>
+      </Modal>
+
+      {/* CREATE NEW MATERIAL ISSUE MODAL */}
+      <Modal isOpen={newIssueOpen} onClose={() => setNewIssueOpen(false)} title="Issue Parts to Support Incident">
+        <form onSubmit={handleAddIssue} className="flex flex-col gap-4 font-body">
+          <Input
+            label="Incident Ticket Code *"
+            placeholder="e.g. RF-100247"
+            value={issueFormTicketId}
+            onChange={(e) => setIssueFormTicketId(e.target.value)}
+            required
+          />
+          <Select
+            label="Select Product SKU to Issue"
+            options={products.map(p => ({ label: `${p.sku} - ${p.name} (Stock: ${p.stock})`, value: p.sku }))}
+            value={issueFormSku}
+            onChange={(e: any) => setIssueFormSku(e.target.value)}
+          />
+          <Input
+            label="Quantity to Deduct *"
+            type="number"
+            placeholder="e.g. 1"
+            value={issueFormQty}
+            onChange={(e) => setIssueFormQty(e.target.value)}
+            required
+          />
+          <Button variant="primary" type="submit" className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+            Deduct Stock & Issue Material
           </Button>
         </form>
       </Modal>
