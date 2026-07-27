@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { securityHeaders } from "./middleware/security.js";
-import { rateLimiter } from "./middleware/rateLimiter.js";
+import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimiter.js";
 import { authRouter } from "./routes/auth.js";
 import { servicesRouter } from "./routes/services.js";
 import { bookingsRouter } from "./routes/bookings.js";
@@ -66,13 +66,15 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-// 4. Global Rate Limiter (150 requests per minute)
-app.use("*", rateLimiter(150, 60000));
+// 4. Global API Rate Limiter (150 requests per minute)
+app.use("/api/*", apiRateLimiter);
 
 // ==========================================
 // ROUTES
 // ==========================================
 
+// Apply strict auth rate limit (10 req/min) to login/register
+app.use("/api/auth/*", authRateLimiter);
 app.route("/api/auth", authRouter);
 app.route("/api/services", servicesRouter);
 app.route("/api/bookings", bookingsRouter);

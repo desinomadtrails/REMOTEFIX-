@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { getDb } from "@remotefix/database";
-import { users, customers, bookings, invoices } from "@remotefix/database/database/schema/index.js";
+import { getDb } from "../db.js";
+import { users, customers, bookings, invoices } from "@remotefix/database";
 import { eq, and, sql } from "drizzle-orm";
-import { requireAuth } from "@remotefix/auth";
+import { requireAuth, AppEnv } from "../middleware/auth.js";
 
-const customersRouter = new Hono();
+const customersRouter = new Hono<AppEnv>();
 
 // ==========================================
 // 1. GET ALL CUSTOMERS WITH STATISTICS (Admin Required)

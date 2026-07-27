@@ -1,1 +1,42 @@
 @import "@remotefix/ui/src/index.css";
+
+/* ── Print styles: Invoice PDF ───────────────────────────────── */
+@media print {
+  /* Hide everything except the printable invoice */
+  body > * {
+    display: none !important;
+  }
+
+  #printable-invoice {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    font-size: 12px;
+    padding: 40px;
+  }
+
+  /* Ensure text is black on white */
+  #printable-invoice * {
+    color: black !important;
+    border-color: #e5e7eb !important;
+    background: transparent !important;
+  }
+
+  /* Hide print button itself */
+  button {
+    display: none !important;
+  }
+}
+
+/* ── Scrollbar hide utility ──────────────────────────────────── */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

@@ -92,6 +92,11 @@ export const api = {
     return request<any>("/api/seed", { method: "POST" });
   },
 
+  // Analytics
+  async getAnalytics() {
+    return request<any>("/api/admin/analytics");
+  },
+
   // Customer Management APIs
   async getCustomers() {
     return request<any>("/api/admin/customers");
