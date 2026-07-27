@@ -91,6 +91,8 @@ export const bookings = mssqlTable("bookings", {
   preferredDate: varchar("preferred_date", { length: 10 }).notNull(), // YYYY-MM-DD
   preferredTime: varchar("preferred_time", { length: 5 }).notNull(), // HH:MM
   operatingSystem: varchar("operating_system", { length: 50 }),
+  remarks: text("remarks"),
+  partsUsed: text("parts_used"),
   engineerId: varchar("engineer_id", { length: 36 }).references(() => engineers.id),
   ticketId: varchar("ticket_id", { length: 50 }).unique(),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),

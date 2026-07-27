@@ -301,7 +301,7 @@ bookingsRouter.put("/:id/status", requireAuth, async (c) => {
     }
     
     const booking = bookingList[0];
-    const { status, engineerId } = result.data;
+    const { status, engineerId, remarks, partsUsed } = result.data;
     
     // Role-based status modifications
     if (user.role === "customer") {
@@ -335,10 +335,16 @@ bookingsRouter.put("/:id/status", requireAuth, async (c) => {
         return c.json({ success: false, error: "Invalid status update for engineer." }, 400);
       }
       
-      await db.update(bookings).set({ status, updatedAt: new Date() }).where(eq(bookings.id, id));
+      const updateFields: any = { status, updatedAt: new Date() };
+      if (remarks !== undefined) updateFields.remarks = remarks;
+      if (partsUsed !== undefined) updateFields.partsUsed = partsUsed;
+      
+      await db.update(bookings).set(updateFields).where(eq(bookings.id, id));
     } else if (user.role === "admin") {
       // Admins can change status to anything, and assign/reassign engineers
       const updatePayload: any = { status, updatedAt: new Date() };
+      if (remarks !== undefined) updatePayload.remarks = remarks;
+      if (partsUsed !== undefined) updatePayload.partsUsed = partsUsed;
       
       if (engineerId !== undefined) {
         updatePayload.engineerId = engineerId || null;

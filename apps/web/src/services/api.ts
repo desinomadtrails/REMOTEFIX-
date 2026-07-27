@@ -95,7 +95,7 @@ export const api = {
     return request<any>(`/api/bookings/${id}`);
   },
 
-  async updateBookingStatus(id: string, body: { status: string; engineerId?: string }) {
+  async updateBookingStatus(id: string, body: { status: string; engineerId?: string; remarks?: string; partsUsed?: string }) {
     return request<any>(`/api/bookings/${id}/status`, {
       method: "PUT",
       body: JSON.stringify(body),

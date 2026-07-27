@@ -84,6 +84,8 @@ export type BookingCreateInput = z.infer<typeof BookingCreateSchema>;
 export const BookingUpdateStatusSchema = z.object({
   status: z.enum(BOOKING_STATUSES),
   engineerId: z.string().uuid().optional(),
+  remarks: z.string().optional(),
+  partsUsed: z.string().optional(),
 });
 
 // Ticket Schemas
