@@ -169,4 +169,40 @@ invoicesRouter.get("/:id", requireAuth, async (c) => {
   }
 });
 
+// ==========================================
+// 4. UPDATE INVOICE STATUS (Admin only)
+// ==========================================
+invoicesRouter.put("/:id", requireAuth, async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+  const user = c.get("user")!;
+  const id = c.req.param("id");
+  
+  if (user.role !== "admin") {
+    return c.json({ success: false, error: "Access denied. Administrator privileges required." }, 403);
+  }
+  
+  try {
+    const { status, amount, pdfUrl } = await c.req.json();
+    
+    const invoiceList = await db.select().from(invoices).where(eq(invoices.id, id));
+    if (invoiceList.length === 0) {
+      return c.json({ success: false, error: "Invoice not found" }, 404);
+    }
+    
+    const updates: any = { updatedAt: new Date() };
+    if (status !== undefined) updates.status = status;
+    if (amount !== undefined) updates.amount = amount.toString();
+    if (pdfUrl !== undefined) updates.pdfUrl = pdfUrl;
+    
+    await db.update(invoices).set(updates).where(eq(invoices.id, id));
+    
+    return c.json({
+      success: true,
+      message: "Invoice status updated successfully.",
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
 export { invoicesRouter };

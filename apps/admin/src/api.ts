@@ -141,4 +141,19 @@ export const api = {
       method: "DELETE",
     });
   },
+
+  // Billing & Invoices APIs
+  async createInvoice(body: any) {
+    return request<any>("/api/invoices", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async updateInvoice(id: string, body: any) {
+    return request<any>(`/api/invoices/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  },
 };

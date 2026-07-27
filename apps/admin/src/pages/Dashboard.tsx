@@ -38,7 +38,10 @@ import {
   Package,
   ShoppingCart,
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Receipt,
+  Printer,
+  Percent
 } from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../api.js";
@@ -49,7 +52,7 @@ export const Dashboard: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "services" | "logs" | "customers" | "technicians" | "inventory">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "services" | "logs" | "customers" | "technicians" | "inventory" | "billing">("overview");
   const queryClient = useQueryClient();
 
   // Dialog State
@@ -103,9 +106,7 @@ export const Dashboard: React.FC = () => {
   const [techFormStatus, setTechFormStatus] = useState("available");
   const [techFormUserStatus, setTechFormUserStatus] = useState("active");
 
-  // ==========================================
-  // INVENTORY MANAGEMENT STATE ENGINE (Persisted in LocalStorage)
-  // ==========================================
+  // Inventory States (LocalStorage)
   const [products, setProducts] = useState<any[]>(() => {
     const saved = localStorage.getItem("rf_inv_products");
     if (saved) return JSON.parse(saved);
@@ -189,6 +190,16 @@ export const Dashboard: React.FC = () => {
   const [issueFormSku, setIssueFormSku] = useState("");
   const [issueFormQty, setIssueFormQty] = useState("");
 
+  // Billing Module States
+  const [billingSearchTerm, setBillingSearchTerm] = useState("");
+  const [billingStatusFilter, setBillingStatusFilter] = useState("all");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [newInvoiceModalOpen, setNewInvoiceModalOpen] = useState(false);
+
+  // Form States for Billing
+  const [invFormBookingId, setInvFormBookingId] = useState("");
+  const [invFormAmount, setInvFormAmount] = useState("");
+
   // Default dropdown setups
   useEffect(() => {
     if (products.length > 0) {
@@ -259,7 +270,7 @@ export const Dashboard: React.FC = () => {
     enabled: isAuthenticated,
   });
 
-  const { data: invoicesData } = useQuery({
+  const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
     queryKey: ["admin-invoices"],
     queryFn: async () => {
       const res = await api.getInvoices();
@@ -336,6 +347,7 @@ export const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
       queryClient.invalidateQueries({ queryKey: ["admin-engineers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
       setTimeout(() => setSeedingSuccess(false), 3000);
     },
   });
@@ -413,6 +425,34 @@ export const Dashboard: React.FC = () => {
     },
     onError: (err: any) => {
       alert(err.message || "Failed to toggle status.");
+    }
+  });
+
+  // Invoices & Billing Mutations
+  const generateInvoiceMutation = useMutation({
+    mutationFn: (payload: any) => api.createInvoice(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+      setNewInvoiceModalOpen(false);
+      setInvFormBookingId("");
+      setInvFormAmount("");
+    },
+    onError: (err: any) => {
+      alert(err.message || "Failed to generate invoice.");
+    }
+  });
+
+  const updateInvoiceMutation = useMutation({
+    mutationFn: (payload: { id: string; status: string }) => api.updateInvoice(payload.id, { status: payload.status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+    },
+    onError: (err: any) => {
+      alert(err.message || "Failed to update status.");
     }
   });
 
@@ -519,7 +559,6 @@ export const Dashboard: React.FC = () => {
     e.preventDefault();
     if (!prodFormSku || !prodFormName || !prodFormStock) return;
     
-    // Check if SKU already exists
     if (products.some(p => p.sku.toLowerCase() === prodFormSku.toLowerCase())) {
       alert("A product with this SKU code already exists!");
       return;
@@ -537,7 +576,6 @@ export const Dashboard: React.FC = () => {
     setProducts([...products, newProd]);
     setNewProductOpen(false);
     
-    // Reset Form
     setProdFormSku("");
     setProdFormName("");
     setProdFormStock("");
@@ -591,10 +629,7 @@ export const Dashboard: React.FC = () => {
     const po = purchaseOrders.find(o => o.id === poId);
     if (!po || po.status === "received") return;
 
-    // Update PO status to received
     setPurchaseOrders(purchaseOrders.map(o => o.id === poId ? { ...o, status: "received" } : o));
-
-    // Refill Product stock level
     setProducts(products.map(p => p.sku === po.sku ? { ...p, stock: p.stock + po.qty } : p));
   };
 
@@ -619,12 +654,22 @@ export const Dashboard: React.FC = () => {
       createdAt: new Date().toISOString().split("T")[0]
     };
 
-    // Deduct stock level
     setProducts(products.map(p => p.sku === issueFormSku ? { ...p, stock: p.stock - issueQty } : p));
     setMaterialIssues([newIssue, ...materialIssues]);
     setNewIssueOpen(false);
     setIssueFormTicketId("");
     setIssueFormQty("");
+  };
+
+  // Billing submit handler
+  const handleGenerateInvoiceSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invFormBookingId || !invFormAmount) return;
+
+    generateInvoiceMutation.mutate({
+      bookingId: invFormBookingId,
+      amount: parseFloat(invFormAmount)
+    });
   };
 
   // Metrics calculations
@@ -798,6 +843,41 @@ export const Dashboard: React.FC = () => {
     );
   });
 
+  // Billing Module logic
+  const filteredInvoices = (invoicesData || []).filter((inv: any) => {
+    const searchLower = billingSearchTerm.toLowerCase();
+    const matchesSearch = 
+      inv.invoiceNumber.toLowerCase().includes(searchLower) ||
+      inv.bookingId.toLowerCase().includes(searchLower);
+
+    const matchesStatus = billingStatusFilter === "all" || inv.status === billingStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const selectedInvoice = (invoicesData || []).find((inv: any) => inv.id === selectedInvoiceId);
+  const selectedInvoiceBooking = selectedInvoice 
+    ? (bookingsData || []).find((b: any) => b.id === selectedInvoice.bookingId)
+    : null;
+
+  // Invoices reports
+  const totalCollectedRevenue = (invoicesData || [])
+    .filter((inv: any) => inv.status === "paid")
+    .reduce((sum: number, inv: any) => sum + parseFloat(inv.amount), 0);
+
+  const totalOutstandingDues = (invoicesData || [])
+    .filter((inv: any) => inv.status === "unpaid")
+    .reduce((sum: number, inv: any) => sum + parseFloat(inv.amount), 0);
+
+  // Dynamic GST calculation (flat 18% GST: 9% CGST + 9% SGST)
+  const gstRate = 0.18;
+  const totalGstCollected = (invoicesData || [])
+    .filter((inv: any) => inv.status === "paid")
+    .reduce((sum: number, inv: any) => {
+      const baseAmount = parseFloat(inv.amount) / (1 + gstRate);
+      return sum + (parseFloat(inv.amount) - baseAmount);
+    }, 0);
+
   if (!isAuthenticated) {
     return (
       <div className="max-w-md mx-auto px-4 py-24">
@@ -864,10 +944,10 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Admin Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-6 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-6 mb-8 font-body">
         <div>
           <h1 className="text-3xl font-black font-display text-text">Administrative Suite</h1>
-          <span className="text-xs text-muted font-body mt-0.5">Control Center Mode: <span className="text-success font-semibold">Active</span></span>
+          <span className="text-xs text-muted mt-0.5">Control Center Mode: <span className="text-success font-semibold">Active</span></span>
         </div>
         <Button variant="ghost" size="sm" className="text-danger hover:bg-danger/10 flex items-center gap-2" onClick={handleLogout}>
           <LogOut size={16} />
@@ -921,6 +1001,15 @@ export const Dashboard: React.FC = () => {
         >
           <Package size={16} />
           Inventory Control
+        </button>
+        <button
+          onClick={() => setActiveTab("billing")}
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
+            activeTab === "billing" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          <Receipt size={16} />
+          Billing &amp; Invoices
         </button>
         <button
           onClick={() => setActiveTab("services")}
@@ -1036,9 +1125,9 @@ export const Dashboard: React.FC = () => {
                     <UserCheck size={14} className="text-secondary" />
                     Assign Pending Bookings ({pendingRequests.length})
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setActiveTab("inventory")}>
-                    <Package size={14} className="text-secondary" />
-                    Verify Stock levels ({lowStockProducts.length} low)
+                  <Button variant="outline" size="sm" className="w-full flex items-center justify-start gap-2" onClick={() => setActiveTab("billing")}>
+                    <Receipt size={14} className="text-secondary" />
+                    Audit Invoices ({invoicesData?.length || 0})
                   </Button>
                 </div>
               </Card>
@@ -1752,7 +1841,6 @@ export const Dashboard: React.FC = () => {
       {/* INVENTORY CONTROL TAB */}
       {activeTab === "inventory" && (
         <div className="space-y-6 font-body">
-          {/* Low Stock Alerts */}
           {lowStockProducts.length > 0 && (
             <div className="bg-danger/10 border border-danger/30 text-danger rounded-xl p-4 flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
@@ -1769,11 +1857,10 @@ export const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Valuation Summary & Global Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card glowColor="purple" className="flex items-center justify-between p-5">
               <div>
-                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Total Asset Valuation</span>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Total Inventory Value</span>
                 <div className="text-2xl font-black font-display text-text mt-1">
                   {formatCurrency(totalInventoryAssetValue)}
                 </div>
@@ -1802,7 +1889,6 @@ export const Dashboard: React.FC = () => {
             </Card>
           </div>
 
-          {/* Sub Navigation for Inventory Tab */}
           <div className="flex gap-4 border-b border-border/25 pb-3">
             <button
               onClick={() => setInventorySubTab("products")}
@@ -1838,10 +1924,8 @@ export const Dashboard: React.FC = () => {
             </button>
           </div>
 
-          {/* Render Inventory Sub Tabs */}
           {inventorySubTab === "products" && (
             <div className="space-y-4">
-              {/* Product control row */}
               <div className="flex flex-col sm:flex-row justify-between gap-4">
                 <div className="relative flex-grow max-w-md">
                   <Input
@@ -1858,7 +1942,6 @@ export const Dashboard: React.FC = () => {
                 </Button>
               </div>
 
-              {/* Products Table */}
               <Card glowColor="none" className="p-4 overflow-x-auto">
                 <table className="w-full text-xs text-left text-muted border-collapse">
                   <thead>
@@ -1990,7 +2073,7 @@ export const Dashboard: React.FC = () => {
           {inventorySubTab === "issues" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold font-display text-text uppercase">Material Issue logs (Usage logs)</h3>
+                <h3 className="text-sm font-bold font-display text-text uppercase">Material Issue logs</h3>
                 <Button variant="cyber" size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setNewIssueOpen(true)}>
                   <Plus size={14} />
                   Issue Parts to Booking
@@ -2023,6 +2106,268 @@ export const Dashboard: React.FC = () => {
               </Card>
             </div>
           )}
+        </div>
+      )}
+
+      {/* BILLING & INVOICES TAB */}
+      {activeTab === "billing" && (
+        <div className="space-y-6 font-body">
+          {/* Billing Reports Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card glowColor="purple" className="flex items-center justify-between p-5">
+              <div>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Total Revenue Collected</span>
+                <div className="text-2xl font-black font-display text-text mt-1 text-success">
+                  {formatCurrency(totalCollectedRevenue)}
+                </div>
+              </div>
+              <DollarSign className="text-success w-8 h-8 opacity-75" />
+            </Card>
+
+            <Card glowColor="purple" className="flex items-center justify-between p-5">
+              <div>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">Outstanding Dues</span>
+                <div className="text-2xl font-black font-display text-text mt-1 text-warning">
+                  {formatCurrency(totalOutstandingDues)}
+                </div>
+              </div>
+              <AlertCircle className="text-warning w-8 h-8 opacity-75" />
+            </Card>
+
+            <Card glowColor="purple" className="flex items-center justify-between p-5">
+              <div>
+                <span className="text-[10px] text-muted uppercase tracking-wider block font-semibold">GST Tax Collected (18% Flat)</span>
+                <div className="text-2xl font-black font-display text-text mt-1 text-primary">
+                  {formatCurrency(totalGstCollected)}
+                </div>
+              </div>
+              <Percent className="text-primary w-8 h-8 opacity-75" />
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Invoices List Sidebar */}
+            <div className="lg:col-span-1 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/20 pb-3">
+                <h3 className="text-sm font-bold font-display text-text uppercase">Invoices Registry</h3>
+                <Button variant="cyber" size="sm" className="text-xs" onClick={() => setNewInvoiceModalOpen(true)}>
+                  Create Invoice
+                </Button>
+              </div>
+
+              <div className="relative">
+                <Input
+                  placeholder="Search Invoice Number..."
+                  value={billingSearchTerm}
+                  onChange={(e) => setBillingSearchTerm(e.target.value)}
+                  className="pl-9 text-xs"
+                />
+                <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
+              </div>
+
+              <div>
+                <select
+                  className="w-full h-10 px-3 bg-[#111827]/60 border border-border text-xs text-text rounded-lg outline-none focus:border-primary"
+                  value={billingStatusFilter}
+                  onChange={(e) => setBillingStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Invoice States</option>
+                  <option value="unpaid">Unpaid</option>
+                  <option value="paid">Paid</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+              </div>
+
+              {invoicesLoading ? (
+                <div>Loading invoices...</div>
+              ) : filteredInvoices.length === 0 ? (
+                <Card className="text-center py-8 text-muted">No invoices found.</Card>
+              ) : (
+                <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
+                  {filteredInvoices.map((inv: any) => (
+                    <div
+                      key={inv.id}
+                      onClick={() => setSelectedInvoiceId(inv.id)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer text-xs ${
+                        selectedInvoiceId === inv.id
+                          ? "bg-secondary/15 border-secondary text-text shadow-[0_0_15px_rgba(139,92,246,0.1)]"
+                          : "bg-[#111827]/50 border-border text-muted hover:border-muted/30 hover:bg-[#111827]/80"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-mono font-bold text-text">{inv.invoiceNumber}</span>
+                        <Badge 
+                          variant={
+                            inv.status === "paid"
+                              ? "success"
+                              : inv.status === "unpaid"
+                              ? "warning"
+                              : "danger"
+                          }
+                          className="py-0 text-[8px] uppercase"
+                        >
+                          {inv.status}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center mt-2 border-t border-border/10 pt-2 text-[10px]">
+                        <span className="text-muted">{formatDateTime(inv.createdAt).split(" ")[0]}</span>
+                        <strong className="text-text">{formatCurrency(parseFloat(inv.amount))}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Invoice Inspect Panel */}
+            <div className="lg:col-span-2">
+              {selectedInvoice ? (
+                <div className="flex flex-col gap-6">
+                  {/* Controls Card */}
+                  <Card className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted font-body">Mark Status:</span>
+                      <select
+                        className="bg-[#111827]/60 border border-border text-xs text-text font-bold rounded p-1.5 outline-none"
+                        value={selectedInvoice.status}
+                        onChange={(e) => updateInvoiceMutation.mutate({ id: selectedInvoice.id, status: e.target.value })}
+                      >
+                        <option value="unpaid">Unpaid</option>
+                        <option value="paid">Paid</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="refunded">Refunded</option>
+                      </select>
+                    </div>
+
+                    <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs text-secondary border border-secondary/20" onClick={() => window.print()}>
+                      <Printer size={14} />
+                      Print Invoice (PDF)
+                    </Button>
+                  </Card>
+
+                  {/* Printable Invoice Container */}
+                  <div id="printable-invoice" className="bg-[#111827]/60 border border-border/80 rounded-2xl p-8 font-body text-xs text-text flex flex-col gap-6 print:border-none print:bg-white print:text-black">
+                    <div className="flex justify-between items-start border-b border-border/30 pb-6 print:border-black/20">
+                      <div>
+                        <h3 className="text-2xl font-black font-display text-text print:text-black">RemoteFix Inc.</h3>
+                        <p className="text-muted mt-1 print:text-black/60">
+                          SaaS Enterprise IT Dispatches &amp; Repairs<br />
+                          100 Tech Park Drive, Suite A<br />
+                          New Delhi, Delhi - 110020
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold font-mono text-primary print:text-black">INVOICE</div>
+                        <h4 className="text-lg font-black font-mono text-text mt-1 print:text-black">{selectedInvoice.invoiceNumber}</h4>
+                        <div className="text-[10px] text-muted mt-1 print:text-black/60">
+                          Issued: {formatDateTime(selectedInvoice.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Client & Booking details */}
+                    <div className="grid grid-cols-2 gap-8 border-b border-border/30 pb-6 print:border-black/20">
+                      <div>
+                        <span className="text-[10px] text-muted uppercase font-bold tracking-wider block mb-1.5 print:text-black/60">Bill To:</span>
+                        {selectedInvoiceBooking ? (
+                          <div className="space-y-0.5">
+                            <div className="text-sm font-bold text-text print:text-black">{selectedInvoiceBooking.name}</div>
+                            <div className="text-muted print:text-black/75">{selectedInvoiceBooking.email}</div>
+                            <div className="text-muted print:text-black/75">Phone: {selectedInvoiceBooking.phone}</div>
+                            {selectedInvoiceBooking.address && (
+                              <div className="text-muted print:text-black/75 mt-1 leading-relaxed">{selectedInvoiceBooking.address}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted italic print:text-black/60">Guest Client Profile</span>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-muted uppercase font-bold tracking-wider block mb-1.5 print:text-black/60">Ref Booking:</span>
+                        <div className="space-y-0.5">
+                          <div>Ticket ID: <strong className="font-mono text-text print:text-black">{selectedInvoiceBooking?.ticketId || "N/A"}</strong></div>
+                          <div>Service Class: <span className="text-text print:text-black font-semibold uppercase">{selectedInvoiceBooking?.type || "Standard"}</span></div>
+                          <div>Priority: <span className="text-text print:text-black font-semibold uppercase">{selectedInvoiceBooking?.priority || "Normal"}</span></div>
+                          {selectedInvoiceBooking?.deviceType && (
+                            <div>Device: <span className="text-text print:text-black">{selectedInvoiceBooking.brand} {selectedInvoiceBooking.model} ({selectedInvoiceBooking.deviceType})</span></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ledger breakdown */}
+                    <div className="flex-grow">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-border/50 font-bold uppercase text-[10px] text-muted print:border-black/20 print:text-black/60">
+                            <th className="pb-2">Description</th>
+                            <th className="pb-2 text-right">Taxable base</th>
+                            <th className="pb-2 text-right">GST (18%)</th>
+                            <th className="pb-2 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-b border-border/20 text-text font-semibold print:border-black/10 print:text-black">
+                            <td className="py-4">
+                              <span className="font-bold block text-sm">Hardware Repair &amp; Systems Diagnostics</span>
+                              <span className="text-muted text-[10px] block mt-0.5 print:text-black/60">
+                                Diagnostics: {selectedInvoiceBooking?.problemDescription || "Platform service dispatches"}
+                              </span>
+                            </td>
+                            <td className="py-4 text-right font-mono">
+                              {formatCurrency(parseFloat(selectedInvoice.amount) / (1 + gstRate))}
+                            </td>
+                            <td className="py-4 text-right font-mono text-primary print:text-black">
+                              {formatCurrency(parseFloat(selectedInvoice.amount) - (parseFloat(selectedInvoice.amount) / (1 + gstRate)))}
+                            </td>
+                            <td className="py-4 text-right font-mono font-bold">
+                              {formatCurrency(parseFloat(selectedInvoice.amount))}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Totals panel */}
+                    <div className="flex justify-end pt-6 border-t border-border/30 print:border-black/20">
+                      <div className="w-64 space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted print:text-black/60">Taxable Value:</span>
+                          <span className="font-mono text-text print:text-black">
+                            {formatCurrency(parseFloat(selectedInvoice.amount) / (1 + gstRate))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted print:text-black/60">CGST (9.0%):</span>
+                          <span className="font-mono text-text print:text-black">
+                            {formatCurrency((parseFloat(selectedInvoice.amount) - (parseFloat(selectedInvoice.amount) / (1 + gstRate))) / 2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted print:text-black/60">SGST (9.0%):</span>
+                          <span className="font-mono text-text print:text-black">
+                            {formatCurrency((parseFloat(selectedInvoice.amount) - (parseFloat(selectedInvoice.amount) / (1 + gstRate))) / 2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-t border-border/30 pt-2 text-sm font-bold print:border-black/20">
+                          <span className="text-text print:text-black">Total Payable:</span>
+                          <span className="font-mono text-secondary print:text-black">
+                            {formatCurrency(parseFloat(selectedInvoice.amount))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Card className="text-center py-20 text-muted">
+                  Select an invoice registry record to print GST invoices, check billing totals, and change payment statuses.
+                </Card>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -2446,6 +2791,37 @@ export const Dashboard: React.FC = () => {
           />
           <Button variant="primary" type="submit" className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
             Deduct Stock & Issue Material
+          </Button>
+        </form>
+      </Modal>
+
+      {/* GENERATE NEW INVOICE MODAL */}
+      <Modal isOpen={newInvoiceModalOpen} onClose={() => setNewInvoiceModalOpen(false)} title="Generate New Client Invoice">
+        <form onSubmit={handleGenerateInvoiceSubmit} className="flex flex-col gap-4 font-body">
+          <Select
+            label="Repair Incident Ticket Reference *"
+            options={(bookingsData || [])
+              .filter((b: any) => b.status === "completed" || b.status === "assigned" || b.status === "in_progress")
+              .map((b: any) => ({ label: `${b.ticketId} - ${b.name} (${b.deviceType || b.operatingSystem})`, value: b.id }))}
+            value={invFormBookingId}
+            onChange={(e: any) => setInvFormBookingId(e.target.value)}
+          />
+          <Input
+            label="Base Billable Amount ($) *"
+            placeholder="e.g. 150.00"
+            value={invFormAmount}
+            onChange={(e) => setInvFormAmount(e.target.value)}
+            required
+          />
+          <div className="bg-[#111827]/40 border border-border/80 rounded-lg p-4 text-[10px] text-muted leading-relaxed">
+            <span className="block font-semibold text-text mb-1 flex items-center gap-1">
+              <Percent size={12} className="text-secondary" />
+              GST Tax Calculation Summary:
+            </span>
+            Standard tax will automatically append 18% GST (9% CGST + 9% SGST) to the final billable total in PDF prints.
+          </div>
+          <Button variant="primary" type="submit" isLoading={generateInvoiceMutation.isPending} className="w-full mt-2" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+            Generate GST Invoice
           </Button>
         </form>
       </Modal>
