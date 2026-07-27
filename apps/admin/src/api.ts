@@ -116,4 +116,29 @@ export const api = {
       method: "DELETE",
     });
   },
+
+  // Technician / Engineer Management APIs
+  async getEngineers() {
+    return request<any>("/api/admin/engineers");
+  },
+
+  async createEngineer(body: any) {
+    return request<any>("/api/admin/engineers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async updateEngineer(id: string, body: any) {
+    return request<any>(`/api/admin/engineers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async deleteEngineer(id: string) {
+    return request<any>(`/api/admin/engineers/${id}`, {
+      method: "DELETE",
+    });
+  },
 };

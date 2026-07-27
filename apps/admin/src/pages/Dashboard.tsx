@@ -31,7 +31,10 @@ import {
   Lock,
   Unlock,
   FileText,
-  History
+  History,
+  Wrench,
+  Activity,
+  Award
 } from "lucide-react";
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../api.js";
@@ -42,7 +45,7 @@ export const Dashboard: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "services" | "logs" | "customers">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "bookings" | "services" | "logs" | "customers" | "technicians">("overview");
   const queryClient = useQueryClient();
 
   // Dialog State
@@ -68,7 +71,7 @@ export const Dashboard: React.FC = () => {
 
   // Customer Management States
   const [custSearchTerm, setCustSearchTerm] = useState("");
-  const [custTypeFilter, setCustTypeFilter] = useState("all"); // 'all' | 'registered' | 'guest'
+  const [custTypeFilter, setCustTypeFilter] = useState("all");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   // Customer CRUD Dialog States
@@ -80,6 +83,21 @@ export const Dashboard: React.FC = () => {
   const [custFormCompanyName, setCustFormCompanyName] = useState("");
   const [custFormBillingAddress, setCustFormBillingAddress] = useState("");
   const [custFormStatus, setCustFormStatus] = useState("active");
+
+  // Technician Management States
+  const [techSearchTerm, setTechSearchTerm] = useState("");
+  const [selectedEngineerId, setSelectedEngineerId] = useState<string | null>(null);
+
+  // Technician CRUD Dialog States
+  const [techModalOpen, setTechModalOpen] = useState(false);
+  const [editingEngineerId, setEditingEngineerId] = useState<string | null>(null);
+  const [techFormName, setTechFormName] = useState("");
+  const [techFormEmail, setTechFormEmail] = useState("");
+  const [techFormPhone, setTechFormPhone] = useState("");
+  const [techFormBio, setTechFormBio] = useState("");
+  const [techFormSpecialities, setTechFormSpecialities] = useState("");
+  const [techFormStatus, setTechFormStatus] = useState("available"); // 'available' | 'busy' | 'offline'
+  const [techFormUserStatus, setTechFormUserStatus] = useState("active"); // 'active' | 'suspended'
 
   useEffect(() => {
     const token = localStorage.getItem("rf_token");
@@ -167,6 +185,15 @@ export const Dashboard: React.FC = () => {
     enabled: isAuthenticated,
   });
 
+  const { data: engineersData, isLoading: engineersLoading } = useQuery({
+    queryKey: ["admin-engineers"],
+    queryFn: async () => {
+      const res = await api.getEngineers();
+      return res.engineers || [];
+    },
+    enabled: isAuthenticated,
+  });
+
   // Mutations
   const updateBookingMutation = useMutation({
     mutationFn: (payload: { id: string; status: string; engineerId?: string }) =>
@@ -175,6 +202,7 @@ export const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-engineers"] });
     },
   });
 
@@ -206,6 +234,7 @@ export const Dashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
       queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-engineers"] });
       setTimeout(() => setSeedingSuccess(false), 3000);
     },
   });
@@ -241,6 +270,44 @@ export const Dashboard: React.FC = () => {
     mutationFn: (id: string) => api.deleteCustomer(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+    },
+    onError: (err: any) => {
+      alert(err.message || "Failed to toggle status.");
+    }
+  });
+
+  // Technician Management Mutations
+  const createEngineerMutation = useMutation({
+    mutationFn: (payload: any) => api.createEngineer(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-engineers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      setTechModalOpen(false);
+      clearTechForm();
+    },
+    onError: (err: any) => {
+      alert(err.message || "Failed to create technician.");
+    }
+  });
+
+  const updateEngineerMutation = useMutation({
+    mutationFn: (payload: { id: string; body: any }) => api.updateEngineer(payload.id, payload.body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-engineers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
+      setTechModalOpen(false);
+      clearTechForm();
+    },
+    onError: (err: any) => {
+      alert(err.message || "Failed to update technician.");
+    }
+  });
+
+  const toggleEngineerSuspensionMutation = useMutation({
+    mutationFn: (id: string) => api.deleteEngineer(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-engineers"] });
       queryClient.invalidateQueries({ queryKey: ["admin-logs"] });
     },
     onError: (err: any) => {
@@ -286,6 +353,50 @@ export const Dashboard: React.FC = () => {
       updateCustomerMutation.mutate({ id: editingCustomerId, body: payload });
     } else {
       createCustomerMutation.mutate(payload);
+    }
+  };
+
+  const clearTechForm = () => {
+    setEditingEngineerId(null);
+    setTechFormName("");
+    setTechFormEmail("");
+    setTechFormPhone("");
+    setTechFormBio("");
+    setTechFormSpecialities("");
+    setTechFormStatus("available");
+    setTechFormUserStatus("active");
+  };
+
+  const handleOpenEditEngineer = (eng: any) => {
+    setEditingEngineerId(eng.id);
+    setTechFormName(eng.fullName);
+    setTechFormEmail(eng.email);
+    setTechFormPhone(eng.phone);
+    setTechFormBio(eng.bio || "");
+    setTechFormSpecialities(eng.specialities || "");
+    setTechFormStatus(eng.status);
+    setTechFormUserStatus(eng.userStatus);
+    setTechModalOpen(true);
+  };
+
+  const handleEngineerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!techFormName || !techFormEmail || !techFormPhone) return;
+
+    const payload = {
+      fullName: techFormName,
+      email: techFormEmail,
+      phone: techFormPhone,
+      bio: techFormBio || null,
+      specialities: techFormSpecialities || null,
+      status: techFormStatus,
+      userStatus: techFormUserStatus,
+    };
+
+    if (editingEngineerId) {
+      updateEngineerMutation.mutate({ id: editingEngineerId, body: payload });
+    } else {
+      createEngineerMutation.mutate(payload);
     }
   };
 
@@ -447,6 +558,19 @@ export const Dashboard: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  // Technician List Search logic
+  const filteredEngineers = (engineersData || []).filter((eng: any) => {
+    const searchLower = techSearchTerm.toLowerCase();
+    return (
+      eng.fullName.toLowerCase().includes(searchLower) ||
+      eng.email.toLowerCase().includes(searchLower) ||
+      eng.phone.includes(searchLower) ||
+      (eng.specialities || "").toLowerCase().includes(searchLower)
+    );
+  });
+
+  const selectedEngineer = (engineersData || []).find((eng: any) => eng.id === selectedEngineerId);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Admin Header */}
@@ -489,6 +613,15 @@ export const Dashboard: React.FC = () => {
         >
           <Users size={16} />
           Customer Management
+        </button>
+        <button
+          onClick={() => setActiveTab("technicians")}
+          className={`flex items-center gap-2 font-display text-sm font-semibold pb-2 border-b-2 cursor-pointer transition-all shrink-0 ${
+            activeTab === "technicians" ? "border-secondary text-secondary" : "border-transparent text-muted hover:text-text"
+          }`}
+        >
+          <Wrench size={16} />
+          Technicians
         </button>
         <button
           onClick={() => setActiveTab("services")}
@@ -910,7 +1043,6 @@ export const Dashboard: React.FC = () => {
       {/* CUSTOMER MANAGEMENT TAB (CRM) */}
       {activeTab === "customers" && (
         <div className="space-y-6 font-body">
-          {/* Controls: Search, Filters & Export */}
           <Card glowColor="none" className="p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 border-b border-border/30 pb-3">
               <div className="flex items-center gap-2 text-sm font-bold font-display text-text uppercase tracking-wider">
@@ -955,7 +1087,6 @@ export const Dashboard: React.FC = () => {
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Customer List Sidebar */}
             <div className="lg:col-span-1 flex flex-col gap-4">
               <h3 className="text-sm font-bold font-display text-text uppercase tracking-wider">Profiles List</h3>
               
@@ -992,11 +1123,9 @@ export const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Customer Profile Inspection Panel */}
             <div className="lg:col-span-2">
               {selectedCustomer ? (
                 <div className="flex flex-col gap-6">
-                  {/* Info Card */}
                   <Card>
                     <div className="flex justify-between items-start border-b border-border/40 pb-4 mb-4">
                       <div>
@@ -1045,7 +1174,6 @@ export const Dashboard: React.FC = () => {
                     </div>
                   </Card>
 
-                  {/* Booking history */}
                   <Card>
                     <h4 className="text-sm font-bold font-display text-text uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-border/40 pb-2">
                       <History size={16} className="text-secondary" />
@@ -1073,7 +1201,6 @@ export const Dashboard: React.FC = () => {
                     )}
                   </Card>
 
-                  {/* Invoices list */}
                   <Card>
                     <h4 className="text-sm font-bold font-display text-text uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-border/40 pb-2">
                       <FileText size={16} className="text-secondary" />
@@ -1101,6 +1228,228 @@ export const Dashboard: React.FC = () => {
               ) : (
                 <Card className="text-center py-20 text-muted">
                   Select a customer profile from the sidebar to inspect dispatch records, billing invoices, and account controls.
+                </Card>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TECHNICIAN MANAGEMENT TAB (CRM) */}
+      {activeTab === "technicians" && (
+        <div className="space-y-6 font-body">
+          {/* Controls: Search & Add */}
+          <Card glowColor="none" className="p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 border-b border-border/30 pb-3">
+              <div className="flex items-center gap-2 text-sm font-bold font-display text-text uppercase tracking-wider">
+                <Wrench size={16} className="text-secondary" />
+                Technician Registry & Scheduling
+              </div>
+              <Button variant="cyber" size="sm" className="flex items-center gap-1.5 text-xs w-full md:w-auto" onClick={() => { clearTechForm(); setTechModalOpen(true); }}>
+                <Plus size={14} />
+                Register New Technician
+              </Button>
+            </div>
+
+            <div className="relative">
+              <Input
+                placeholder="Search Name, Email, Skills (e.g. Cisco)..."
+                value={techSearchTerm}
+                onChange={(e) => setTechSearchTerm(e.target.value)}
+                className="pl-9 text-xs"
+              />
+              <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
+            </div>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Tech sidebar list */}
+            <div className="lg:col-span-1 flex flex-col gap-4">
+              <h3 className="text-sm font-bold font-display text-text uppercase tracking-wider">Staff Roster</h3>
+              
+              {engineersLoading ? (
+                <div>Loading technician logs...</div>
+              ) : filteredEngineers.length === 0 ? (
+                <Card className="text-center py-8 text-muted">No technicians found.</Card>
+              ) : (
+                <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-1">
+                  {filteredEngineers.map((eng: any) => (
+                    <div
+                      key={eng.id}
+                      onClick={() => setSelectedEngineerId(eng.id)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer text-xs ${
+                        selectedEngineerId === eng.id
+                          ? "bg-secondary/15 border-secondary text-text shadow-[0_0_15px_rgba(139,92,246,0.1)]"
+                          : "bg-[#111827]/50 border-border text-muted hover:border-muted/30 hover:bg-[#111827]/80"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-semibold text-text truncate max-w-[130px] block">{eng.fullName}</span>
+                        <Badge 
+                          variant={
+                            eng.status === "available"
+                              ? "success"
+                              : eng.status === "busy"
+                              ? "warning"
+                              : "danger"
+                          }
+                          className="py-0 text-[8px] uppercase"
+                        >
+                          {eng.status}
+                        </Badge>
+                      </div>
+                      <p className="truncate text-muted">{eng.email}</p>
+                      
+                      {eng.specialities && (
+                        <div className="flex flex-wrap gap-1 mt-2.5">
+                          {eng.specialitiesList.slice(0, 2).map((s: string, idx: number) => (
+                            <span key={idx} className="bg-primary/10 border border-primary/20 text-primary text-[8px] px-1 py-0.5 rounded">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Inspect Panel */}
+            <div className="lg:col-span-2">
+              {selectedEngineer ? (
+                <div className="flex flex-col gap-6">
+                  {/* Stats & Profile */}
+                  <Card>
+                    <div className="flex justify-between items-start border-b border-border/40 pb-4 mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold font-display text-text">{selectedEngineer.fullName}</h3>
+                        <p className="text-xs text-muted mt-1">Specialist Ref: {selectedEngineer.id}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="p-2 h-8 text-secondary" onClick={() => handleOpenEditEngineer(selectedEngineer)}>
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`p-2 h-8 ${selectedEngineer.userStatus === "suspended" ? "text-success hover:bg-success/10" : "text-danger hover:bg-danger/10"}`}
+                          onClick={() => toggleEngineerSuspensionMutation.mutate(selectedEngineer.id)}
+                          isLoading={toggleEngineerSuspensionMutation.isPending}
+                        >
+                          {selectedEngineer.userStatus === "suspended" ? <Unlock size={14} /> : <Lock size={14} />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-muted">
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-muted block">Availability:</span>
+                          <Badge variant={selectedEngineer.status === "available" ? "success" : selectedEngineer.status === "busy" ? "warning" : "danger"}>
+                            {selectedEngineer.status}
+                          </Badge>
+                        </div>
+                        <div>
+                          <span className="text-muted block">Phone Number:</span>
+                          <span className="text-text font-semibold">{selectedEngineer.phone}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted block">Email:</span>
+                          <span className="text-text font-semibold">{selectedEngineer.email}</span>
+                        </div>
+                        {selectedEngineer.bio && (
+                          <div>
+                            <span className="text-muted block">Bio:</span>
+                            <span className="text-text leading-relaxed">{selectedEngineer.bio}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-muted block flex items-center gap-1">
+                            <Award size={12} className="text-primary" />
+                            Skills &amp; Specialties:
+                          </span>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {selectedEngineer.specialitiesList.length === 0 ? (
+                              <span className="text-muted italic text-[10px]">No skills logged.</span>
+                            ) : (
+                              selectedEngineer.specialitiesList.map((s: string, idx: number) => (
+                                <span key={idx} className="bg-primary/10 border border-primary/20 text-primary text-[9px] px-1.5 py-0.5 rounded font-semibold">
+                                  {s}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-muted block">Account Status:</span>
+                          <Badge variant={selectedEngineer.userStatus === "suspended" ? "danger" : "success"}>
+                            {selectedEngineer.userStatus}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Performance Indicators */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card glowColor="purple" className="p-4 flex items-center gap-3">
+                      <Activity size={24} className="text-secondary shrink-0" />
+                      <div>
+                        <span className="text-[10px] text-muted uppercase font-semibold">Success Rate</span>
+                        <div className="text-lg font-black text-text mt-0.5 font-display">{selectedEngineer.successRate}%</div>
+                      </div>
+                    </Card>
+                    <Card glowColor="purple" className="p-4 flex items-center gap-3">
+                      <CheckCircle size={24} className="text-secondary shrink-0" />
+                      <div>
+                        <span className="text-[10px] text-muted uppercase font-semibold">Repairs Completed</span>
+                        <div className="text-lg font-black text-text mt-0.5 font-display">{selectedEngineer.completedCount}</div>
+                      </div>
+                    </Card>
+                    <Card glowColor="purple" className="p-4 flex items-center gap-3">
+                      <DollarSign size={24} className="text-secondary shrink-0" />
+                      <div>
+                        <span className="text-[10px] text-muted uppercase font-semibold">Revenue Generated</span>
+                        <div className="text-lg font-black text-text mt-0.5 font-display">{formatCurrency(selectedEngineer.totalRevenueGenerated)}</div>
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Assigned Jobs */}
+                  <Card>
+                    <h4 className="text-sm font-bold font-display text-text uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-border/40 pb-2">
+                      <ClipboardList size={16} className="text-secondary" />
+                      Assigned Incidents Timeline ({selectedEngineer.bookings.length})
+                    </h4>
+                    {selectedEngineer.bookings.length === 0 ? (
+                      <p className="text-xs text-muted italic">No incidents assigned to this technician.</p>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        {selectedEngineer.bookings.map((b: any) => (
+                          <div key={b.id} className="bg-[#111827]/40 border border-border/50 rounded-xl p-3 flex justify-between items-center text-xs">
+                            <div>
+                              <span className="font-mono text-primary font-bold">{b.ticketId || "INCIDENT"}</span>
+                              <span className="text-text font-semibold block mt-0.5 truncate max-w-sm">{b.problemDescription}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-muted text-[10px]">{b.preferredDate}</span>
+                              <Badge variant={b.status === "completed" ? "success" : b.status === "cancelled" ? "danger" : "warning"} className="py-0.5">
+                                {b.status}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              ) : (
+                <Card className="text-center py-20 text-muted">
+                  Select a technician from the roster list to audit diagnostic performance metrics, active schedules, and skills logs.
                 </Card>
               )}
             </div>
@@ -1304,6 +1653,82 @@ export const Dashboard: React.FC = () => {
 
           <Button variant="primary" type="submit" isLoading={createCustomerMutation.isPending || updateCustomerMutation.isPending} className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
             {editingCustomerId ? "Save Profile Changes" : "Create Profile"}
+          </Button>
+        </form>
+      </Modal>
+
+      {/* CREATE / EDIT TECHNICIAN MODAL */}
+      <Modal isOpen={techModalOpen} onClose={() => setTechModalOpen(false)} title={editingEngineerId ? "Edit Technician Profile" : "Register New Technician"}>
+        <form onSubmit={handleEngineerSubmit} className="flex flex-col gap-4 font-body">
+          <Input
+            label="Full Name *"
+            placeholder="e.g. Gordon Freeman"
+            value={techFormName}
+            onChange={(e) => setTechFormName(e.target.value)}
+            required
+          />
+
+          <Input
+            label="Email Address *"
+            type="email"
+            placeholder="e.g. gordon@blackmesa.com"
+            value={techFormEmail}
+            onChange={(e) => setTechFormEmail(e.target.value)}
+            required
+          />
+
+          <Input
+            label="Mobile Phone *"
+            placeholder="e.g. 505-888-2920"
+            value={techFormPhone}
+            onChange={(e) => setTechFormPhone(e.target.value)}
+            required
+          />
+
+          <Input
+            label="Specialities / Skills (Comma-separated) *"
+            placeholder="e.g. Cisco, WiFi Audit, Malware Response"
+            value={techFormSpecialities}
+            onChange={(e) => setTechFormSpecialities(e.target.value)}
+            required
+          />
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium font-display text-muted">Technician Biography</label>
+            <textarea
+              rows={3}
+              placeholder="e.g. PhD in Theoretical Physics from MIT, 10 years network diagnostics..."
+              value={techFormBio}
+              onChange={(e) => setTechFormBio(e.target.value)}
+              className="w-full px-4 py-3 bg-[#111827]/60 border border-border focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg text-text text-xs outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Availability Status"
+              options={[
+                { label: "Available", value: "available" },
+                { label: "Busy (Active Dispatch)", value: "busy" },
+                { label: "Offline (Leave / Shift ended)", value: "offline" },
+              ]}
+              value={techFormStatus}
+              onChange={(e: any) => setTechFormStatus(e.target.value)}
+            />
+
+            <Select
+              label="Account Access"
+              options={[
+                { label: "Active", value: "active" },
+                { label: "Suspended", value: "suspended" },
+              ]}
+              value={techFormUserStatus}
+              onChange={(e: any) => setTechFormUserStatus(e.target.value)}
+            />
+          </div>
+
+          <Button variant="primary" type="submit" isLoading={createEngineerMutation.isPending || updateEngineerMutation.isPending} className="w-full mt-4" style={{ backgroundColor: "#8B5CF6", color: "white" }}>
+            {editingEngineerId ? "Save Technician Changes" : "Register Technician"}
           </Button>
         </form>
       </Modal>
