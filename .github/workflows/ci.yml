@@ -1,0 +1,51 @@
+name: RemoteFix CI/CD Production Pipeline
+
+on:
+  push:
+    branches: [ main, master, production ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify:
+    name: TypeCheck & Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Workspace Type Check
+        run: |
+          npm run typecheck --workspace=packages/types
+          npm run typecheck --workspace=packages/utils
+          npm run typecheck --workspace=packages/ui
+          npm run typecheck --workspace=packages/auth
+          npm run typecheck --workspace=packages/database
+          npm run typecheck --workspace=apps/web
+          npm run typecheck --workspace=apps/api
+          npm run typecheck --workspace=apps/admin
+
+      - name: Monorepo Production Build
+        run: npm run build
+
+      - name: Upload Web Dist Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist/
+
+      - name: Upload Admin Dist Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-dist
+          path: apps/admin/dist/

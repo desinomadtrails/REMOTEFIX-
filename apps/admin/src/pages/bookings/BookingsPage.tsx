@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search, SlidersHorizontal, CheckSquare, Square,
-  ChevronLeft, ChevronRight, Badge as BadgeIcon
+  ChevronLeft, ChevronRight, Badge as BadgeIcon, Wrench
 } from "lucide-react";
 import { Card, Badge, Button, Input } from "@remotefix/ui";
 import { api } from "../../api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
+import { TechnicianWorkflowModal } from "../technicians/TechnicianWorkflowModal.js";
 
 const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
   <div className={`animate-pulse bg-white/5 rounded-xl ${className}`} />
@@ -23,6 +24,7 @@ export const BookingsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState("");
+  const [workflowBooking, setWorkflowBooking] = useState<any>(null);
 
   const { data: bookingsData, isLoading } = useQuery({
     queryKey: ["admin-bookings"],
@@ -155,6 +157,9 @@ export const BookingsPage: React.FC = () => {
                       <option key={eng.id} value={eng.id}>{eng.fullName}</option>
                     ))}
                   </select>
+                  <Button variant="cyber" size="sm" className="text-[10px] py-1 flex items-center justify-center gap-1" onClick={() => setWorkflowBooking(b)}>
+                    <Wrench size={11} /> Field Workflow
+                  </Button>
                   {!["completed","cancelled"].includes(b.status) && (
                     <div className="flex gap-1.5">
                       <Button variant="ghost" size="sm" className="text-[10px] py-1 text-success hover:bg-success/10 flex-1" onClick={() => updateMutation.mutate({ id: b.id, status: "completed" })}>Complete</Button>
@@ -181,6 +186,16 @@ export const BookingsPage: React.FC = () => {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Technician Field Workflow Modal */}
+      {workflowBooking && (
+        <TechnicianWorkflowModal
+          isOpen={!!workflowBooking}
+          onClose={() => setWorkflowBooking(null)}
+          booking={workflowBooking}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-bookings"] })}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { logger as honoLogger } from "hono/logger";
 import { securityHeaders } from "./middleware/security.js";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimiter.js";
+import { structuredLogger } from "./middleware/logging.js";
 import { authRouter } from "./routes/auth.js";
 import { servicesRouter } from "./routes/services.js";
 import { bookingsRouter } from "./routes/bookings.js";
@@ -14,6 +15,8 @@ import { logsRouter } from "./routes/logs.js";
 import { serviceRequestRouter } from "./routes/serviceRequest.js";
 import { customersRouter } from "./routes/customers.js";
 import { engineersRouter } from "./routes/engineers.js";
+import { healthRouter } from "./routes/health.js";
+import { technicianWorkflowRouter } from "./routes/technicianWorkflow.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -25,7 +28,8 @@ const app = new Hono<AppEnv>();
 // MIDDLEWARES
 // ==========================================
 
-// 1. Logger
+// 1. Structured Logger
+app.use("*", structuredLogger);
 app.use("*", honoLogger());
 
 // 2. CORS configurations
@@ -34,8 +38,8 @@ app.use(
   cors({
     origin: (origin) => origin || "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Request-ID"],
+    exposeHeaders: ["Content-Length", "X-Kuma-Revision", "X-Request-ID"],
     maxAge: 600,
     credentials: true,
   })
@@ -73,7 +77,11 @@ app.use("/api/*", apiRateLimiter);
 // ROUTES
 // ==========================================
 
-// Apply strict auth rate limit (10 req/min) to login/register
+// Health Checks
+app.route("/health", healthRouter);
+app.route("/api/health", healthRouter);
+
+// Auth & Core Features
 app.use("/api/auth/*", authRateLimiter);
 app.route("/api/auth", authRouter);
 app.route("/api/services", servicesRouter);
@@ -82,6 +90,7 @@ app.route("/api/service-request", serviceRequestRouter);
 app.route("/api/tickets", ticketsRouter);
 app.route("/api/invoices", invoicesRouter);
 app.route("/api/payments", paymentsRouter);
+app.route("/api/technician-workflow", technicianWorkflowRouter);
 app.route("/api/admin/analytics", analyticsRouter);
 app.route("/api/admin/logs", logsRouter);
 app.route("/api/admin/customers", customersRouter);
@@ -119,14 +128,12 @@ app.post("/api/seed", async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   
   try {
-    // Check if services are already seeded
     const sCount = await db.select({ value: count(services.id) }).from(services);
     
     if (sCount[0].value > 0) {
       return c.json({ success: true, message: "Database already seeded with services." });
     }
     
-    // Core Services Seed Data
     const coreServices = [
       {
         id: crypto.randomUUID(),
@@ -205,7 +212,7 @@ app.notFound((c) => {
 });
 
 app.onError((err, c) => {
-  console.error("Unhandle API Error:", err);
+  console.error("Unhandled API Error:", err);
   return c.json(
     {
       success: false,

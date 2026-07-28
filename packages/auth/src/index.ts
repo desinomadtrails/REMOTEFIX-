@@ -166,6 +166,27 @@ export async function verifyPassword(password: string, storedHash: string): Prom
 }
 
 // ==========================================
+// SECURE TOKEN GENERATORS & HASHERS
+// ==========================================
+
+/** Generates a cryptographically random token string */
+export function generateRandomToken(length = 32): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Computes SHA-256 hash of a token string for safe DB storage */
+export async function hashToken(token: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(token);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// ==========================================
 // ROLE-BASED ACCESS CONTROL (RBAC) HELPERS
 // ==========================================
 

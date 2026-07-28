@@ -92,6 +92,32 @@ export const api = {
     return request<any>("/api/seed", { method: "POST" });
   },
 
+  // Technician Workflow API
+  async technicianCheckIn(bookingId: string, lat?: number, lng?: number) {
+    return request<any>("/api/technician-workflow/check-in", {
+      method: "POST",
+      body: JSON.stringify({ bookingId, lat, lng }),
+    });
+  },
+
+  async uploadWorkAssets(body: { bookingId: string; beforePhotos?: string[]; afterPhotos?: string[]; digitalSignature?: string; notes?: string }) {
+    return request<any>("/api/technician-workflow/upload-work-assets", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async technicianCheckOut(bookingId: string, lat?: number, lng?: number, remarks?: string, partsUsed?: string) {
+    return request<any>("/api/technician-workflow/check-out", {
+      method: "POST",
+      body: JSON.stringify({ bookingId, lat, lng, remarks, partsUsed }),
+    });
+  },
+
+  async getTechnicianWorkLog(bookingId: string) {
+    return request<any>(`/api/technician-workflow/log/${bookingId}`);
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");
