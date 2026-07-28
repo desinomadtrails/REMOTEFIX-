@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Mail, Phone, MapPin, Send, CheckCircle2 } from "lucide-react";
-import { Button, Card, Input } from "@remotefix/ui";
+import { Mail, Phone, MapPin, Send, CheckCircle2, Clock, MessageSquare } from "lucide-react";
+import { Button, Card, Input, GlowDivider } from "@remotefix/ui";
+import { SEO } from "../components/SEO.js";
 
 export const Contact: React.FC = () => {
   const [name, setName] = useState("");
@@ -13,19 +14,27 @@ export const Contact: React.FC = () => {
     e.preventDefault();
     if (!name || !email || !subject || !message) return;
     
-    // Simulate submission
-    console.log("Contact form submitted:", { name, email, subject, message });
     setSubmitted(true);
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 font-body">
+      <SEO
+        title="Contact Us &amp; Support Desk | RemoteFix"
+        description="Get in touch with RemoteFix systems engineers for enterprise IT inquiries, corporate AMC contracts, or emergency dispatch support."
+        canonicalUrl="https://remotefix.com/contact"
+      />
+
       {/* Title */}
       <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs font-semibold uppercase tracking-wider text-primary mb-4 font-display">
+          <MessageSquare className="w-3.5 h-3.5" />
+          24/7 Operations Desk
+        </div>
         <h1 className="text-4xl sm:text-5xl font-black font-display text-text">
           Get in Touch
         </h1>
-        <p className="text-muted font-body mt-4 max-w-md mx-auto leading-relaxed">
+        <p className="text-muted font-body mt-4 max-w-md mx-auto leading-relaxed text-sm">
           Need a custom enterprise quote, or have a billing inquiry? Reach out and we will respond within 4 hours.
         </p>
       </div>
@@ -39,7 +48,7 @@ export const Contact: React.FC = () => {
             </h3>
             
             <div className="flex items-start gap-3.5 font-body text-sm text-muted">
-              <Phone className="w-5 h-5 text-primary shrink-0" />
+              <Phone className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <span className="block font-semibold text-text">Direct Phone</span>
                 <span className="block mt-0.5">+1 (800) 555-RFIX</span>
@@ -47,7 +56,7 @@ export const Contact: React.FC = () => {
             </div>
 
             <div className="flex items-start gap-3.5 font-body text-sm text-muted">
-              <Mail className="w-5 h-5 text-primary shrink-0" />
+              <Mail className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <span className="block font-semibold text-text">General Inquiries</span>
                 <span className="block mt-0.5">support@remotefix.com</span>
@@ -55,13 +64,21 @@ export const Contact: React.FC = () => {
             </div>
 
             <div className="flex items-start gap-3.5 font-body text-sm text-muted">
-              <MapPin className="w-5 h-5 text-primary shrink-0" />
+              <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <span className="block font-semibold text-text">Headquarters</span>
                 <span className="block mt-0.5 leading-relaxed">
-                  100 Cyber Ridge Plaza,<br />
-                  Suite 404, Tech Valley, CA 94025
+                  100 Enterprise Way,<br />
+                  Suite 300, Azure City, CA 94025
                 </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 font-body text-sm text-muted border-t border-border/40 pt-4">
+              <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <span className="block font-semibold text-text">Service Hours</span>
+                <span className="block mt-0.5">24/7/365 Continuous SLA</span>
               </div>
             </div>
           </Card>
@@ -70,14 +87,17 @@ export const Contact: React.FC = () => {
         {/* Form */}
         <div className="lg:col-span-2">
           {submitted ? (
-            <Card className="text-center py-12 flex flex-col items-center gap-4" glowColor="cyan">
+            <Card className="text-center py-16 flex flex-col items-center gap-4" glowColor="cyan">
               <div className="p-3 bg-success/10 text-success border border-success/30 rounded-full">
                 <CheckCircle2 size={36} />
               </div>
               <h2 className="text-2xl font-bold font-display text-text">Message Received!</h2>
-              <p className="text-sm text-muted font-body leading-relaxed max-w-sm">
-                Thank you for contacting RemoteFix. A support manager has been assigned to your ticket and will email you shortly.
+              <p className="text-xs text-muted font-body leading-relaxed max-w-sm">
+                Thank you for contacting RemoteFix. A support manager has been assigned to your message and will reply via email shortly.
               </p>
+              <Button variant="outline" size="sm" onClick={() => setSubmitted(false)} className="mt-2">
+                Send Another Message
+              </Button>
             </Card>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -88,14 +108,14 @@ export const Contact: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label="Name"
+                    label="Name *"
                     placeholder="Enter your name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
                   />
                   <Input
-                    label="Email"
+                    label="Email *"
                     type="email"
                     placeholder="Enter your email"
                     value={email}
@@ -105,7 +125,7 @@ export const Contact: React.FC = () => {
                 </div>
 
                 <Input
-                  label="Subject"
+                  label="Subject *"
                   placeholder="Billing / Corporate AMC / Feedback"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
@@ -113,14 +133,14 @@ export const Contact: React.FC = () => {
                 />
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium font-display text-muted">Message</label>
+                  <label className="text-xs font-semibold font-display text-muted">Message *</label>
                   <textarea
                     rows={5}
                     placeholder="What would you like to discuss with our IT management team?"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     required
-                    className="w-full px-4 py-3 bg-[#111827]/60 border border-border focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg text-text font-body outline-none"
+                    className="w-full px-4 py-3 bg-[#111827]/60 border border-border focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg text-text text-xs font-body outline-none"
                   />
                 </div>
 

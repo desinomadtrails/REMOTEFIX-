@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Tag, Search, ArrowRight } from "lucide-react";
-import { Button, Card, Input } from "@remotefix/ui";
+import { Clock, Tag, Search, ArrowRight, ShieldCheck, Zap, Wrench } from "lucide-react";
+import { Button, Card, Input, GlowDivider } from "@remotefix/ui";
 import { api } from "../services/api.js";
 import { formatCurrency } from "@remotefix/utils";
+import { SEO } from "../components/SEO.js";
 
 // Local fallback services in case the database is empty or connection is offline
 const FALLBACK_SERVICES = [
   {
     id: "fallback-remote",
     name: "Remote IT Support",
-    description: "Fast diagnostics, troubleshooting, software fixes, and optimizations handled securely via secure remote desktop utilities.",
+    description: "Fast diagnostics, troubleshooting, software fixes, and optimizations handled securely via client-initiated remote desktop utilities.",
     category: "Support",
     price: "79.00",
     estimatedDurationMinutes: 60,
@@ -86,15 +87,45 @@ export const Services: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": rawServices.map((s: any, i: number) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "item": {
+        "@type": "Service",
+        "name": s.name,
+        "description": s.description,
+        "offers": {
+          "@type": "Offer",
+          "price": s.price,
+          "priceCurrency": "USD",
+        },
+      },
+    })),
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 font-body">
+      <SEO
+        title="On-Demand IT Services & Repairs | RemoteFix"
+        description="Explore our IT service catalog: Remote Support, WiFi Network Setup, Malware Removal, OS Clean Installs, Data Recovery, and Enterprise IT Consulting."
+        canonicalUrl="https://remotefix.com/services"
+        jsonLd={serviceSchema}
+      />
+
       {/* Title */}
       <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs font-semibold uppercase tracking-wider text-primary mb-4">
+          <Wrench className="w-3.5 h-3.5" />
+          Catalog of Solutions
+        </div>
         <h1 className="text-4xl sm:text-5xl font-black font-display text-text">
           On-Demand IT Services
         </h1>
-        <p className="text-muted font-body mt-4 max-w-lg mx-auto leading-relaxed">
-          Transparent pricing, expert engineers, and fast turnaround times. Select a service to initiate booking.
+        <p className="text-muted font-body mt-4 max-w-lg mx-auto leading-relaxed text-sm">
+          Transparent pricing, certified engineers, and rapid SLAs. Select any service to initiate guest booking.
         </p>
       </div>
 
@@ -106,7 +137,7 @@ export const Services: React.FC = () => {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-lg font-display text-sm font-semibold transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-lg font-display text-xs font-semibold transition-all cursor-pointer ${
                 activeCategory === cat
                   ? "bg-primary text-[#030712] shadow-[0_0_12px_rgba(0,229,255,0.25)]"
                   : "bg-[#111827]/50 text-muted border border-border hover:bg-surface-hover hover:text-text"
@@ -123,7 +154,7 @@ export const Services: React.FC = () => {
             placeholder="Search services..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-xs"
           />
           <Search className="absolute left-3.5 top-3.5 text-muted w-4 h-4" />
         </div>
@@ -185,6 +216,26 @@ export const Services: React.FC = () => {
           ))}
         </div>
       )}
+
+      <GlowDivider color="gradient" className="my-16" />
+
+      {/* SLA ASSURANCE */}
+      <div className="bg-[#111827]/40 border border-border/80 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-primary/10 text-primary border border-primary/20 rounded-xl">
+            <ShieldCheck size={28} />
+          </div>
+          <div>
+            <h4 className="text-lg font-bold font-display text-text">Guaranteed Certified Engineers</h4>
+            <p className="text-xs text-muted font-body mt-1 max-w-xl leading-relaxed">
+              All services are performed by CISSP, Microsoft 365, or Cisco CCNA certified technicians. Instant guest booking with real-time status tracking.
+            </p>
+          </div>
+        </div>
+        <Button variant="primary" glow onClick={() => navigate("/book")}>
+          Launch Booking Wizard
+        </Button>
+      </div>
     </div>
   );
 };

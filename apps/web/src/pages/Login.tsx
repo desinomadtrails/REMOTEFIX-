@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Shield, Key, Mail, ArrowRight } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
 import { api } from "../services/api.js";
+import { SEO } from "../components/SEO.js";
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -68,7 +69,12 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-20">
+    <div className="max-w-md mx-auto px-4 py-20 font-body">
+      <SEO
+        title="Sign In | RemoteFix Customer & Tech Portal"
+        description="Sign in to your RemoteFix account to manage bookings, track repair tickets, view invoices, and update profile."
+        canonicalUrl="https://remotefix.com/login"
+      />
       <div className="text-center mb-8">
         <Link to="/" className="inline-flex items-center gap-2 group mb-4">
           <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">

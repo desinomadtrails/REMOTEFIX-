@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Shield, Mail, Key, User, Phone, Building, MapPin } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
 import { api } from "../services/api.js";
+import { SEO } from "../components/SEO.js";
 
 export const Register: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -45,7 +46,12 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-16">
+    <div className="max-w-lg mx-auto px-4 py-16 font-body">
+      <SEO
+        title="Create Customer Account | RemoteFix"
+        description="Register a free RemoteFix customer account to link guest service bookings, access invoice history, and manage corporate AMC contracts."
+        canonicalUrl="https://remotefix.com/register"
+      />
       <div className="text-center mb-8">
         <Link to="/" className="inline-flex items-center gap-2 group mb-4">
           <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">

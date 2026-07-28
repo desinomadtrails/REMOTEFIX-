@@ -19,6 +19,7 @@ import {
 import { Button, Card, Badge, Modal, Input, GlowDivider, Select } from "@remotefix/ui";
 import { api } from "../services/api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
+import { SEO } from "../components/SEO.js";
 
 export const CustomerDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"bookings" | "invoices" | "tickets" | "notifications" | "profile" | "link">("bookings");
@@ -215,7 +216,12 @@ export const CustomerDashboard: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-body">
+      <SEO
+        title="Customer Dashboard | RemoteFix"
+        description="Manage your IT service bookings, view invoices, open support tickets, and link guest bookings."
+        canonicalUrl="https://remotefix.com/customer"
+      />
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 border-b border-border/40 pb-6">
         <div>

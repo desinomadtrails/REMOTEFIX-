@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /customer
+Disallow: /engineer
+Disallow: /admin
+
+Sitemap: https://remotefix.com/sitemap.xml

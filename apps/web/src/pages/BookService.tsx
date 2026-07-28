@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useMutation } from "@tanstack/react-query";
-import { User, Cpu, Calendar, CheckCircle2, FileImage } from "lucide-react";
+import { User, Cpu, Calendar, CheckCircle2, FileImage, Shield } from "lucide-react";
 import { Button, Card, Input, Select } from "@remotefix/ui";
 import { api } from "../services/api.js";
+import { SEO } from "../components/SEO.js";
 
 const DEVICE_TYPES = [
   { value: "Laptop", label: "Laptop" },
@@ -74,7 +75,7 @@ export const BookService: React.FC = () => {
       return api.createServiceRequest(payload);
     },
     onSuccess: (data: any) => {
-      navigate(`/book/success?ticketId=${data.ticketId}`);
+      navigate(`/book/success?ticketId=${data.ticketId}&phone=${encodeURIComponent(phone)}`);
     },
     onError: (err: any) => {
       setErrorMsg(err.message || "Failed to submit request. Please check your network and fields.");
@@ -146,7 +147,26 @@ export const BookService: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-16">
+    <div className="max-w-3xl mx-auto px-4 py-16 font-body">
+      <SEO
+        title="Guest Booking Wizard | RemoteFix IT Services"
+        description="Book on-site or remote IT support in under 2 minutes. No account creation required. Instant Ticket ID generated and saved to Azure SQL."
+        canonicalUrl="https://remotefix.com/book"
+      />
+
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs font-semibold uppercase tracking-wider text-primary mb-3 font-display">
+          <Shield className="w-3.5 h-3.5" />
+          Zero Friction Guest Booking
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-black font-display text-text">
+          Book IT Service
+        </h1>
+        <p className="text-xs text-muted font-body mt-1">
+          No sign-up mandatory. Describe your issue and track live milestones instantly.
+        </p>
+      </div>
+
       {/* SaaS Wizard Step Header */}
       <div className="flex justify-between items-center mb-12 relative">
         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border/40 -translate-y-1/2 z-0" />
@@ -171,7 +191,7 @@ export const BookService: React.FC = () => {
       </div>
 
       {errorMsg && (
-        <div className="bg-danger/10 border border-danger/30 text-danger text-sm rounded-lg p-4 mb-6 font-body">
+        <div className="bg-danger/10 border border-danger/30 text-danger text-xs rounded-lg p-4 mb-6 font-body">
           {errorMsg}
         </div>
       )}
@@ -184,7 +204,7 @@ export const BookService: React.FC = () => {
               <User size={24} className="text-primary" />
               1. Contact Information
             </h2>
-            <p className="text-sm text-muted font-body mt-1">
+            <p className="text-xs text-muted font-body mt-1">
               Enter your coordinates where our support technician can contact you.
             </p>
           </div>
@@ -261,7 +281,7 @@ export const BookService: React.FC = () => {
               <Cpu size={24} className="text-primary" />
               2. Device Configuration
             </h2>
-            <p className="text-sm text-muted font-body mt-1">
+            <p className="text-xs text-muted font-body mt-1">
               Specify the type and brand of the device needing service.
             </p>
           </div>
@@ -315,9 +335,9 @@ export const BookService: React.FC = () => {
             <div>
               <h2 className="text-2xl font-black font-display text-text flex items-center gap-2">
                 <Calendar size={24} className="text-primary" />
-                3. Issue Details & Schedule
+                3. Issue Details &amp; Schedule
               </h2>
-              <p className="text-sm text-muted font-body mt-1">
+              <p className="text-xs text-muted font-body mt-1">
                 Describe the problem and select your preferred visit time slot.
               </p>
             </div>
@@ -330,13 +350,13 @@ export const BookService: React.FC = () => {
             />
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium font-display text-muted">Problem Description *</label>
+              <label className="text-xs font-semibold font-display text-muted">Problem Description *</label>
               <textarea
                 rows={4}
                 placeholder="Describe the issue in detail. Include any error codes, symptoms, or what happened right before the failure..."
                 value={problemDescription}
                 onChange={(e) => setProblemDescription(e.target.value)}
-                className="w-full px-4 py-3 bg-[#111827]/60 border border-border focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg text-text font-body outline-none"
+                className="w-full px-4 py-3 bg-[#111827]/60 border border-border focus:border-primary focus:ring-1 focus:ring-primary/30 rounded-lg text-text text-xs font-body outline-none"
                 required
               />
             </div>
@@ -361,7 +381,7 @@ export const BookService: React.FC = () => {
 
             {/* Photo uploader */}
             <div className="flex flex-col gap-3">
-              <label className="text-sm font-medium font-display text-muted">Upload Device Images or Screenshots (Optional)</label>
+              <label className="text-xs font-semibold font-display text-muted">Upload Device Images or Screenshots (Optional)</label>
               <div className="border border-dashed border-border hover:border-primary/50 transition-colors rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer relative bg-[#111827]/30">
                 <input
                   type="file"

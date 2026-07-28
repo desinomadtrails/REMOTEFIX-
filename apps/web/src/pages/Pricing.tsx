@@ -1,7 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { Check, ShieldCheck } from "lucide-react";
+import { Check, ShieldCheck, Tag } from "lucide-react";
 import { Button, Card, GlowDivider } from "@remotefix/ui";
+import { SEO } from "../components/SEO.js";
 
 export const Pricing: React.FC = () => {
   const navigate = useNavigate();
@@ -56,14 +57,24 @@ export const Pricing: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 font-body">
+      <SEO
+        title="Transparent Pricing & SLA Tiers | RemoteFix"
+        description="Clear, upfront pricing for remote IT repairs, emergency SLA dispatches, and corporate AMC contracts. No hidden callout fees."
+        canonicalUrl="https://remotefix.com/pricing"
+      />
+
       {/* Header */}
       <div className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs font-semibold uppercase tracking-wider text-primary mb-4 font-display">
+          <Tag className="w-3.5 h-3.5" />
+          No Hidden Fees
+        </div>
         <h1 className="text-4xl sm:text-5xl font-black font-display text-text">
           Transparent Cyber Pricing
         </h1>
-        <p className="text-muted font-body mt-4 max-w-lg mx-auto leading-relaxed">
-          Choose a one-off support incident package or outsourcing agreement. No hidden service call fees.
+        <p className="text-muted font-body mt-4 max-w-lg mx-auto leading-relaxed text-sm">
+          Choose a one-off support incident package or full corporate outsourcing. Guest checkout available.
         </p>
       </div>
 
@@ -98,10 +109,10 @@ export const Pricing: React.FC = () => {
             <GlowDivider color={plan.highlighted ? "purple" : "cyan"} className="my-2" />
 
             {/* Features */}
-            <ul className="space-y-3.5 my-6 flex-grow font-body text-sm text-muted">
+            <ul className="space-y-3.5 my-6 flex-grow font-body text-xs text-muted">
               {plan.features.map((feat, fidx) => (
                 <li key={fidx} className="flex items-start gap-2.5">
-                  <Check size={16} className={plan.highlighted ? "text-secondary mt-0.5" : "text-primary mt-0.5"} />
+                  <Check size={16} className={plan.highlighted ? "text-secondary mt-0.5 shrink-0" : "text-primary mt-0.5 shrink-0"} />
                   <span>{feat}</span>
                 </li>
               ))}
@@ -122,14 +133,14 @@ export const Pricing: React.FC = () => {
       </div>
 
       {/* Security Assurance */}
-      <div className="glass bg-[#111827]/40 border border-border/80 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-[#111827]/40 border border-border/80 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/25 rounded-xl">
             <ShieldCheck size={28} />
           </div>
           <div>
             <h4 className="text-lg font-bold font-display text-text">100% Satisfaction Service SLA Guarantee</h4>
-            <p className="text-sm text-muted font-body mt-1 max-w-xl">
+            <p className="text-xs text-muted font-body mt-1 max-w-xl leading-relaxed">
               If our engineers cannot resolve the problem described in your booking request, your diagnostic fee is refunded immediately. No questions asked.
             </p>
           </div>

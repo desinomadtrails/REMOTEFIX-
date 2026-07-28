@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
-import { Search, MapPin, Calendar, Clock, User, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Search, MapPin, Calendar, Clock, User, CheckCircle2, ShieldAlert, FileText, Activity } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
 import { api } from "../services/api.js";
+import { SEO } from "../components/SEO.js";
 
 export const TrackService: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,22 +14,18 @@ export const TrackService: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [trackData, setTrackData] = useState<any>(null);
 
-  const handleTrack = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ticketId || !phone) {
-      setErrorMsg("Please enter both Ticket ID and Mobile Number.");
-      return;
-    }
+  const fetchTracking = async (tid: string, ph: string) => {
+    if (!tid || !ph) return;
 
     setLoading(true);
     setErrorMsg("");
     setTrackData(null);
 
     try {
-      const res = await api.trackServiceRequest(ticketId, phone);
+      const res = await api.trackServiceRequest(tid, ph);
       if (res.success) {
         setTrackData(res);
-        setSearchParams({ ticketId, phone });
+        setSearchParams({ ticketId: tid, phone: ph });
       } else {
         setErrorMsg(res.error || "Failed to retrieve request status.");
       }
@@ -39,11 +36,38 @@ export const TrackService: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const paramTid = searchParams.get("ticketId");
+    const paramPhone = searchParams.get("phone");
+    if (paramTid && paramPhone) {
+      fetchTracking(paramTid, paramPhone);
+    }
+  }, []);
+
+  const handleTrack = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ticketId || !phone) {
+      setErrorMsg("Please enter both Ticket ID and Mobile Number.");
+      return;
+    }
+    fetchTracking(ticketId, phone);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-16 font-body">
+      <SEO
+        title="Track Service Request | RemoteFix Ticket Lookup"
+        description="Track the real-time status of your IT service ticket using your Ticket ID and Mobile Number. No account sign-in required."
+        canonicalUrl="https://remotefix.com/track"
+      />
+
       <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs font-semibold uppercase tracking-wider text-primary mb-3 font-display">
+          <Activity className="w-3.5 h-3.5" />
+          Real-Time Azure SQL Lookup
+        </div>
         <h1 className="text-4xl font-black font-display text-text">Track Your Service Request</h1>
-        <p className="text-sm text-muted mt-2">
+        <p className="text-xs text-muted mt-2 max-w-md mx-auto">
           Enter your Ticket ID and registered mobile number to check real-time progress.
         </p>
       </div>
@@ -54,14 +78,14 @@ export const TrackService: React.FC = () => {
           <Card glowColor="cyan" className="p-6">
             <form onSubmit={handleTrack} className="flex flex-col gap-4">
               <Input
-                label="Ticket ID"
-                placeholder="e.g. RF-20260727-000127"
+                label="Ticket ID *"
+                placeholder="e.g. RF-20260728-000127"
                 value={ticketId}
                 onChange={(e) => setTicketId(e.target.value)}
                 required
               />
               <Input
-                label="Mobile Number"
+                label="Mobile Number *"
                 placeholder="e.g. 9876543210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -96,7 +120,7 @@ export const TrackService: React.FC = () => {
               <Card className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/50 pb-3 gap-2">
                   <div>
-                    <span className="text-xs text-muted uppercase">Ticket Details</span>
+                    <span className="text-[10px] text-muted uppercase font-semibold">Ticket Details</span>
                     <h2 className="text-xl font-bold font-display text-text">{trackData.booking.ticketId}</h2>
                   </div>
                   <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase border self-start ${
@@ -110,34 +134,34 @@ export const TrackService: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
-                    <span className="text-muted block text-xs">Device Class</span>
+                    <span className="text-muted block text-[10px]">Device Class</span>
                     <span className="font-semibold text-text">{trackData.booking.device}</span>
                   </div>
                   <div>
-                    <span className="text-muted block text-xs">Priority</span>
+                    <span className="text-muted block text-[10px]">Priority</span>
                     <span className="font-semibold text-text uppercase">{trackData.booking.priority}</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Calendar className="w-4 h-4 text-primary mt-0.5" />
                     <div>
-                      <span className="text-muted block text-xs">Visit Date</span>
+                      <span className="text-muted block text-[10px]">Visit Date</span>
                       <span className="font-semibold text-text">{trackData.booking.visitDate}</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Clock className="w-4 h-4 text-primary mt-0.5" />
                     <div>
-                      <span className="text-muted block text-xs">Time Slot</span>
+                      <span className="text-muted block text-[10px]">Time Slot</span>
                       <span className="font-semibold text-text">{trackData.booking.visitTime}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="border-t border-border/50 pt-4 mt-2">
-                  <span className="text-muted block text-xs">Problem Description</span>
-                  <p className="text-text text-sm leading-relaxed mt-1 bg-[#111827]/40 p-3 rounded-lg border border-border/50">
+                  <span className="text-muted block text-[10px]">Problem Description</span>
+                  <p className="text-text text-xs leading-relaxed mt-1 bg-[#111827]/40 p-3 rounded-lg border border-border/50">
                     {trackData.booking.problemDescription}
                   </p>
                 </div>
@@ -145,7 +169,7 @@ export const TrackService: React.FC = () => {
 
               {/* Status Timeline Card */}
               <Card>
-                <h3 className="text-lg font-bold font-display text-text border-b border-border/50 pb-3 mb-6">
+                <h3 className="text-base font-bold font-display text-text border-b border-border/50 pb-3 mb-6">
                   Service Request Timeline
                 </h3>
                 
@@ -160,7 +184,7 @@ export const TrackService: React.FC = () => {
                       }`} />
                       
                       <div>
-                        <h4 className={`text-sm font-bold font-display ${step.isCompleted ? "text-text" : "text-muted"}`}>
+                        <h4 className={`text-xs font-bold font-display ${step.isCompleted ? "text-text" : "text-muted"}`}>
                           {step.stage}
                         </h4>
                         {step.date && (
@@ -182,8 +206,8 @@ export const TrackService: React.FC = () => {
                     <User className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <span className="text-xs text-muted block">Assigned Technician</span>
-                    <h4 className="text-base font-bold font-display text-text">{trackData.technician.name}</h4>
+                    <span className="text-[10px] text-muted block font-semibold">Assigned Technician</span>
+                    <h4 className="text-sm font-bold font-display text-text">{trackData.technician.name}</h4>
                     <p className="text-xs text-muted leading-relaxed mt-1 max-w-md">
                       {trackData.technician.bio || "Field systems technician dispatched to service your device hardware."}
                     </p>
@@ -194,7 +218,7 @@ export const TrackService: React.FC = () => {
           ) : (
             <div className="border border-border/40 bg-[#111827]/10 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
               <ShieldAlert className="w-12 h-12 text-muted mb-4 animate-pulse" />
-              <h3 className="text-lg font-bold font-display text-text">No Lookup Active</h3>
+              <h3 className="text-base font-bold font-display text-text">No Lookup Active</h3>
               <p className="text-xs text-muted max-w-xs mt-1 leading-relaxed">
                 Enter your Ticket ID and Mobile Number on the left to display real-time tracking details.
               </p>

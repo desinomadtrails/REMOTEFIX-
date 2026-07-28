@@ -13,14 +13,17 @@ import {
   UserCheck, 
   Award,
   Star,
-  MessageSquare,
   HelpCircle,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  Zap,
+  Lock,
+  Search
 } from "lucide-react";
 import { Button, Card, GlowDivider } from "@remotefix/ui";
 import { AuroraBackground } from "../components/AuroraBackground.js";
+import { SEO } from "../components/SEO.js";
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -30,21 +33,25 @@ export const Home: React.FC = () => {
       icon: <Monitor className="w-6 h-6 text-primary" />,
       title: "Remote IT Diagnostics",
       desc: "Fast, client-initiated software troubleshooting and configurations over safe, encrypted pipelines.",
+      type: "remote",
     },
     {
       icon: <Wifi className="w-6 h-6 text-primary" />,
       title: "Network Optimization",
       desc: "Signal mapping, router diagnostics, and guest SSID setups for optimal wifi bandwidth coverage.",
+      type: "onsite",
     },
     {
       icon: <ShieldAlert className="w-6 h-6 text-primary" />,
       title: "Cyber Security Scan",
       desc: "Malware isolation, active firewall audits, system patch deployment, and vulnerability checks.",
+      type: "remote",
     },
     {
       icon: <Cpu className="w-6 h-6 text-primary" />,
       title: "On-Site Hardware Integrations",
       desc: "Physical configuration of corporate server racks, NAS file vaults, CCTV systems, and workstations.",
+      type: "onsite",
     },
   ];
 
@@ -52,44 +59,69 @@ export const Home: React.FC = () => {
     {
       icon: <Clock className="w-5 h-5 text-primary" />,
       title: "15-Min Response Guarantee",
-      desc: "Emergency requests are triaged instantly with technician dispatch or cloud support starting in minutes."
+      desc: "Emergency requests are triaged instantly with technician dispatch or cloud support starting in minutes.",
     },
     {
       icon: <UserCheck className="w-5 h-5 text-primary" />,
       title: "Account-Free Checkout",
-      desc: "No username or credentials needed. Simply describe the fault, book, and track using your Ticket ID."
+      desc: "No username or credentials needed. Simply describe the fault, book, and track using your Ticket ID.",
     },
     {
       icon: <Award className="w-5 h-5 text-primary" />,
       title: "Certified Systems Engineers",
-      desc: "Every technician holds active CISSP, Microsoft 365, Cisco, or Google Cloud systems certifications."
-    }
+      desc: "Every technician holds active CISSP, Microsoft 365, Cisco, or Google Cloud systems certifications.",
+    },
   ];
 
   const steps = [
     { num: "01", title: "Select Service Category", desc: "Choose onsite visit, remote support, or emergency SLA dispatch." },
     { num: "02", title: "Provide Device & Address Specs", desc: "Input device type, brand, and problem symptoms in our guest booking wizard." },
     { num: "03", title: "Receive Unique Ticket ID", desc: "Your request is registered in Azure SQL. A trackable ID is generated instantly." },
-    { num: "04", title: "Track Progress & Confirm", desc: "Monitor live status milestones from submission to technician completion." }
+    { num: "04", title: "Track Progress & Confirm", desc: "Monitor live status milestones from submission to technician completion." },
   ];
 
   const reviews = [
     { name: "Sarah Jenkins", role: "Office Operations Mgr", rating: 5, comment: "Our company router went offline. We triggered the emergency protocol, and a RemoteFix engineer arrived onsite in 12 minutes to resolve the fault. Superb service!" },
     { name: "David Chen", role: "Creative Director", rating: 5, comment: "I love that I didn't have to create another login account. I just input my details, got my Ticket ID, and tracked the remote virus scan live. Highly recommend!" },
-    { name: "Robert Miller", role: "Hotel Systems Lead", rating: 5, comment: "Excellent CCTV and WiFi access point setup. The pricing was transparent, and the technician was certified and professional." }
+    { name: "Robert Miller", role: "Hotel Systems Lead", rating: 5, comment: "Excellent CCTV and WiFi access point setup. The pricing was transparent, and the technician was certified and professional." },
   ];
 
   const faqs = [
     { q: "Do I need to sign up for an account to request a service?", a: "No. RemoteFix is built for zero friction. You can request on-site or remote support instantly as a guest. You will receive a Ticket ID to track progress." },
     { q: "How do I track my service ticket status?", a: "Go to the 'Track Service' page, enter your Ticket ID and Mobile Number. This queries our Azure SQL database in real-time to display the status and technician details." },
-    { q: "Is the remote support connection secure?", a: "Yes. Remote sessions use client-initiated codes and are fully encrypted using 256-bit AES protocols. Our technicians cannot connect without your active session consent." }
+    { q: "Is the remote support connection secure?", a: "Yes. Remote sessions use client-initiated codes and are fully encrypted using 256-bit AES protocols. Our technicians cannot connect without your active session consent." },
   ];
+
+  const orgSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "RemoteFix IT Services Platform",
+    "image": "https://remotefix.com/og-image.jpg",
+    "description": "Enterprise-grade remote and on-site IT support platform. Fast diagnostics, network configuration, and hardware repair.",
+    "telephone": "+1-800-555-7349",
+    "email": "support@remotefix.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "100 Enterprise Way, Suite 300",
+      "addressLocality": "Azure City",
+      "addressCountry": "US",
+    },
+    "openingHours": "Mo-Su 00:00-23:59",
+    "priceRange": "$$",
+  };
 
   return (
     <div className="relative min-h-screen pt-12 pb-24 overflow-hidden">
+      <SEO
+        title="RemoteFix | Instant Remote & On-Site IT Support Platform"
+        description="Get enterprise-grade remote and on-site IT support. No login required. Submit your device repair request as a guest, receive a trackable Ticket ID, and monitor progress real-time."
+        canonicalUrl="https://remotefix.com/"
+        jsonLd={orgSchema}
+      />
+      
       <AuroraBackground />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 font-body">
         
         {/* HERO SECTION */}
         <div className="text-center pt-16 pb-20 md:pt-24 md:pb-28">
@@ -121,7 +153,7 @@ export const Home: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-6 text-lg sm:text-xl text-muted font-body max-w-2xl mx-auto leading-relaxed"
           >
-            Submit your device diagnostic request as a guest. Get a secure Ticket ID instantly and track our certified technicians real-time.
+            Submit your device diagnostic request as a guest. Get a secure Ticket ID instantly and track certified technicians in real time.
           </motion.p>
 
           <motion.div
@@ -134,7 +166,7 @@ export const Home: React.FC = () => {
               variant="primary"
               size="lg"
               glow
-              className="w-full sm:w-auto flex items-center gap-2 group"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 group"
               onClick={() => navigate("/book")}
             >
               Book a Service
@@ -143,17 +175,18 @@ export const Home: React.FC = () => {
             <Button
               variant="secondary"
               size="lg"
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto flex items-center justify-center gap-2"
               onClick={() => navigate("/track")}
             >
-              Track Request
+              <Search className="w-4 h-4" />
+              Track Ticket
             </Button>
           </motion.div>
         </div>
 
         <GlowDivider color="gradient" />
 
-        {/* SERVICES SECTION */}
+        {/* SERVICES PREVIEW */}
         <div className="py-20" id="services">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold font-display text-text">Our Specialized IT Services</h2>
@@ -164,14 +197,26 @@ export const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.map((svc, idx) => (
-              <Card key={idx} className="flex flex-col items-start gap-4" glowColor="cyan">
+              <Card key={idx} className="flex flex-col items-start gap-4 hover:-translate-y-1 transition-transform" glowColor="cyan">
                 <div className="p-3 bg-primary/10 rounded-xl border border-primary/20">
                   {svc.icon}
                 </div>
                 <h3 className="text-lg font-bold font-display text-text">{svc.title}</h3>
-                <p className="text-xs text-muted leading-relaxed font-body">{svc.desc}</p>
+                <p className="text-xs text-muted leading-relaxed font-body flex-grow">{svc.desc}</p>
+                <button
+                  onClick={() => navigate(`/book?type=${svc.type}`)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer pt-2"
+                >
+                  Book this service <ArrowRight size={12} />
+                </button>
               </Card>
             ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <Button variant="outline" onClick={() => navigate("/services")}>
+              Explore Full Service Catalog
+            </Button>
           </div>
         </div>
 
@@ -188,7 +233,7 @@ export const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {valueProps.map((prop, idx) => (
-              <Card key={idx} className="flex flex-col gap-4 text-center items-center p-6">
+              <Card key={idx} className="flex flex-col gap-4 text-center items-center p-6" glowColor="none">
                 <div className="p-3 bg-primary/10 rounded-full border border-primary/20 text-primary">
                   {prop.icon}
                 </div>
@@ -212,7 +257,7 @@ export const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {steps.map((st, idx) => (
-              <div key={idx} className="flex flex-col gap-4 bg-[#111827]/20 border border-border/40 rounded-xl p-5 relative">
+              <div key={idx} className="flex flex-col gap-4 bg-[#111827]/30 border border-border/60 rounded-xl p-5 relative hover:border-primary/40 transition-colors">
                 <span className="text-3xl font-black font-display text-primary/30 absolute top-4 right-4">{st.num}</span>
                 <h3 className="text-base font-bold font-display text-text mt-4">{st.title}</h3>
                 <p className="text-xs text-muted leading-relaxed font-body">{st.desc}</p>
@@ -277,11 +322,17 @@ export const Home: React.FC = () => {
               </Card>
             ))}
           </div>
+
+          <div className="text-center mt-8">
+            <Button variant="ghost" className="text-xs text-primary hover:underline" onClick={() => navigate("/faq")}>
+              View all FAQs &rarr;
+            </Button>
+          </div>
         </div>
 
         <GlowDivider color="cyan" />
 
-        {/* CONTACT SECTION */}
+        {/* CONTACT BANNER */}
         <div className="py-20">
           <Card className="max-w-4xl mx-auto p-8 md:p-12 relative overflow-hidden" glowColor="cyan">
             <div className="absolute -bottom-[20%] -right-[10%] w-[35%] h-[35%] rounded-full bg-secondary/15 blur-[60px]" />
