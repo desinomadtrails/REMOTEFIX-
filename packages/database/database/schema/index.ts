@@ -638,3 +638,23 @@ export const notificationQueue = mssqlTable("notification_queue", {
   index("idx_notif_queue_user_id").on(table.userId),
   index("idx_notif_queue_created_at").on(table.createdAt),
 ]);
+
+// ==========================================
+// 24. FEATURE FLAGS TABLE (Database-Driven Feature Controls)
+// ==========================================
+export const featureFlags = mssqlTable("feature_flags", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  key: varchar("key", { length: 100 }).notNull().unique(), // e.g. 'ai_triage_enabled' | 'rmm_terminal_enabled'
+  name: varchar("name", { length: 150 }).notNull(),
+  description: text("description"),
+  isEnabled: bit("is_enabled").notNull().default(false),
+  targetOrgId: varchar("target_org_id", { length: 36 }).references(() => organizations.id),
+  rolloutPercentage: int("rollout_percentage").notNull().default(100),
+  scheduledEnableAt: datetime2("scheduled_enable_at"),
+  scheduledDisableAt: datetime2("scheduled_disable_at"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_feature_flags_key").on(table.key),
+  index("idx_feature_flags_target_org").on(table.targetOrgId),
+]);

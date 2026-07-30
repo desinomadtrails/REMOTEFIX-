@@ -536,3 +536,17 @@ export interface NotificationQueueItem {
   sentAt?: string | null;
   createdAt: string;
 }
+
+export interface FeatureFlag {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  isEnabled: boolean;
+  targetOrgId?: string | null;
+  rolloutPercentage: number;
+  scheduledEnableAt?: string | null;
+  scheduledDisableAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

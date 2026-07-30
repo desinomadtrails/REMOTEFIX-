@@ -279,6 +279,17 @@ export const api = {
     });
   },
 
+  // Feature Flags API
+  async getAdminFeatureFlags() {
+    return request<any>("/api/flags/admin");
+  },
+
+  async toggleFeatureFlag(id: string) {
+    return request<any>(`/api/flags/admin/${id}/toggle`, {
+      method: "PATCH",
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Building2, Palette, Clock, DollarSign, Mail, MessageSquare,
-  Users, Shield, Save, Check, ChevronDown, ChevronUp, Lock, Key, Plus, Globe, CheckCircle2
+  Users, Shield, Save, Check, ChevronDown, ChevronUp, Lock, Key, Plus, Globe, CheckCircle2, ToggleLeft, ToggleRight, Sliders
 } from "lucide-react";
 import { Card, Button, Input, Modal, Select, Badge } from "@remotefix/ui";
 import { api } from "../../api.js";
 
-// ── Local storage helpers ────────────────────────────────────────
 function useSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
     try {
@@ -19,7 +18,6 @@ function useSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
   return [value, set];
 }
 
-// ── Collapsible Section ──────────────────────────────────────────
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
@@ -38,7 +36,6 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-// ── Save Toast ───────────────────────────────────────────────────
 function SaveButton({ onClick, saved }: { onClick: () => void; saved: boolean }) {
   return (
     <Button variant="cyber" size="sm" className="mt-4 flex items-center gap-2 text-xs" onClick={onClick}>
@@ -50,7 +47,7 @@ function SaveButton({ onClick, saved }: { onClick: () => void; saved: boolean })
 export const SettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
 
-  // ── Company Profile ────────────────────────────────────────────
+  // Company Profile
   const [companyName, setCompanyName] = useSetting("rf_company_name", "RemoteFix Inc.");
   const [companyGstin, setCompanyGstin] = useSetting("rf_company_gstin", "");
   const [companyAddress, setCompanyAddress] = useSetting("rf_company_address", "100 Tech Park Drive, New Delhi - 110020");
@@ -58,7 +55,7 @@ export const SettingsPage: React.FC = () => {
   const [companyEmail, setCompanyEmail] = useSetting("rf_company_email", "support@remotefix.com");
   const [companySaved, setCompanySaved] = useState(false);
 
-  // ── SSO Provider Form State ─────────────────────────────────────
+  // SSO Form
   const [ssoModalOpen, setSsoModalOpen] = useState(false);
   const [ssoType, setSsoType] = useState<"okta" | "azure_ad" | "google_workspace" | "custom_saml">("okta");
   const [ssoIssuer, setSsoIssuer] = useState("");
@@ -68,10 +65,17 @@ export const SettingsPage: React.FC = () => {
 
   const { data: ssoData = [] } = useQuery({
     queryKey: ["admin-sso-providers"],
-    queryFn: async () => {
-      const res = await api.getSsoProviders();
-      return res.providers || [];
-    },
+    queryFn: async () => { const res = await api.getSsoProviders(); return res.providers || []; },
+  });
+
+  const { data: flagsData = [] } = useQuery({
+    queryKey: ["admin-feature-flags"],
+    queryFn: async () => { const res = await api.getAdminFeatureFlags(); return res.flags || []; },
+  });
+
+  const toggleFlagMutation = useMutation({
+    mutationFn: (flagId: string) => api.toggleFeatureFlag(flagId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
   });
 
   const createSsoMutation = useMutation({
@@ -79,11 +83,7 @@ export const SettingsPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-sso-providers"] });
       setSsoModalOpen(false);
-      setSsoIssuer("");
-      setSsoUrl("");
-      setSsoDomain("");
     },
-    onError: (err: any) => alert(err.message),
   });
 
   const saveCompany = () => { setCompanySaved(true); setTimeout(() => setCompanySaved(false), 2000); };
@@ -91,24 +91,53 @@ export const SettingsPage: React.FC = () => {
   const handleCreateSso = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ssoIssuer || !ssoUrl) return;
-    createSsoMutation.mutate({
-      providerType: ssoType,
-      issuerUrl: ssoIssuer,
-      ssoUrl: ssoUrl,
-      domain: ssoDomain || undefined,
-      certificatePem: ssoCert || undefined,
-    });
+    createSsoMutation.mutate({ providerType: ssoType, issuerUrl: ssoIssuer, ssoUrl, domain: ssoDomain || undefined, certificatePem: ssoCert || undefined });
   };
 
   return (
     <div className="space-y-6 font-body">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-2xl font-black font-display text-text">Platform Settings &amp; Enterprise SSO</h1>
-          <p className="text-xs text-muted mt-0.5">Manage company profile, GST billing options, and SAML 2.0 / Okta Single Sign-On providers.</p>
+          <h1 className="text-2xl font-black font-display text-text">Platform Settings &amp; Feature Flags</h1>
+          <p className="text-xs text-muted mt-0.5">Manage company profile, SAML SSO, and database-driven feature flags &amp; beta rollouts.</p>
         </div>
       </div>
+
+      {/* FEATURE FLAGS SECTION */}
+      <Section icon={<Sliders size={16} className="text-primary" />} title="Database-Driven Feature Flags &amp; Beta Rollouts">
+        <div className="space-y-4">
+          <p className="text-xs text-muted max-w-xl">
+            Control feature availability, kill switches, and percentage rollouts dynamically across tenant organizations without code redeployment.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {flagsData.map((flag: any) => (
+              <Card key={flag.id} glowColor="purple" className="flex justify-between items-center p-4">
+                <div className="space-y-1">
+                  <span className="font-bold text-text text-xs font-display flex items-center gap-1.5">
+                    {flag.name}
+                  </span>
+                  <p className="text-[11px] text-muted">{flag.description}</p>
+                  <div className="flex items-center gap-2 text-[10px] text-muted font-mono pt-1">
+                    <span>Key: <code className="text-primary">{flag.key}</code></span>
+                    <span>Rollout: {flag.rolloutPercentage}%</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant={flag.isEnabled ? "primary" : "outline"}
+                  size="sm"
+                  className="text-xs flex items-center gap-1 shrink-0 ml-3"
+                  onClick={() => toggleFlagMutation.mutate(flag.id)}
+                >
+                  {flag.isEnabled ? <ToggleRight size={16} className="text-white" /> : <ToggleLeft size={16} className="text-muted" />}
+                  {flag.isEnabled ? "ON" : "OFF"}
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </Section>
 
       {/* ENTERPRISE SSO CONFIGURATION SECTION */}
       <Section icon={<Lock size={16} className="text-primary" />} title="Enterprise SSO &amp; Identity Providers (SAML 2.0 / Okta / Azure AD)">

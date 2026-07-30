@@ -87,11 +87,13 @@ import { rmmRouter } from "./routes/rmm.js";
 import { ssoRouter } from "./routes/sso.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { docsRouter } from "./routes/docs.js";
+import { flagsRouter } from "./routes/flags.js";
 
 // Health Checks & Interactive API Docs
 app.route("/health", healthRouter);
 app.route("/api/health", healthRouter);
 app.route("/api/docs", docsRouter);
+app.route("/api/flags", flagsRouter);
 
 // Auth & Core Features
 app.use("/api/auth/*", authRateLimiter);
