@@ -65,6 +65,23 @@ export const assets = mssqlTable("assets", {
 ]);
 
 // ==========================================
+// 0.3 SLA POLICIES TABLE (Service Level Agreements)
+// ==========================================
+export const slaPolicies = mssqlTable("sla_policies", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 150 }).notNull(),
+  priority: varchar("priority", { length: 20 }).notNull().unique(), // 'urgent' | 'high' | 'medium' | 'low' | 'normal'
+  responseBufferMinutes: int("response_buffer_minutes").notNull(), // Target first response minutes (e.g. 15)
+  resolutionBufferMinutes: int("resolution_buffer_minutes").notNull(), // Target resolution minutes (e.g. 120)
+  escalationEmail: varchar("escalation_email", { length: 255 }),
+  isDefault: bit("is_default").notNull().default(false),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_sla_priority").on(table.priority),
+]);
+
+// ==========================================
 // 1. USERS TABLE
 // ==========================================
 export const users = mssqlTable("users", {
@@ -158,6 +175,7 @@ export const bookings = mssqlTable("bookings", {
   organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
   assetId: varchar("asset_id", { length: 36 }).references(() => assets.id),
+  slaPolicyId: varchar("sla_policy_id", { length: 36 }).references(() => slaPolicies.id),
   customerId: varchar("customer_id", { length: 36 })
     .notNull()
     .references(() => customers.id),
@@ -185,6 +203,9 @@ export const bookings = mssqlTable("bookings", {
   partsUsed: text("parts_used"),
   engineerId: varchar("engineer_id", { length: 36 }).references(() => engineers.id),
   ticketId: varchar("ticket_id", { length: 50 }).unique(),
+  firstResponseDueAt: datetime2("first_response_due_at"),
+  resolutionDueAt: datetime2("resolution_due_at"),
+  isSlaBreached: bit("is_sla_breached").notNull().default(false),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
   updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
 }, (table) => [
@@ -195,6 +216,7 @@ export const bookings = mssqlTable("bookings", {
   index("idx_bookings_phone").on(table.phone),
   index("idx_bookings_org_id").on(table.organizationId),
   index("idx_bookings_asset_id").on(table.assetId),
+  index("idx_bookings_sla_breached").on(table.isSlaBreached),
   index("idx_bookings_created_at").on(table.createdAt),
 ]);
 
@@ -260,6 +282,7 @@ export const tickets = mssqlTable("tickets", {
   organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
   assetId: varchar("asset_id", { length: 36 }).references(() => assets.id),
+  slaPolicyId: varchar("sla_policy_id", { length: 36 }).references(() => slaPolicies.id),
   bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id),
   customerId: varchar("customer_id", { length: 36 })
     .notNull()
@@ -269,6 +292,9 @@ export const tickets = mssqlTable("tickets", {
   priority: varchar("priority", { length: 20 }).notNull().default("medium"), // 'low' | 'medium' | 'high' | 'urgent'
   status: varchar("status", { length: 20 }).notNull().default("open"), // 'open' | 'in_progress' | 'resolved' | 'closed'
   engineerId: varchar("engineer_id", { length: 36 }).references(() => engineers.id),
+  firstResponseDueAt: datetime2("first_response_due_at"),
+  resolutionDueAt: datetime2("resolution_due_at"),
+  isSlaBreached: bit("is_sla_breached").notNull().default(false),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
   updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
 }, (table) => [
@@ -277,6 +303,7 @@ export const tickets = mssqlTable("tickets", {
   index("idx_tickets_status").on(table.status),
   index("idx_tickets_org_id").on(table.organizationId),
   index("idx_tickets_asset_id").on(table.assetId),
+  index("idx_tickets_sla_breached").on(table.isSlaBreached),
 ]);
 
 // ==========================================

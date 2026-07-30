@@ -61,6 +61,16 @@ export const AssetCreateSchema = z.object({
 });
 export type AssetCreateInput = z.infer<typeof AssetCreateSchema>;
 
+export const SlaPolicyCreateSchema = z.object({
+  name: z.string().min(2, "SLA policy name is required"),
+  priority: z.enum(["urgent", "high", "medium", "low", "normal"]),
+  responseBufferMinutes: z.number().int().min(1, "Response target must be at least 1 minute"),
+  resolutionBufferMinutes: z.number().int().min(1, "Resolution target must be at least 1 minute"),
+  escalationEmail: z.string().email().optional(),
+  isDefault: z.boolean().default(false),
+});
+export type SlaPolicyCreateInput = z.infer<typeof SlaPolicyCreateSchema>;
+
 export const DepartmentCreateSchema = z.object({
   organizationId: z.string().uuid("Invalid organization ID"),
   name: z.string().min(2, "Department name is required"),
@@ -373,6 +383,18 @@ export interface Asset {
   purchaseDate?: string | null;
   warrantyExpiryDate?: string | null;
   notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SlaPolicy {
+  id: string;
+  name: string;
+  priority: string;
+  responseBufferMinutes: number;
+  resolutionBufferMinutes: number;
+  escalationEmail?: string | null;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -18,6 +18,7 @@ import { NotificationBell } from "./notifications/NotificationsPage.js";
 const OverviewPage    = lazy(() => import("./overview/OverviewPage.js").then(m => ({ default: m.OverviewPage })));
 const OrganizationsPage = lazy(() => import("./organizations/OrganizationsPage.js").then(m => ({ default: m.OrganizationsPage })));
 const AssetsPage      = lazy(() => import("./assets/AssetsPage.js").then(m => ({ default: m.AssetsPage })));
+const SlaPage         = lazy(() => import("./sla/SlaPage.js").then(m => ({ default: m.SlaPage })));
 const BookingsPage    = lazy(() => import("./bookings/BookingsPage.js").then(m => ({ default: m.BookingsPage })));
 const CustomersPage   = lazy(() => import("./customers/CustomersPage.js").then(m => ({ default: m.CustomersPage })));
 const TechniciansPage = lazy(() => import("./technicians/TechniciansPage.js").then(m => ({ default: m.TechniciansPage })));
@@ -31,7 +32,7 @@ const SettingsPage    = lazy(() => import("./settings/SettingsPage.js").then(m =
 
 // ── Tab definition ────────────────────────────────────────────────
 type TabKey =
-  | "overview" | "organizations" | "assets" | "bookings" | "customers" | "technicians"
+  | "overview" | "organizations" | "assets" | "sla" | "bookings" | "customers" | "technicians"
   | "inventory" | "billing" | "reports" | "notifications"
   | "settings" | "services" | "logs";
 
@@ -39,6 +40,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: "overview",       label: "Analytics",        icon: <LayoutDashboard size={14} /> },
   { key: "organizations",  label: "Organizations",    icon: <Building2 size={14} /> },
   { key: "assets",         label: "Assets ITAM",      icon: <Package size={14} /> },
+  { key: "sla",            label: "SLA Policies",     icon: <Clock size={14} /> },
   { key: "bookings",       label: "Booking Queue",     icon: <Calendar size={14} /> },
   { key: "customers",      label: "Customers",         icon: <Users size={14} /> },
   { key: "technicians",    label: "Technicians",       icon: <Wrench size={14} /> },
@@ -228,6 +230,7 @@ export const Dashboard: React.FC = () => {
           {activeTab === "overview"       && <OverviewPage />}
           {activeTab === "organizations"  && <OrganizationsPage />}
           {activeTab === "assets"         && <AssetsPage />}
+          {activeTab === "sla"            && <SlaPage />}
           {activeTab === "bookings"       && <BookingsPage />}
           {activeTab === "customers"      && <CustomersPage />}
           {activeTab === "technicians"    && <TechniciansPage />}

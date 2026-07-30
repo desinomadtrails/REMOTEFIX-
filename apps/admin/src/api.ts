@@ -160,6 +160,24 @@ export const api = {
     });
   },
 
+  // SLA Policies API
+  async getSlaPolicies() {
+    return request<any>("/api/admin/sla");
+  },
+
+  async createSlaPolicy(body: any) {
+    return request<any>("/api/admin/sla", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async evaluateSlaBreaches() {
+    return request<any>("/api/admin/sla/evaluate", {
+      method: "POST",
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");
