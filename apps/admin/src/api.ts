@@ -202,6 +202,21 @@ export const api = {
     });
   },
 
+  // AI Intelligence API
+  async aiTriage(subject: string, description: string) {
+    return request<any>("/api/ai/triage", {
+      method: "POST",
+      body: JSON.stringify({ subject, description }),
+    });
+  },
+
+  async aiDiagnose(subject: string, description: string, deviceType?: string) {
+    return request<any>("/api/ai/diagnose", {
+      method: "POST",
+      body: JSON.stringify({ subject, description, deviceType }),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search, SlidersHorizontal, CheckSquare, Square,
-  ChevronLeft, ChevronRight, Badge as BadgeIcon, Wrench
+  ChevronLeft, ChevronRight, Badge as BadgeIcon, Wrench, Bot, Sparkles, AlertCircle, CheckCircle2, Zap
 } from "lucide-react";
-import { Card, Badge, Button, Input } from "@remotefix/ui";
+import { Card, Badge, Button, Input, Modal } from "@remotefix/ui";
 import { api } from "../../api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
 import { TechnicianWorkflowModal } from "../technicians/TechnicianWorkflowModal.js";
@@ -26,6 +26,11 @@ export const BookingsPage: React.FC = () => {
   const [bulkAction, setBulkAction] = useState("");
   const [workflowBooking, setWorkflowBooking] = useState<any>(null);
 
+  // AI Copilot Modal State
+  const [aiBooking, setAiBooking] = useState<any>(null);
+  const [aiDiagnosis, setAiDiagnosis] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   const { data: bookingsData, isLoading } = useQuery({
     queryKey: ["admin-bookings"],
     queryFn: async () => { const r = await api.getBookings(); return r.bookings || []; },
@@ -42,6 +47,20 @@ export const BookingsPage: React.FC = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-bookings"] }),
   });
 
+  const handleRunAiDiagnose = async (b: any) => {
+    setAiBooking(b);
+    setAiLoading(true);
+    setAiDiagnosis(null);
+    try {
+      const res = await api.aiDiagnose(b.type || "IT Incident", b.problemDescription || "System Issue", b.deviceType);
+      setAiDiagnosis(res.diagnosis);
+    } catch (err: any) {
+      alert("AI Diagnosis failed: " + err.message);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const filtered = (bookingsData || []).filter((b: any) => {
     const sl = searchTerm.toLowerCase();
     return (
@@ -52,70 +71,58 @@ export const BookingsPage: React.FC = () => {
     );
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
   const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  useEffect(() => setCurrentPage(1), [searchTerm, statusFilter, priorityFilter, typeFilter]);
 
   const toggleAll = () => setSelectedIds(selectedIds.length === paginated.length ? [] : paginated.map((b: any) => b.id));
   const toggleOne = (id: string) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const applyBulk = async () => {
-    if (!selectedIds.length || !bulkAction) return;
-    const statusMap: Record<string, { status: string; engineerId?: string }> = {
-      complete: { status: "completed" },
-      cancel: { status: "cancelled" },
-    };
-    const target = statusMap[bulkAction];
-    if (!target) return;
-    for (const id of selectedIds) await updateMutation.mutateAsync({ id, ...target });
-    setSelectedIds([]); setBulkAction("");
+  const handleBulkApply = () => {
+    if (!bulkAction || selectedIds.length === 0) return;
+    selectedIds.forEach(id => updateMutation.mutate({ id, status: bulkAction }));
+    setSelectedIds([]);
+    setBulkAction("");
   };
 
-  if (isLoading) return <div className="space-y-4">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-28" />)}</div>;
+  if (isLoading) return <div className="space-y-4 font-body"><div className="grid grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16" />)}</div><Skeleton className="h-96" /></div>;
 
   return (
-    <div className="space-y-5 font-body">
-      {/* Filters */}
-      <Card glowColor="none" className="p-5">
-        <div className="flex items-center gap-2 text-sm font-bold font-display text-text uppercase tracking-wider mb-4">
-          <SlidersHorizontal size={15} className="text-secondary" /> Filters &amp; Search
+    <div className="space-y-6 font-body">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <h1 className="text-2xl font-black font-display text-text">Booking Queue &amp; Incident Dispatch</h1>
+          <p className="text-xs text-muted mt-0.5 font-body">Manage service requests, assign field engineers, and run AI Incident Diagnosis.</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="relative">
-            <Input placeholder="Ticket, name, email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 text-xs" />
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
-          </div>
-          {[
-            { value: statusFilter, setter: setStatusFilter, opts: [["all","All States"],["pending","Pending"],["assigned","Assigned"],["in_progress","In Progress"],["completed","Completed"],["cancelled","Cancelled"]] },
-            { value: priorityFilter, setter: setPriorityFilter, opts: [["all","All Priorities"],["normal","Normal"],["high","High"],["emergency","Emergency"]] },
-            { value: typeFilter, setter: setTypeFilter, opts: [["all","All Types"],["remote","Remote"],["onsite","On-Site"],["emergency","Emergency"],["amc","AMC"]] },
-          ].map((sel, i) => (
-            <select key={i} className="w-full h-10 px-3 bg-[#111827]/60 border border-border text-xs text-text rounded-lg outline-none" value={sel.value} onChange={e => sel.setter(e.target.value)}>
-              {sel.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          ))}
+      </div>
+
+      {/* Filters Bar */}
+      <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-card/40 p-4 rounded-xl border border-border/40">
+        <div className="relative w-full md:w-72">
+          <Input placeholder="Search ticket ID, customer, issue..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-9 text-xs" />
+          <Search className="absolute left-3 top-3.5 text-muted w-3.5 h-3.5" />
         </div>
 
-        {paginated.length > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4 pt-4 border-t border-border/20">
-            <button onClick={toggleAll} className="flex items-center gap-2 text-xs text-muted hover:text-text cursor-pointer">
-              {selectedIds.length === paginated.length ? <CheckSquare size={16} className="text-secondary" /> : <Square size={16} />}
-              Select page ({selectedIds.length} selected)
-            </button>
-            <div className="flex items-center gap-2">
-              <select className="bg-[#111827]/60 border border-border text-xs text-text rounded p-1.5 outline-none" value={bulkAction} onChange={e => setBulkAction(e.target.value)}>
-                <option value="">-- Bulk Action --</option>
-                <option value="complete">Mark Completed</option>
-                <option value="cancel">Mark Cancelled</option>
-              </select>
-              <Button variant="cyber" size="sm" className="text-xs py-1 px-3" onClick={applyBulk} disabled={!selectedIds.length || !bulkAction}>Apply</Button>
-            </div>
-          </div>
-        )}
-      </Card>
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <select className="bg-[#111827]/80 border border-border/60 text-xs text-text rounded-lg px-2.5 py-2 outline-none" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
 
-      {/* Booking cards */}
+          <select className="bg-[#111827]/80 border border-border/60 text-xs text-text rounded-lg px-2.5 py-2 outline-none" value={priorityFilter} onChange={e => { setPriorityFilter(e.target.value); setCurrentPage(1); }}>
+            <option value="all">All Priorities</option>
+            <option value="emergency">Emergency</option>
+            <option value="high">High Priority</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Bookings Queue */}
       {paginated.length === 0 ? (
         <Card className="text-center py-16 text-muted">
           <Search size={32} className="mx-auto mb-3 opacity-20" />
@@ -143,7 +150,6 @@ export const BookingsPage: React.FC = () => {
                     <div>Scheduled: <span className="text-text">{b.preferredDate} · {b.preferredTime}</span></div>
                     {b.address && <div className="text-muted truncate max-w-md">📍 {b.address}</div>}
                     <div className="text-muted truncate max-w-lg">{b.problemDescription}</div>
-                    {b.remarks && <div className="text-primary text-[10px]">Remarks: {b.remarks}</div>}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
@@ -157,15 +163,15 @@ export const BookingsPage: React.FC = () => {
                       <option key={eng.id} value={eng.id}>{eng.fullName}</option>
                     ))}
                   </select>
-                  <Button variant="cyber" size="sm" className="text-[10px] py-1 flex items-center justify-center gap-1" onClick={() => setWorkflowBooking(b)}>
-                    <Wrench size={11} /> Field Workflow
-                  </Button>
-                  {!["completed","cancelled"].includes(b.status) && (
-                    <div className="flex gap-1.5">
-                      <Button variant="ghost" size="sm" className="text-[10px] py-1 text-success hover:bg-success/10 flex-1" onClick={() => updateMutation.mutate({ id: b.id, status: "completed" })}>Complete</Button>
-                      <Button variant="ghost" size="sm" className="text-[10px] py-1 text-danger hover:bg-danger/10 flex-1" onClick={() => updateMutation.mutate({ id: b.id, status: "cancelled" })}>Cancel</Button>
-                    </div>
-                  )}
+
+                  <div className="flex items-center gap-1.5">
+                    <Button variant="outline" size="sm" className="text-[10px] py-1 flex items-center justify-center gap-1 text-primary border-primary/30 flex-1" onClick={() => handleRunAiDiagnose(b)}>
+                      <Sparkles size={12} /> AI Copilot
+                    </Button>
+                    <Button variant="cyber" size="sm" className="text-[10px] py-1 flex items-center justify-center gap-1 flex-1" onClick={() => setWorkflowBooking(b)}>
+                      <Wrench size={11} /> Field Workflow
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );
@@ -173,19 +179,54 @@ export const BookingsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center text-xs text-muted">
-          <span>{filtered.length} total · Page {currentPage} of {totalPages}</span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="p-2 h-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-              <ChevronLeft size={15} />
-            </Button>
-            <Button variant="outline" size="sm" className="p-2 h-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-              <ChevronRight size={15} />
-            </Button>
+      {/* AI DIAGNOSIS MODAL */}
+      {aiBooking && (
+        <Modal isOpen={!!aiBooking} onClose={() => setAiBooking(null)} title={`AI Copilot Diagnosis — #${aiBooking.ticketId || "GUEST"}`}>
+          <div className="space-y-4 font-body py-1 text-xs">
+            <div className="p-3 bg-secondary/10 border border-secondary/20 rounded-xl space-y-1">
+              <span className="text-[10px] text-secondary font-bold uppercase tracking-wider block font-display flex items-center gap-1">
+                <Bot size={13} /> Customer Incident Report
+              </span>
+              <p className="text-text font-semibold">{aiBooking.problemDescription}</p>
+            </div>
+
+            {aiLoading ? (
+              <div className="py-8 text-center space-y-2">
+                <Sparkles size={28} className="mx-auto text-primary animate-spin" />
+                <p className="text-xs text-muted font-display">Analyzing hardware symptoms &amp; generating AI resolution script...</p>
+              </div>
+            ) : aiDiagnosis ? (
+              <div className="space-y-4">
+                <div className="p-3 bg-card/60 border border-border/40 rounded-xl space-y-1">
+                  <span className="text-[10px] text-muted uppercase font-bold block">Predicted Root Cause</span>
+                  <span className="text-sm font-bold font-display text-primary">{aiDiagnosis.rootCauseSummary}</span>
+                  <span className="text-[10px] text-muted block mt-1">Est. Repair Time: {aiDiagnosis.estimatedFixMinutes} mins</span>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] text-muted uppercase font-bold block">Probable Causes</span>
+                  <ul className="list-disc pl-4 space-y-1 text-muted">
+                    {aiDiagnosis.probableCauses.map((c: string, idx: number) => (
+                      <li key={idx}><span className="text-text">{c}</span></li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] text-muted uppercase font-bold block">Recommended Repair Script for Technicians</span>
+                  <div className="p-3 bg-black/40 border border-border/40 rounded-xl space-y-2 font-mono text-[11px]">
+                    {aiDiagnosis.recommendedSteps.map((step: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <span className="text-secondary font-bold shrink-0">{idx + 1}.</span>
+                        <span className="text-text">{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Technician Field Workflow Modal */}
