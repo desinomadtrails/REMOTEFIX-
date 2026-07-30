@@ -61,6 +61,26 @@ export const BookingsPage: React.FC = () => {
     }
   };
 
+  const handleSmartAssign = async (b: any) => {
+    if (!engineersData || engineersData.length === 0) {
+      alert("No engineers available for AI auto-assignment.");
+      return;
+    }
+    try {
+      const res = await api.aiSmartAssign(b.problemDescription || "IT Support", b.type || "remote", engineersData);
+      if (res.recommendation && res.recommendation.recommendedEngineerId) {
+        updateMutation.mutate({
+          id: b.id,
+          status: "assigned",
+          engineerId: res.recommendation.recommendedEngineerId,
+        });
+        alert(`AI Smart Assigned to ${res.recommendation.engineerName} (${res.recommendation.matchScore}% Match - ${res.recommendation.matchingSpeciality})`);
+      }
+    } catch (err: any) {
+      alert("AI Auto-Assign failed: " + err.message);
+    }
+  };
+
   const filtered = (bookingsData || []).filter((b: any) => {
     const sl = searchTerm.toLowerCase();
     return (
@@ -153,16 +173,22 @@ export const BookingsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
-                  <select
-                    className="bg-[#111827]/60 border border-border text-[11px] text-text rounded p-1.5 outline-none w-full"
-                    value={b.engineerId || ""}
-                    onChange={e => updateMutation.mutate({ id: b.id, status: e.target.value ? "assigned" : "pending", engineerId: e.target.value || undefined })}
-                  >
-                    <option value="">-- Unassigned --</option>
-                    {(engineersData || []).map((eng: any) => (
-                      <option key={eng.id} value={eng.id}>{eng.fullName}</option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      className="bg-[#111827]/60 border border-border text-[11px] text-text rounded p-1.5 outline-none flex-grow"
+                      value={b.engineerId || ""}
+                      onChange={e => updateMutation.mutate({ id: b.id, status: e.target.value ? "assigned" : "pending", engineerId: e.target.value || undefined })}
+                    >
+                      <option value="">-- Unassigned --</option>
+                      {(engineersData || []).map((eng: any) => (
+                        <option key={eng.id} value={eng.id}>{eng.fullName}</option>
+                      ))}
+                    </select>
+
+                    <Button variant="ghost" size="sm" className="text-[10px] py-1 text-secondary border border-secondary/30 hover:bg-secondary/10 shrink-0" onClick={() => handleSmartAssign(b)} title="AI Smart Auto-Assign">
+                      <Zap size={12} /> Smart Assign
+                    </Button>
+                  </div>
 
                   <div className="flex items-center gap-1.5">
                     <Button variant="outline" size="sm" className="text-[10px] py-1 flex items-center justify-center gap-1 text-primary border-primary/30 flex-1" onClick={() => handleRunAiDiagnose(b)}>

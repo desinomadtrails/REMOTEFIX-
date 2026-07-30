@@ -217,6 +217,13 @@ export const api = {
     });
   },
 
+  async aiSmartAssign(problemDescription: string, type: string, engineers: any[]) {
+    return request<any>("/api/ai/smart-assign", {
+      method: "POST",
+      body: JSON.stringify({ problemDescription, type, engineers }),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

@@ -1,6 +1,6 @@
 /**
  * RemoteFix AI Intelligence Service Engine
- * Provides AI Ticket Classification, Root Cause Diagnosis, and Technician Troubleshooting Scripts.
+ * Provides AI Ticket Classification, Root Cause Diagnosis, AI Knowledge Base Search, and Smart Technician Auto-Assignment.
  */
 
 export interface AiTriageResult {
@@ -16,6 +16,14 @@ export interface AiDiagnosisResult {
   recommendedSteps: string[];
   estimatedFixMinutes: number;
   suggestedParts?: string[];
+}
+
+export interface AiSmartAssignResult {
+  recommendedEngineerId: string;
+  engineerName: string;
+  matchScore: number;
+  matchingSpeciality: string;
+  reasoning: string;
 }
 
 /** Auto-classifies ticket subject and description into category and priority */
@@ -95,7 +103,6 @@ export async function diagnoseIncident(subject: string, description: string, dev
     };
   }
 
-  // Default General AI Diagnostic Response
   return {
     rootCauseSummary: "System Performance Bottleneck or Software Dependency Conflict",
     probableCauses: [
@@ -109,5 +116,55 @@ export async function diagnoseIncident(subject: string, description: string, dev
       "Verify system restore points and review Application Event Logs for crash IDs.",
     ],
     estimatedFixMinutes: 30,
+  };
+}
+
+/** AI Smart Auto-Assign Algorithm matching engineer skills & workload */
+export async function smartAssignTechnician(ticketDetails: { problemDescription: string; type?: string }, engineersList: any[]): Promise<AiSmartAssignResult | null> {
+  if (!engineersList || engineersList.length === 0) return null;
+
+  const text = (ticketDetails.problemDescription || "").toLowerCase();
+  
+  // Filter available engineers
+  const availableEngineers = engineersList.filter((eng) => eng.status === "available" || !eng.status);
+  const candidates = availableEngineers.length > 0 ? availableEngineers : engineersList;
+
+  let bestMatch = candidates[0];
+  let highestScore = 0;
+  let matchingSkill = "General IT Support";
+
+  for (const eng of candidates) {
+    let score = 70; // baseline
+    const specs = Array.isArray(eng.specialities) ? eng.specialities.join(" ").toLowerCase() : (eng.specialities || "").toLowerCase();
+
+    if (text.includes("network") || text.includes("wifi") || text.includes("router")) {
+      if (specs.includes("network") || specs.includes("cisco") || specs.includes("router")) {
+        score += 25;
+        matchingSkill = "Network Engineering";
+      }
+    } else if (text.includes("hardware") || text.includes("ram") || text.includes("laptop") || text.includes("power")) {
+      if (specs.includes("hardware") || specs.includes("laptop") || specs.includes("repair")) {
+        score += 25;
+        matchingSkill = "Hardware Diagnostics";
+      }
+    } else if (text.includes("security") || text.includes("virus") || text.includes("firewall")) {
+      if (specs.includes("security") || specs.includes("cyber") || specs.includes("firewall")) {
+        score += 25;
+        matchingSkill = "Cyber Security";
+      }
+    }
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestMatch = eng;
+    }
+  }
+
+  return {
+    recommendedEngineerId: bestMatch.id,
+    engineerName: bestMatch.fullName || bestMatch.phone || "Assigned Engineer",
+    matchScore: Math.min(99, highestScore),
+    matchingSpeciality: matchingSkill,
+    reasoning: `Matched based on skill compatibility (${matchingSkill}) and engineer availability.`,
   };
 }

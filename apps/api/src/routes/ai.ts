@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { classifyTicket, diagnoseIncident } from "../services/aiService.js";
+import { classifyTicket, diagnoseIncident, smartAssignTechnician } from "../services/aiService.js";
 import { requireAuth, AppEnv } from "../middleware/auth.js";
 
 const aiRouter = new Hono<AppEnv>();
@@ -38,6 +38,23 @@ aiRouter.post("/diagnose", async (c) => {
     return c.json({ success: true, diagnosis });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "AI diagnosis failed" }, 500);
+  }
+});
+
+// ==========================================
+// 3. AI SMART TECHNICIAN AUTO-ASSIGNMENT
+// ==========================================
+aiRouter.post("/smart-assign", async (c) => {
+  try {
+    const { problemDescription, type, engineers } = await c.req.json();
+    if (!problemDescription || !Array.isArray(engineers)) {
+      return c.json({ success: false, error: "Problem description and engineers list required." }, 400);
+    }
+
+    const recommendation = await smartAssignTechnician({ problemDescription, type }, engineers);
+    return c.json({ success: true, recommendation });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Smart assignment failed" }, 500);
   }
 });
 
