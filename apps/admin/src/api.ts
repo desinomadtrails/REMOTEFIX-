@@ -247,6 +247,18 @@ export const api = {
     });
   },
 
+  // Enterprise SSO API
+  async getSsoProviders() {
+    return request<any>("/api/admin/sso");
+  },
+
+  async createSsoProvider(body: any) {
+    return request<any>("/api/admin/sso", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

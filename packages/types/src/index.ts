@@ -476,3 +476,16 @@ export interface RmmScript {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface SsoProvider {
+  id: string;
+  organizationId?: string | null;
+  providerType: "okta" | "azure_ad" | "google_workspace" | "custom_saml";
+  issuerUrl: string;
+  ssoUrl: string;
+  certificatePem?: string | null;
+  domain?: string | null;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

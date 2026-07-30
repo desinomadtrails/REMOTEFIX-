@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Building2, Palette, Clock, DollarSign, Mail, MessageSquare,
-  Users, Shield, Save, Check, ChevronDown, ChevronUp
+  Users, Shield, Save, Check, ChevronDown, ChevronUp, Lock, Key, Plus, Globe, CheckCircle2
 } from "lucide-react";
-import { Card, Button, Input } from "@remotefix/ui";
+import { Card, Button, Input, Modal, Select, Badge } from "@remotefix/ui";
+import { api } from "../../api.js";
 
 // ── Local storage helpers ────────────────────────────────────────
 function useSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
@@ -21,7 +23,7 @@ function useSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <Card glowColor="none" className="p-0 overflow-hidden">
+    <Card glowColor="none" className="p-0 overflow-hidden font-body">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between p-5 cursor-pointer hover:bg-white/3 transition-colors"
@@ -45,9 +47,9 @@ function SaveButton({ onClick, saved }: { onClick: () => void; saved: boolean })
   );
 }
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
 export const SettingsPage: React.FC = () => {
+  const queryClient = useQueryClient();
+
   // ── Company Profile ────────────────────────────────────────────
   const [companyName, setCompanyName] = useSetting("rf_company_name", "RemoteFix Inc.");
   const [companyGstin, setCompanyGstin] = useSetting("rf_company_gstin", "");
@@ -56,198 +58,137 @@ export const SettingsPage: React.FC = () => {
   const [companyEmail, setCompanyEmail] = useSetting("rf_company_email", "support@remotefix.com");
   const [companySaved, setCompanySaved] = useState(false);
 
-  // ── Branding ───────────────────────────────────────────────────
-  const [logoUrl, setLogoUrl] = useSetting("rf_logo_url", "");
-  const [primaryColor, setPrimaryColor] = useSetting("rf_primary_color", "#8B5CF6");
-  const [accentColor, setAccentColor] = useSetting("rf_accent_color", "#06b6d4");
-  const [brandSaved, setBrandSaved] = useState(false);
+  // ── SSO Provider Form State ─────────────────────────────────────
+  const [ssoModalOpen, setSsoModalOpen] = useState(false);
+  const [ssoType, setSsoType] = useState<"okta" | "azure_ad" | "google_workspace" | "custom_saml">("okta");
+  const [ssoIssuer, setSsoIssuer] = useState("");
+  const [ssoUrl, setSsoUrl] = useState("");
+  const [ssoDomain, setSsoDomain] = useState("");
+  const [ssoCert, setSsoCert] = useState("");
 
-  // ── Business Hours ─────────────────────────────────────────────
-  const defaultHours = DAYS.map(d => ({ day: d, open: d !== "Sunday", from: "09:00", to: "18:00" }));
-  const [businessHours, setBusinessHours] = useSetting("rf_business_hours", defaultHours);
-  const [hoursSaved, setHoursSaved] = useState(false);
+  const { data: ssoData = [] } = useQuery({
+    queryKey: ["admin-sso-providers"],
+    queryFn: async () => {
+      const res = await api.getSsoProviders();
+      return res.providers || [];
+    },
+  });
 
-  const updateHour = (idx: number, field: "open" | "from" | "to", value: any) => {
-    const updated = [...businessHours] as any[];
-    updated[idx] = { ...updated[idx], [field]: value };
-    setBusinessHours(updated as any);
+  const createSsoMutation = useMutation({
+    mutationFn: (data: any) => api.createSsoProvider(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-sso-providers"] });
+      setSsoModalOpen(false);
+      setSsoIssuer("");
+      setSsoUrl("");
+      setSsoDomain("");
+    },
+    onError: (err: any) => alert(err.message),
+  });
+
+  const saveCompany = () => { setCompanySaved(true); setTimeout(() => setCompanySaved(false), 2000); };
+
+  const handleCreateSso = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ssoIssuer || !ssoUrl) return;
+    createSsoMutation.mutate({
+      providerType: ssoType,
+      issuerUrl: ssoIssuer,
+      ssoUrl: ssoUrl,
+      domain: ssoDomain || undefined,
+      certificatePem: ssoCert || undefined,
+    });
   };
 
-  // ── Service Charges ────────────────────────────────────────────
-  const [calloutFee, setCalloutFee] = useSetting("rf_callout_fee", "50.00");
-  const [emergencySurcharge, setEmergencySurcharge] = useSetting("rf_emergency_surcharge", "25.00");
-  const [gstRate, setGstRate] = useSetting("rf_gst_rate", "18");
-  const [chargesSaved, setChargesSaved] = useState(false);
-
-  // ── Email Config ───────────────────────────────────────────────
-  const [smtpHost, setSmtpHost] = useSetting("rf_smtp_host", "");
-  const [smtpPort, setSmtpPort] = useSetting("rf_smtp_port", "587");
-  const [smtpUser, setSmtpUser] = useSetting("rf_smtp_user", "");
-  const [smtpPass, setSmtpPass] = useSetting("rf_smtp_pass", "");
-  const [smtpFromName, setSmtpFromName] = useSetting("rf_smtp_from_name", "RemoteFix Support");
-  const [emailSaved, setEmailSaved] = useState(false);
-
-  // ── SMS Config ─────────────────────────────────────────────────
-  const [twilioSid, setTwilioSid] = useSetting("rf_twilio_sid", "");
-  const [twilioToken, setTwilioToken] = useSetting("rf_twilio_token", "");
-  const [twilioFrom, setTwilioFrom] = useSetting("rf_twilio_from", "");
-  const [smsSaved, setSmsSaved] = useState(false);
-
-  function flash(setter: React.Dispatch<React.SetStateAction<boolean>>) {
-    setter(true);
-    setTimeout(() => setter(false), 2000);
-  }
-
   return (
-    <div className="space-y-4 font-body max-w-3xl">
-      <div className="mb-6">
-        <h2 className="text-xl font-black font-display text-text">Platform Settings</h2>
-        <p className="text-xs text-muted mt-1">Configure company profile, branding, hours, charges, and integrations.</p>
+    <div className="space-y-6 font-body">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <h1 className="text-2xl font-black font-display text-text">Platform Settings &amp; Enterprise SSO</h1>
+          <p className="text-xs text-muted mt-0.5">Manage company profile, GST billing options, and SAML 2.0 / Okta Single Sign-On providers.</p>
+        </div>
       </div>
 
-      {/* Company Profile */}
-      <Section icon={<Building2 size={15} className="text-secondary" />} title="Company Profile">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Company Name" value={companyName as string} onChange={(e: any) => setCompanyName(e.target.value)} />
-          <Input label="GSTIN Number" value={companyGstin as string} onChange={(e: any) => setCompanyGstin(e.target.value)} placeholder="22AAAAA0000A1Z5" />
-          <Input label="Support Email" type="email" value={companyEmail as string} onChange={(e: any) => setCompanyEmail(e.target.value)} />
-          <Input label="Support Phone" value={companyPhone as string} onChange={(e: any) => setCompanyPhone(e.target.value)} />
-          <div className="md:col-span-2">
-            <label className="text-xs font-semibold text-muted font-display block mb-1">Registered Address</label>
-            <textarea rows={2} value={companyAddress as string} onChange={(e) => setCompanyAddress(e.target.value)} className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary resize-none" />
+      {/* ENTERPRISE SSO CONFIGURATION SECTION */}
+      <Section icon={<Lock size={16} className="text-primary" />} title="Enterprise SSO &amp; Identity Providers (SAML 2.0 / Okta / Azure AD)">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted max-w-xl">
+              Enable corporate Single Sign-On (SSO) for Okta, Azure AD (Microsoft Entra ID), or Google Workspace to enforce enterprise SAML authentication.
+            </p>
+            <Button variant="primary" glow size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setSsoModalOpen(true)}>
+              <Plus size={14} /> Configure IdP Provider
+            </Button>
           </div>
-        </div>
-        <SaveButton saved={companySaved} onClick={() => flash(setCompanySaved)} />
-      </Section>
 
-      {/* Branding */}
-      <Section icon={<Palette size={15} className="text-secondary" />} title="Branding & Appearance">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Logo URL" value={logoUrl as string} onChange={(e: any) => setLogoUrl(e.target.value)} placeholder="https://yoursite.com/logo.png" />
-          <div />
-          <div>
-            <label className="text-xs font-semibold text-muted font-display block mb-1">Primary Color</label>
-            <div className="flex items-center gap-2">
-              <input type="color" value={primaryColor as string} onChange={e => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded border border-border cursor-pointer bg-transparent" />
-              <span className="text-xs text-muted font-mono">{primaryColor as string}</span>
+          {ssoData.length === 0 ? (
+            <div className="p-6 bg-black/20 border border-border/40 rounded-xl text-center text-xs text-muted">
+              <Shield size={32} className="mx-auto mb-2 text-muted/30" />
+              <span>No SSO Identity Providers configured. Click <strong>Configure IdP Provider</strong> to onboard Okta or Azure AD.</span>
             </div>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-muted font-display block mb-1">Accent Color</label>
-            <div className="flex items-center gap-2">
-              <input type="color" value={accentColor as string} onChange={e => setAccentColor(e.target.value)} className="w-10 h-10 rounded border border-border cursor-pointer bg-transparent" />
-              <span className="text-xs text-muted font-mono">{accentColor as string}</span>
-            </div>
-          </div>
-        </div>
-        {(logoUrl as string) && (
-          <div className="mt-3">
-            <label className="text-[10px] text-muted uppercase font-semibold block mb-1">Logo Preview</label>
-            <img src={logoUrl as string} alt="Logo preview" className="h-10 object-contain bg-white/5 rounded p-1" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
-          </div>
-        )}
-        <SaveButton saved={brandSaved} onClick={() => flash(setBrandSaved)} />
-      </Section>
-
-      {/* Business Hours */}
-      <Section icon={<Clock size={15} className="text-secondary" />} title="Business Hours">
-        <div className="flex flex-col gap-2">
-          {(businessHours as any[]).map((h: any, i: number) => (
-            <div key={h.day} className="flex items-center gap-3 text-xs">
-              <span className="w-24 text-muted font-semibold shrink-0">{h.day}</span>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" checked={h.open} onChange={e => updateHour(i, "open", e.target.checked)} className="accent-purple-500" />
-                <span className={h.open ? "text-text" : "text-muted"}>Open</span>
-              </label>
-              {h.open && (
-                <>
-                  <input type="time" value={h.from} onChange={e => updateHour(i, "from", e.target.value)} className="px-2 py-1 bg-[#111827]/60 border border-border text-text rounded outline-none text-xs" />
-                  <span className="text-muted">to</span>
-                  <input type="time" value={h.to} onChange={e => updateHour(i, "to", e.target.value)} className="px-2 py-1 bg-[#111827]/60 border border-border text-text rounded outline-none text-xs" />
-                </>
-              )}
-              {!h.open && <span className="text-muted italic text-[10px]">Closed</span>}
-            </div>
-          ))}
-        </div>
-        <SaveButton saved={hoursSaved} onClick={() => flash(setHoursSaved)} />
-      </Section>
-
-      {/* Service Charges */}
-      <Section icon={<DollarSign size={15} className="text-secondary" />} title="Service Charges & Tax">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-xs font-semibold text-muted font-display block mb-1">Callout Fee (₹)</label>
-            <input type="number" value={calloutFee as string} onChange={e => setCalloutFee(e.target.value)} className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-muted font-display block mb-1">Emergency Surcharge (₹)</label>
-            <input type="number" value={emergencySurcharge as string} onChange={e => setEmergencySurcharge(e.target.value)} className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-muted font-display block mb-1">GST Rate (%)</label>
-            <input type="number" min="0" max="100" value={gstRate as string} onChange={e => setGstRate(e.target.value)} className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
-          </div>
-        </div>
-        <div className="mt-3 bg-secondary/5 border border-secondary/20 rounded-lg p-3 text-[10px] text-muted">
-          GST breakdown on invoices: <strong className="text-text">CGST {Math.round(parseFloat(gstRate as string) / 2)}%</strong> + <strong className="text-text">SGST {Math.round(parseFloat(gstRate as string) / 2)}%</strong> = <strong className="text-secondary">{gstRate}% Total</strong>
-        </div>
-        <SaveButton saved={chargesSaved} onClick={() => flash(setChargesSaved)} />
-      </Section>
-
-      {/* Email Config */}
-      <Section icon={<Mail size={15} className="text-secondary" />} title="Email Configuration (SMTP)">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="SMTP Host" value={smtpHost as string} onChange={(e: any) => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" />
-          <Input label="SMTP Port" value={smtpPort as string} onChange={(e: any) => setSmtpPort(e.target.value)} placeholder="587" />
-          <Input label="Username / Email" value={smtpUser as string} onChange={(e: any) => setSmtpUser(e.target.value)} placeholder="no-reply@company.com" />
-          <Input label="Password / App Key" type="password" value={smtpPass as string} onChange={(e: any) => setSmtpPass(e.target.value)} placeholder="••••••••" />
-          <Input label="Sender Display Name" value={smtpFromName as string} onChange={(e: any) => setSmtpFromName(e.target.value)} placeholder="RemoteFix Support" />
-        </div>
-        <div className="mt-3 bg-[#111827]/60 border border-border/50 rounded-lg p-3 text-[10px] text-muted">
-          Set <code className="text-primary">SMTP_HOST</code>, <code className="text-primary">SMTP_PORT</code>, <code className="text-primary">SMTP_USER</code>, <code className="text-primary">SMTP_PASS</code> in your Cloudflare Worker environment to activate live email dispatch.
-        </div>
-        <SaveButton saved={emailSaved} onClick={() => flash(setEmailSaved)} />
-      </Section>
-
-      {/* SMS Config */}
-      <Section icon={<MessageSquare size={15} className="text-secondary" />} title="SMS Configuration (Twilio)">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Twilio Account SID" value={twilioSid as string} onChange={(e: any) => setTwilioSid(e.target.value)} placeholder="ACxxxxxxxxxxxxxxxx" />
-          <Input label="Twilio Auth Token" type="password" value={twilioToken as string} onChange={(e: any) => setTwilioToken(e.target.value)} placeholder="••••••••" />
-          <Input label="Twilio Sender Number" value={twilioFrom as string} onChange={(e: any) => setTwilioFrom(e.target.value)} placeholder="+12345678901" />
-        </div>
-        <SaveButton saved={smsSaved} onClick={() => flash(setSmsSaved)} />
-      </Section>
-
-      {/* Users & Roles */}
-      <Section icon={<Shield size={15} className="text-secondary" />} title="Users, Roles & Permissions">
-        <div className="space-y-3 text-xs">
-          <div className="bg-[#111827]/40 border border-border/50 rounded-xl p-4">
-            <h4 className="text-text font-bold font-display mb-3 uppercase tracking-wider text-[10px]">Role Definitions</h4>
-            <div className="flex flex-col gap-3">
-              {[
-                { role: "admin", color: "text-danger", label: "Administrator", perms: ["All permissions — full system access, billing, user management"] },
-                { role: "engineer", color: "text-warning", label: "Technician / Engineer", perms: ["View assigned bookings", "Update job status", "Upload photos & remarks", "View own performance"] },
-                { role: "customer", color: "text-cyan-400", label: "Customer (Portal)", perms: ["View own bookings", "Download own invoices", "Update profile", "Track service status"] },
-              ].map(r => (
-                <div key={r.role} className="flex items-start gap-3 p-3 bg-[#0a0f1a]/60 rounded-lg border border-border/30">
-                  <code className={`text-[10px] font-mono font-bold ${r.color} bg-current/10 px-2 py-0.5 rounded shrink-0`} style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>{r.role}</code>
-                  <div>
-                    <div className="font-semibold text-text mb-0.5">{r.label}</div>
-                    {r.perms.map((p, i) => <div key={i} className="text-muted text-[10px] flex items-center gap-1"><span className="text-success">✓</span> {p}</div>)}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ssoData.map((sso: any) => (
+                <Card key={sso.id} glowColor="cyan" className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-text uppercase font-display flex items-center gap-1.5">
+                      <Globe size={14} className="text-primary" /> {sso.providerType.replace("_", " ")}
+                    </span>
+                    <Badge variant={sso.isEnabled ? "success" : "danger"} className="text-[9px] uppercase">
+                      {sso.isEnabled ? "Active" : "Disabled"}
+                    </Badge>
                   </div>
-                </div>
+                  <div className="text-[10px] text-muted font-mono space-y-1 bg-black/30 p-2.5 rounded-lg border border-border/30">
+                    <div>Issuer: <span className="text-text">{sso.issuerUrl}</span></div>
+                    <div>SSO Endpoint: <span className="text-primary">{sso.ssoUrl}</span></div>
+                    {sso.domain && <div>Domain Scoped: <span className="text-success font-semibold">@{sso.domain}</span></div>}
+                  </div>
+                </Card>
               ))}
             </div>
-          </div>
-
-          <div className="bg-secondary/5 border border-secondary/20 rounded-xl p-4 text-[10px] text-muted leading-relaxed">
-            <span className="text-text font-bold block mb-1">🔐 Role Assignment</span>
-            Roles are assigned via the <strong className="text-text">Technician Management → Register New Technician</strong> workflow. Customer roles are auto-assigned on portal registration. Admin promotion requires direct database modification for security.
-          </div>
+          )}
         </div>
       </Section>
+
+      {/* COMPANY PROFILE SECTION */}
+      <Section icon={<Building2 size={16} className="text-primary" />} title="Company &amp; GST Billing Profile">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-body">
+          <Input label="Company Legal Name" value={companyName} onChange={e => setCompanyName(e.target.value)} />
+          <Input label="GSTIN Tax ID (15 digits)" value={companyGstin} onChange={e => setCompanyGstin(e.target.value)} placeholder="27AAAAA0000A1Z5" />
+          <Input label="Support Email Address" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} />
+          <Input label="Support Helpline Phone" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} />
+          <div className="md:col-span-2">
+            <Input label="Corporate Address" value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} />
+          </div>
+        </div>
+        <SaveButton onClick={saveCompany} saved={companySaved} />
+      </Section>
+
+      {/* CONFIGURE SSO MODAL */}
+      <Modal isOpen={ssoModalOpen} onClose={() => setSsoModalOpen(false)} title="Configure Enterprise Identity Provider (SSO)">
+        <form onSubmit={handleCreateSso} className="space-y-4 font-body">
+          <Select
+            label="Identity Provider Type"
+            options={[
+              { value: "okta", label: "Okta Single Sign-On" },
+              { value: "azure_ad", label: "Microsoft Azure AD / Entra ID" },
+              { value: "google_workspace", label: "Google Workspace SAML" },
+              { value: "custom_saml", label: "Custom SAML 2.0 Provider" },
+            ]}
+            value={ssoType}
+            onChange={(e: any) => setSsoType(e.target.value)}
+          />
+
+          <Input label="Issuer URL (Entity ID) *" placeholder="https://www.okta.com/exk123456" value={ssoIssuer} onChange={(e) => setSsoIssuer(e.target.value)} required />
+          <Input label="SAML Single Sign-On Endpoint URL *" placeholder="https://dev-12345.okta.com/app/sso/saml" value={ssoUrl} onChange={(e) => setSsoUrl(e.target.value)} required />
+          <Input label="Target Corporate Email Domain (e.g. acmecorp.com)" placeholder="acmecorp.com" value={ssoDomain} onChange={(e) => setSsoDomain(e.target.value)} />
+
+          <Button variant="primary" type="submit" glow className="w-full mt-2" isLoading={createSsoMutation.isPending}>
+            Save Enterprise SSO Configuration
+          </Button>
+        </form>
+      </Modal>
     </div>
   );
 };

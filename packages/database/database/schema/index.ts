@@ -567,3 +567,22 @@ export const rmmScripts = mssqlTable("rmm_scripts", {
   index("idx_rmm_scripts_category").on(table.category),
   index("idx_rmm_scripts_shell").on(table.shellType),
 ]);
+
+// ==========================================
+// 21. SSO PROVIDERS TABLE (Enterprise SAML / Okta)
+// ==========================================
+export const ssoProviders = mssqlTable("sso_providers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  providerType: varchar("provider_type", { length: 50 }).notNull(), // 'okta' | 'azure_ad' | 'google_workspace' | 'custom_saml'
+  issuerUrl: varchar("issuer_url", { length: 500 }).notNull(),
+  ssoUrl: varchar("sso_url", { length: 500 }).notNull(),
+  certificatePem: text("certificate_pem"),
+  domain: varchar("domain", { length: 255 }),
+  isEnabled: bit("is_enabled").notNull().default(true),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_sso_org_id").on(table.organizationId),
+  index("idx_sso_provider_type").on(table.providerType),
+]);
