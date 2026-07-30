@@ -14,6 +14,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npx tsx tests/rc_suite.test.ts",
+    "test:load": "npx tsx tests/load_test.ts",
     "db:generate": "npm run db:generate --workspace=packages/database",
     "db:migrate": "npm run db:migrate --workspace=packages/database",
     "db:push": "npm run db:push --workspace=packages/database",
