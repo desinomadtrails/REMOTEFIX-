@@ -508,3 +508,31 @@ export interface AuditEntry {
   userAgent?: string | null;
   createdAt: string;
 }
+
+export interface NotificationTemplate {
+  id: string;
+  organizationId?: string | null;
+  eventKey: string;
+  channel: "email" | "in_app" | "push" | "webhook";
+  subject: string;
+  bodyTemplate: string;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NotificationQueueItem {
+  id: string;
+  organizationId?: string | null;
+  userId?: string | null;
+  eventKey: string;
+  channel: "email" | "in_app" | "push" | "webhook";
+  recipient: string;
+  title: string;
+  message: string;
+  status: "pending" | "sent" | "failed";
+  retryCount: number;
+  lastError?: string | null;
+  sentAt?: string | null;
+  createdAt: string;
+}

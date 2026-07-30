@@ -597,3 +597,44 @@ export const ssoProviders = mssqlTable("sso_providers", {
   index("idx_sso_org_id").on(table.organizationId),
   index("idx_sso_provider_type").on(table.providerType),
 ]);
+
+// ==========================================
+// 22. NOTIFICATION TEMPLATES TABLE
+// ==========================================
+export const notificationTemplates = mssqlTable("notification_templates", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  eventKey: varchar("event_key", { length: 100 }).notNull(), // 'ticket.assigned' | 'sla.breach' | 'rmm.offline' | 'invoice.paid'
+  channel: varchar("channel", { length: 20 }).notNull().default("in_app"), // 'email' | 'in_app' | 'push' | 'webhook'
+  subject: varchar("subject", { length: 255 }).notNull(),
+  bodyTemplate: text("body_template").notNull(),
+  isEnabled: bit("is_enabled").notNull().default(true),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_notif_templates_event").on(table.eventKey),
+  index("idx_notif_templates_channel").on(table.channel),
+]);
+
+// ==========================================
+// 23. NOTIFICATION QUEUE TABLE
+// ==========================================
+export const notificationQueue = mssqlTable("notification_queue", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  userId: varchar("user_id", { length: 36 }).references(() => users.id),
+  eventKey: varchar("event_key", { length: 100 }).notNull(),
+  channel: varchar("channel", { length: 20 }).notNull().default("in_app"),
+  recipient: varchar("recipient", { length: 255 }).notNull(), // email address, webhook URL, or userId
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending' | 'sent' | 'failed'
+  retryCount: int("retry_count").notNull().default(0),
+  lastError: text("last_error"),
+  sentAt: datetime2("sent_at"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_notif_queue_status").on(table.status),
+  index("idx_notif_queue_user_id").on(table.userId),
+  index("idx_notif_queue_created_at").on(table.createdAt),
+]);

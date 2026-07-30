@@ -259,6 +259,26 @@ export const api = {
     });
   },
 
+  // Notification Center API
+  async getNotifications() {
+    return request<any>("/api/notifications");
+  },
+
+  async getNotificationQueue() {
+    return request<any>("/api/notifications/admin/queue");
+  },
+
+  async getNotificationTemplates() {
+    return request<any>("/api/notifications/admin/templates");
+  },
+
+  async createNotificationTemplate(body: any) {
+    return request<any>("/api/notifications/admin/templates", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

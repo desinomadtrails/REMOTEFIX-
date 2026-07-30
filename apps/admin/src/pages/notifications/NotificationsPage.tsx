@@ -1,281 +1,257 @@
-import React, { useState, useEffect } from "react";
-import { Bell, Check, CheckCheck, BookOpen, Receipt, UserPlus, Wrench, AlertTriangle, Info } from "lucide-react";
-import { Card, Badge, Button } from "@remotefix/ui";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Bell, Check, CheckCheck, BookOpen, Receipt, UserPlus, Wrench, AlertTriangle, Info, Mail, Send, Plus, RefreshCw, FileText, Activity } from "lucide-react";
+import { Card, Badge, Button, Input, Modal, Select } from "@remotefix/ui";
 import { api } from "../../api.js";
 import { formatDateTime } from "@remotefix/utils";
 
-// ── Types ────────────────────────────────────────────────────────
-interface Notification {
-  id: string;
-  type: "booking" | "invoice" | "customer" | "engineer" | "alert" | "info";
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-}
+const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`animate-pulse bg-white/5 rounded-xl ${className}`} />
+);
 
-// ── Icon resolver ────────────────────────────────────────────────
-function NotifIcon({ type }: { type: Notification["type"] }) {
-  const map: Record<Notification["type"], React.ReactNode> = {
-    booking: <BookOpen size={14} className="text-secondary" />,
-    invoice: <Receipt size={14} className="text-success" />,
-    customer: <UserPlus size={14} className="text-cyan-400" />,
-    engineer: <Wrench size={14} className="text-warning" />,
-    alert: <AlertTriangle size={14} className="text-danger" />,
-    info: <Info size={14} className="text-muted" />,
-  };
-  return <span>{map[type]}</span>;
-}
-
-// ── Storage helpers ──────────────────────────────────────────────
-const STORAGE_KEY = "rf_notifications";
-
-function loadNotifications(): Notification[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function saveNotifications(notifs: Notification[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notifs));
-}
-
-// ── Build notifications from live data ──────────────────────────
-function buildNotifications(bookings: any[], invoices: any[], customers: any[], engineers: any[]): Notification[] {
-  const items: Notification[] = [];
-
-  // Latest 5 bookings
-  (bookings || []).slice(0, 5).forEach((b: any) => {
-    items.push({
-      id: `booking-${b.id}`,
-      type: "booking",
-      title: b.status === "pending" ? "New Booking Received" : `Booking ${b.status}`,
-      message: `${b.name} booked a ${b.type} service · Ticket ${b.ticketId || "GUEST"}`,
-      timestamp: b.createdAt,
-      read: false,
-    });
-  });
-
-  // Unpaid invoices
-  (invoices || []).filter((i: any) => i.status === "unpaid").slice(0, 3).forEach((inv: any) => {
-    items.push({
-      id: `invoice-${inv.id}`,
-      type: "invoice",
-      title: "Outstanding Invoice",
-      message: `Invoice ${inv.invoiceNumber} is unpaid · Amount due`,
-      timestamp: inv.createdAt,
-      read: false,
-    });
-  });
-
-  // New customers
-  (customers || []).slice(0, 3).forEach((c: any) => {
-    items.push({
-      id: `customer-${c.id}`,
-      type: "customer",
-      title: "New Customer Registered",
-      message: `${c.fullName} (${c.isGuest ? "Guest" : "Member"}) joined the platform`,
-      timestamp: c.createdAt || new Date().toISOString(),
-      read: false,
-    });
-  });
-
-  // Offline engineers
-  (engineers || []).filter((e: any) => e.status === "offline").slice(0, 2).forEach((eng: any) => {
-    items.push({
-      id: `engineer-${eng.id}`,
-      type: "engineer",
-      title: "Technician Offline",
-      message: `${eng.fullName} is currently offline and unavailable for dispatch`,
-      timestamp: new Date().toISOString(),
-      read: false,
-    });
-  });
-
-  // Sort by recency
-  return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-}
-
-// ── Notification Bell (exported for use in nav) ──────────────────
-export function NotificationBell({ onClick }: { onClick: () => void }) {
-  const unread = loadNotifications().filter(n => !n.read).length;
-  return (
-    <button
-      onClick={onClick}
-      className="relative p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-      aria-label="Notifications"
-    >
-      <Bell size={18} className="text-muted hover:text-text transition-colors" />
-      {unread > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 bg-danger text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-          {unread > 9 ? "9+" : unread}
-        </span>
-      )}
-    </button>
-  );
-}
-
-// ── Main Notifications Page ──────────────────────────────────────
 export const NotificationsPage: React.FC = () => {
-  const [notifs, setNotifs] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState<"all" | "unread">("all");
-  const [smtpHost, setSmtpHost] = useState(() => localStorage.getItem("rf_smtp_host") || "");
-  const [smtpPort, setSmtpPort] = useState(() => localStorage.getItem("rf_smtp_port") || "587");
-  const [smtpUser, setSmtpUser] = useState(() => localStorage.getItem("rf_smtp_user") || "");
-  const [twilioSid, setTwilioSid] = useState(() => localStorage.getItem("rf_twilio_sid") || "");
-  const [twilioFrom, setTwilioFrom] = useState(() => localStorage.getItem("rf_twilio_from") || "");
-  const [saved, setSaved] = useState(false);
+  const queryClient = useQueryClient();
+  const [activeSubTab, setActiveSubTab] = useState<"in_app" | "templates" | "queue">("in_app");
+  const [newTemplateModalOpen, setNewTemplateModalOpen] = useState(false);
 
-  const { data: bookingsData } = useQuery({ queryKey: ["admin-bookings"], queryFn: async () => { const r = await api.getBookings(); return r.bookings || []; } });
-  const { data: invoicesData } = useQuery({ queryKey: ["admin-invoices"], queryFn: async () => { const r = await api.getInvoices(); return r.invoices || []; } });
-  const { data: customersData } = useQuery({ queryKey: ["admin-customers"], queryFn: async () => { const r = await api.getCustomers(); return r.customers || []; } });
-  const { data: engineersData } = useQuery({ queryKey: ["admin-engineers"], queryFn: async () => { const r = await api.getEngineers(); return r.engineers || []; } });
+  // Template Form State
+  const [eventKey, setEventKey] = useState("ticket.assigned");
+  const [channel, setChannel] = useState<"email" | "in_app" | "push" | "webhook">("email");
+  const [subject, setSubject] = useState("");
+  const [bodyTemplate, setBodyTemplate] = useState("");
 
-  useEffect(() => {
-    // Merge stored read-state with freshly built notifications
-    const stored = loadNotifications();
-    const readIds = new Set(stored.filter(n => n.read).map(n => n.id));
-    const fresh = buildNotifications(bookingsData || [], invoicesData || [], customersData || [], engineersData || []);
-    const merged = fresh.map(n => ({ ...n, read: readIds.has(n.id) }));
-    setNotifs(merged);
-    saveNotifications(merged);
-  }, [bookingsData, invoicesData, customersData, engineersData]);
+  const { data: queueData = [], isLoading: queueLoading, refetch: refetchQueue } = useQuery({
+    queryKey: ["admin-notification-queue"],
+    queryFn: async () => { const r = await api.getNotificationQueue(); return r.queue || []; },
+    refetchInterval: 10000,
+  });
 
-  const markRead = (id: string) => {
-    const updated = notifs.map(n => n.id === id ? { ...n, read: true } : n);
-    setNotifs(updated); saveNotifications(updated);
+  const { data: templatesData = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ["admin-notification-templates"],
+    queryFn: async () => { const r = await api.getNotificationTemplates(); return r.templates || []; },
+  });
+
+  const createTemplateMutation = useMutation({
+    mutationFn: (data: any) => api.createNotificationTemplate(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-notification-templates"] });
+      setNewTemplateModalOpen(false);
+      setSubject("");
+      setBodyTemplate("");
+    },
+    onError: (err: any) => alert(err.message),
+  });
+
+  const handleCreateTemplate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventKey || !subject || !bodyTemplate) return;
+    createTemplateMutation.mutate({ eventKey, channel, subject, bodyTemplate });
   };
-
-  const markAllRead = () => {
-    const updated = notifs.map(n => ({ ...n, read: true }));
-    setNotifs(updated); saveNotifications(updated);
-  };
-
-  const handleSaveChannels = () => {
-    localStorage.setItem("rf_smtp_host", smtpHost);
-    localStorage.setItem("rf_smtp_port", smtpPort);
-    localStorage.setItem("rf_smtp_user", smtpUser);
-    localStorage.setItem("rf_twilio_sid", twilioSid);
-    localStorage.setItem("rf_twilio_from", twilioFrom);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
-
-  const displayed = filter === "unread" ? notifs.filter(n => !n.read) : notifs;
-  const unreadCount = notifs.filter(n => !n.read).length;
 
   return (
     <div className="space-y-6 font-body">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h2 className="text-xl font-black font-display text-text flex items-center gap-2">
-            <Bell size={20} className="text-secondary" /> Notification Center
-          </h2>
-          <p className="text-xs text-muted mt-0.5">{unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg overflow-hidden border border-border/50">
-            <button onClick={() => setFilter("all")} className={`text-xs px-3 py-1.5 font-semibold transition-colors cursor-pointer ${filter === "all" ? "bg-secondary text-white" : "text-muted hover:text-text"}`}>All</button>
-            <button onClick={() => setFilter("unread")} className={`text-xs px-3 py-1.5 font-semibold transition-colors cursor-pointer ${filter === "unread" ? "bg-secondary text-white" : "text-muted hover:text-text"}`}>Unread ({unreadCount})</button>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs font-semibold uppercase tracking-wider text-primary mb-2 font-display">
+            <Bell className="w-3.5 h-3.5" /> Centralized Enterprise Notification Engine
           </div>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs flex items-center gap-1 text-muted hover:text-text" onClick={markAllRead}>
-              <CheckCheck size={14} /> Mark all read
-            </Button>
-          )}
+          <h1 className="text-2xl font-black font-display text-text">Notification Center &amp; Template Manager</h1>
+          <p className="text-xs text-muted mt-0.5">
+            Manage multi-channel notifications (In-App, Email, Push, Webhooks), dispatch queue, and custom event templates.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex bg-card/60 border border-border/50 rounded-lg p-1">
+            <button
+              onClick={() => setActiveSubTab("in_app")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold font-display transition-all ${activeSubTab === "in_app" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted hover:text-text"}`}
+            >
+              Live Feed
+            </button>
+            <button
+              onClick={() => setActiveSubTab("templates")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold font-display transition-all ${activeSubTab === "templates" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted hover:text-text"}`}
+            >
+              Template Editor
+            </button>
+            <button
+              onClick={() => setActiveSubTab("queue")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold font-display transition-all ${activeSubTab === "queue" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted hover:text-text"}`}
+            >
+              Queue Monitor
+            </button>
+          </div>
+
+          <Button variant="primary" glow size="sm" className="text-xs flex items-center gap-1.5" onClick={() => setNewTemplateModalOpen(true)}>
+            <Plus size={14} /> New Template
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Activity Feed */}
-        <div className="lg:col-span-2 flex flex-col gap-3">
-          {displayed.length === 0 ? (
+      {activeSubTab === "in_app" ? (
+        /* LIVE FEED */
+        <div className="space-y-4 font-body">
+          {queueData.length === 0 ? (
             <Card className="text-center py-16 text-muted">
-              <Bell size={36} className="mx-auto mb-3 opacity-20" />
-              <p className="text-sm font-semibold">No notifications</p>
-              <p className="text-xs mt-1">System events will appear here automatically.</p>
+              <Bell size={40} className="mx-auto mb-3 text-muted/30" />
+              <h3 className="text-base font-bold font-display text-text">No Recent Notifications</h3>
+              <p className="text-xs max-w-sm mx-auto mt-1">System events (ticket dispatches, SLA breaches, invoice receipts) will appear here automatically.</p>
             </Card>
           ) : (
-            displayed.map(n => (
-              <div
-                key={n.id}
-                className={`flex items-start gap-3 p-4 rounded-xl border transition-all ${n.read ? "bg-[#111827]/30 border-border/20 opacity-60" : "bg-[#111827]/60 border-border/50 hover:border-secondary/30"}`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${n.read ? "bg-white/5" : "bg-secondary/10 border border-secondary/20"}`}>
-                  <NotifIcon type={n.type} />
-                </div>
-                <div className="flex-grow min-w-0">
-                  <div className="flex justify-between items-start gap-2">
-                    <span className={`text-xs font-bold ${n.read ? "text-muted" : "text-text"}`}>{n.title}</span>
-                    {!n.read && <span className="w-2 h-2 rounded-full bg-secondary shrink-0 mt-0.5" />}
+            <div className="space-y-3">
+              {queueData.map((n: any) => (
+                <Card key={n.id} glowColor="none" className="p-4 flex items-start gap-4 border border-border/40 hover:border-primary/30 transition-colors">
+                  <div className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary shrink-0">
+                    <Bell size={18} />
                   </div>
-                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed">{n.message}</p>
-                  <span className="text-[10px] text-muted/60 mt-1 block">{formatDateTime(n.timestamp)}</span>
-                </div>
-                {!n.read && (
-                  <button onClick={() => markRead(n.id)} className="text-[10px] text-secondary hover:underline shrink-0 cursor-pointer mt-0.5">
-                    <Check size={14} />
-                  </button>
-                )}
-              </div>
-            ))
+                  <div className="flex-grow space-y-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-xs font-bold font-display text-text">{n.title}</h3>
+                      <Badge variant={n.status === "sent" ? "success" : n.status === "pending" ? "warning" : "danger"} className="text-[9px] uppercase">
+                        {n.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted leading-relaxed">{n.message}</p>
+                    <div className="flex items-center gap-4 text-[10px] text-muted font-mono pt-1">
+                      <span>Event: <strong className="text-primary">{n.eventKey}</strong></span>
+                      <span>Channel: <strong className="text-text uppercase">{n.channel}</strong></span>
+                      <span>Recipient: {n.recipient}</span>
+                      <span>{formatDateTime(n.createdAt)}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
-
-        {/* Channel Config */}
-        <div className="flex flex-col gap-4">
-          <Card glowColor="none" className="p-5">
-            <h3 className="text-xs font-bold font-display text-text uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border/30 pb-3">
-              ✉️ Email (SMTP) Config
-            </h3>
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="text-[10px] text-muted uppercase font-semibold block mb-1">SMTP Host</label>
-                <input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-muted uppercase font-semibold block mb-1">Port</label>
-                  <input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} placeholder="587" className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
+      ) : activeSubTab === "templates" ? (
+        /* TEMPLATES TAB */
+        <div className="space-y-4 font-body">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {templatesData.map((t: any) => (
+              <Card key={t.id} glowColor="purple" className="flex flex-col justify-between h-full space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold font-display text-text">{t.subject}</h3>
+                      <span className="text-[10px] text-primary font-mono">{t.eventKey}</span>
+                    </div>
+                    <Badge variant="info" className="text-[9px] uppercase">{t.channel}</Badge>
+                  </div>
+                  <p className="text-xs text-muted leading-relaxed p-2.5 bg-black/30 border border-border/30 rounded-lg font-mono text-[11px]">
+                    {t.bodyTemplate}
+                  </p>
                 </div>
-                <div>
-                  <label className="text-[10px] text-muted uppercase font-semibold block mb-1">Username</label>
-                  <input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="no-reply@..." className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
+                <div className="pt-2 border-t border-border/40 flex justify-between items-center text-[10px] text-muted font-mono">
+                  <span>Channel: {t.channel}</span>
+                  <Badge variant={t.isEnabled ? "success" : "danger"} className="text-[9px] uppercase">{t.isEnabled ? "Active" : "Disabled"}</Badge>
                 </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card glowColor="none" className="p-5">
-            <h3 className="text-xs font-bold font-display text-text uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-border/30 pb-3">
-              📱 SMS (Twilio) Config
-            </h3>
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className="text-[10px] text-muted uppercase font-semibold block mb-1">Twilio Account SID</label>
-                <input value={twilioSid} onChange={e => setTwilioSid(e.target.value)} placeholder="ACxxxxxxxxxxxxxxxx" className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
-              </div>
-              <div>
-                <label className="text-[10px] text-muted uppercase font-semibold block mb-1">Sender Number</label>
-                <input value={twilioFrom} onChange={e => setTwilioFrom(e.target.value)} placeholder="+1234567890" className="w-full px-3 py-2 text-xs bg-[#111827]/60 border border-border text-text rounded-lg outline-none focus:border-primary" />
-              </div>
-            </div>
-          </Card>
-
-          <Button variant="cyber" className="w-full text-xs flex items-center justify-center gap-2" onClick={handleSaveChannels}>
-            {saved ? <><Check size={14} /> Saved!</> : "Save Channel Configuration"}
-          </Button>
-
-          <div className="bg-[#111827]/40 border border-border/50 rounded-xl p-4 text-[10px] text-muted leading-relaxed">
-            <span className="text-text font-semibold block mb-1">ℹ️ Integration Note</span>
-            Email and SMS dispatch require a backend worker. Connect these credentials to your Cloudflare Worker environment variables (<code>SMTP_*</code>, <code>TWILIO_*</code>) to activate live delivery.
+              </Card>
+            ))}
           </div>
         </div>
-      </div>
+      ) : (
+        /* QUEUE MONITOR TAB */
+        <Card className="p-0 overflow-hidden border border-border/40">
+          <div className="p-4 bg-card/40 border-b border-border/40 flex justify-between items-center text-xs">
+            <span className="font-bold text-text font-display flex items-center gap-1.5">
+              <Activity size={14} className="text-primary" /> Live Dispatcher Queue Monitor
+            </span>
+            <Button variant="ghost" size="sm" className="text-[10px] flex items-center gap-1" onClick={() => refetchQueue()}>
+              <RefreshCw size={12} /> Sync Queue
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-body">
+              <thead className="bg-card/60 text-muted uppercase text-[10px] font-bold border-b border-border/40">
+                <tr>
+                  <th className="px-4 py-3">Event Key</th>
+                  <th className="px-4 py-3">Channel</th>
+                  <th className="px-4 py-3">Recipient</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Retries</th>
+                  <th className="px-4 py-3">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {queueData.map((q: any) => (
+                  <tr key={q.id} className="hover:bg-white/3 transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-primary">{q.eventKey}</td>
+                    <td className="px-4 py-3 uppercase font-semibold text-text">{q.channel}</td>
+                    <td className="px-4 py-3 font-mono text-muted">{q.recipient}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant={q.status === "sent" ? "success" : q.status === "pending" ? "warning" : "danger"} className="text-[9px] uppercase">
+                        {q.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 font-mono">{q.retryCount}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted">{formatDateTime(q.createdAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* NEW TEMPLATE MODAL */}
+      <Modal isOpen={newTemplateModalOpen} onClose={() => setNewTemplateModalOpen(false)} title="Create Notification Event Template">
+        <form onSubmit={handleCreateTemplate} className="space-y-4 font-body">
+          <Select
+            label="Notification Event *"
+            options={[
+              { value: "ticket.assigned", label: "Ticket Assigned to Technician" },
+              { value: "ticket.closed", label: "Ticket Resolved / Closed" },
+              { value: "sla.breach", label: "SLA Response / Resolution Breach" },
+              { value: "warranty.expiry", label: "ITAM Hardware Warranty Expiry" },
+              { value: "amc.renewal", label: "Annual Maintenance Contract Renewal" },
+              { value: "invoice.paid", label: "GST Invoice Payment Received" },
+              { value: "rmm.offline", label: "RMM Endpoint Agent Offline Alert" },
+            ]}
+            value={eventKey}
+            onChange={(e: any) => setEventKey(e.target.value)}
+          />
+
+          <Select
+            label="Notification Channel *"
+            options={[
+              { value: "email", label: "Email (SMTP)" },
+              { value: "in_app", label: "In-App Console Alert" },
+              { value: "push", label: "Browser Web Push" },
+              { value: "webhook", label: "Corporate Webhook URL" },
+            ]}
+            value={channel}
+            onChange={(e: any) => setChannel(e.target.value)}
+          />
+
+          <Input label="Email / Notification Subject *" placeholder="Ticket Assigned: {ticketId}" value={subject} onChange={(e) => setSubject(e.target.value)} required />
+
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-text block">Body Template (Supports Variables) *</label>
+            <textarea
+              className="w-full p-3 bg-black/40 border border-border/40 rounded-xl text-xs font-mono text-text outline-none focus:border-primary h-28"
+              placeholder="You have been assigned to service booking #{ticketId} for customer {customerName}."
+              value={bodyTemplate}
+              onChange={(e) => setBodyTemplate(e.target.value)}
+              required
+            />
+          </div>
+
+          <Button variant="primary" type="submit" glow className="w-full mt-2" isLoading={createTemplateMutation.isPending}>
+            Save Notification Template
+          </Button>
+        </form>
+      </Modal>
     </div>
   );
 };
+
+export function NotificationBell({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="relative p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer" aria-label="Notifications">
+      <Bell size={18} className="text-muted hover:text-text transition-colors" />
+    </button>
+  );
+}

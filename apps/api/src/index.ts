@@ -85,6 +85,7 @@ import { rolesRouter } from "./routes/roles.js";
 import { aiRouter } from "./routes/ai.js";
 import { rmmRouter } from "./routes/rmm.js";
 import { ssoRouter } from "./routes/sso.js";
+import { notificationsRouter } from "./routes/notifications.js";
 
 // Health Checks
 app.route("/health", healthRouter);
@@ -95,6 +96,7 @@ app.use("/api/auth/*", authRateLimiter);
 app.route("/api/auth", authRouter);
 app.route("/api/auth", ssoRouter);
 app.route("/api/admin/sso", ssoRouter);
+app.route("/api/notifications", notificationsRouter);
 app.route("/api/services", servicesRouter);
 app.route("/api/bookings", bookingsRouter);
 app.route("/api/service-request", serviceRequestRouter);
