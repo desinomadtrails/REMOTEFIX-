@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Laptop, QrCode, Plus, Search, Filter, ShieldCheck, AlertTriangle, Download, Server, HardDrive, Cpu, ExternalLink } from "lucide-react";
+import { Cpu, Plus, QrCode, Search, Wrench, AlertTriangle, ShieldCheck, CheckCircle2, Sparkles, Activity, AlertCircle } from "lucide-react";
 import { Card, Badge, Button, Input, Modal, Select } from "@remotefix/ui";
 import { api } from "../../api.js";
 
@@ -10,23 +10,27 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 export const AssetsPage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [qrModalAsset, setQrModalAsset] = useState<any | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [newAssetModalOpen, setNewAssetModalOpen] = useState(false);
+  const [qrModalAsset, setQrModalAsset] = useState<any>(null);
+
+  // Predictive Scan Modal State
+  const [predictiveAsset, setPredictiveAsset] = useState<any>(null);
+  const [predictiveData, setPredictiveData] = useState<any>(null);
+  const [predictiveLoading, setPredictiveLoading] = useState(false);
 
   // Form State
-  const [name, setName] = useState("");
-  const [type, setType] = useState<"Laptop" | "Desktop" | "Server" | "Router" | "CCTV" | "Printer" | "Other">("Laptop");
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [serialNumber, setSerialNumber] = useState("");
+  const [assetName, setAssetName] = useState("");
+  const [assetType, setAssetType] = useState("Laptop");
+  const [assetBrand, setAssetBrand] = useState("");
+  const [assetModel, setAssetModel] = useState("");
+  const [assetSerial, setAssetSerial] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
-  const [warrantyExpiryDate, setWarrantyExpiryDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [warrantyExpiry, setWarrantyExpiry] = useState("");
 
-  const { data: assetsList = [], isLoading } = useQuery({
+  const { data: assetsData = [], isLoading } = useQuery({
     queryKey: ["admin-assets"],
     queryFn: async () => {
       const res = await api.getAssets();
@@ -38,48 +42,55 @@ export const AssetsPage: React.FC = () => {
     mutationFn: (data: any) => api.createAsset(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
-      setCreateModalOpen(false);
-      setName("");
-      setBrand("");
-      setModel("");
-      setSerialNumber("");
-      setErrorMsg("");
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to register asset.");
+      setNewAssetModalOpen(false);
+      setAssetName("");
+      setAssetBrand("");
+      setAssetModel("");
+      setAssetSerial("");
     },
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: (data: { id: string; status: string }) => api.updateAssetStatus(data.id, data.status),
+    mutationFn: ({ id, status }: { id: string; status: string }) => api.updateAssetStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
     },
   });
 
+  const handlePredictiveScan = async (asset: any) => {
+    setPredictiveAsset(asset);
+    setPredictiveLoading(true);
+    setPredictiveData(null);
+    try {
+      const res = await api.aiPredictMaintenance(asset);
+      setPredictiveData(res.prediction);
+    } catch (err: any) {
+      alert("Predictive scan failed: " + err.message);
+    } finally {
+      setPredictiveLoading(false);
+    }
+  };
+
   const handleCreateAsset = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !brand || !model) return;
+    if (!assetName || !assetBrand || !assetModel) return;
     createAssetMutation.mutate({
-      name,
-      type,
-      brand,
-      model,
-      serialNumber: serialNumber || undefined,
+      name: assetName,
+      type: assetType,
+      brand: assetBrand,
+      model: assetModel,
+      serialNumber: assetSerial || undefined,
       purchaseDate: purchaseDate || undefined,
-      warrantyExpiryDate: warrantyExpiryDate || undefined,
-      notes: notes || undefined,
+      warrantyExpiryDate: warrantyExpiry || undefined,
     });
   };
 
-  const filteredAssets = assetsList.filter((asset: any) => {
-    const matchesQuery =
-      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.assetTag.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.model.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === "all" || asset.type === selectedType;
-    return matchesQuery && matchesType;
+  const filteredAssets = assetsData.filter((a: any) => {
+    const sl = search.toLowerCase();
+    const matchSearch = !sl || a.name.toLowerCase().includes(sl) || a.assetTag.toLowerCase().includes(sl) || a.brand.toLowerCase().includes(sl) || a.model.toLowerCase().includes(sl);
+    const matchStatus = statusFilter === "all" || a.status === statusFilter;
+    const matchType = typeFilter === "all" || a.type === typeFilter;
+    return matchSearch && matchStatus && matchType;
   });
 
   return (
@@ -87,47 +98,47 @@ export const AssetsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary/15 rounded-full border border-secondary/20 text-xs font-semibold uppercase tracking-wider text-secondary mb-2 font-display">
-            <Laptop className="w-3.5 h-3.5" /> Enterprise ITAM &amp; QR Tracking
-          </div>
-          <h1 className="text-2xl font-black font-display text-text">IT Hardware Assets &amp; Printable QR Tags</h1>
+          <h1 className="text-2xl font-black font-display text-text">Enterprise Asset Management &amp; Predictive Maintenance</h1>
           <p className="text-xs text-muted font-body mt-0.5">
-            Register hardware inventory, track warranties, and generate printable QR code tags for instant repair scanning.
+            ITAM inventory tracking, QR code physical tags, and AI predictive hardware failure risk alerts.
           </p>
         </div>
 
-        <Button variant="primary" glow className="flex items-center gap-2 text-xs" style={{ backgroundColor: "#8B5CF6", color: "white" }} onClick={() => setCreateModalOpen(true)}>
-          <Plus size={15} /> Register New Asset
+        <Button variant="primary" glow className="flex items-center gap-2 text-xs" onClick={() => setNewAssetModalOpen(true)}>
+          <Plus size={15} /> Add Hardware Asset
         </Button>
       </div>
 
       {/* Filters Bar */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-card/40 p-4 rounded-xl border border-border/40">
-        <div className="relative w-full md:w-80">
-          <Input
-            placeholder="Search by name, tag, brand, serial..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs"
-          />
+      <div className="flex flex-col md:flex-row gap-3 justify-between items-center bg-card/40 p-4 rounded-xl border border-border/40">
+        <div className="relative w-full md:w-72">
+          <Input placeholder="Search asset tag, name, model..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 text-xs" />
           <Search className="absolute left-3 top-3.5 text-muted w-3.5 h-3.5" />
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <Filter size={14} className="text-muted" />
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <Select
             options={[
-              { value: "all", label: "All Asset Types" },
+              { value: "all", label: "All Statuses" },
+              { value: "active", label: "Active" },
+              { value: "maintenance", label: "Maintenance" },
+              { value: "retired", label: "Retired" },
+            ]}
+            value={statusFilter}
+            onChange={(e: any) => setStatusFilter(e.target.value)}
+            className="text-xs"
+          />
+
+          <Select
+            options={[
+              { value: "all", label: "All Types" },
               { value: "Laptop", label: "Laptops" },
               { value: "Desktop", label: "Desktops" },
               { value: "Server", label: "Servers" },
-              { value: "Router", label: "Routers / Networking" },
-              { value: "CCTV", label: "CCTV Systems" },
-              { value: "Printer", label: "Printers / Scanners" },
-              { value: "Other", label: "Other Hardware" },
+              { value: "Router", label: "Routers" },
             ]}
-            value={selectedType}
-            onChange={(e: any) => setSelectedType(e.target.value)}
+            value={typeFilter}
+            onChange={(e: any) => setTypeFilter(e.target.value)}
             className="text-xs"
           />
         </div>
@@ -136,17 +147,15 @@ export const AssetsPage: React.FC = () => {
       {/* Assets Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-52" />
-          ))}
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-56" />)}
         </div>
       ) : filteredAssets.length === 0 ? (
         <Card className="text-center py-16 text-muted">
-          <HardDrive size={40} className="mx-auto mb-3 text-muted/30" />
-          <h3 className="text-base font-bold font-display text-text">No Assets Found</h3>
-          <p className="text-xs max-w-sm mx-auto mt-1">Register hardware inventory to track warranties and generate printable QR code tags.</p>
-          <Button variant="primary" size="sm" className="mt-4" onClick={() => setCreateModalOpen(true)}>
-            Register First Hardware Asset
+          <Cpu size={40} className="mx-auto mb-3 text-muted/30" />
+          <h3 className="text-base font-bold font-display text-text">No IT Hardware Assets Found</h3>
+          <p className="text-xs max-w-sm mx-auto mt-1">Onboard corporate laptops, servers, and routers to track lifetime warranties and printable QR tags.</p>
+          <Button variant="primary" size="sm" className="mt-4" onClick={() => setNewAssetModalOpen(true)}>
+            Onboard First Hardware Asset
           </Button>
         </Card>
       ) : (
@@ -194,14 +203,17 @@ export const AssetsPage: React.FC = () => {
                   <QrCode size={14} /> Printable QR
                 </Button>
                 <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" className="text-[10px] py-1 text-primary border-primary/30 flex items-center gap-1" onClick={() => handlePredictiveScan(asset)}>
+                    <Activity size={11} /> AI Risk Scan
+                  </Button>
                   {asset.status !== "active" && (
                     <Button variant="outline" size="sm" className="text-[10px] py-1" onClick={() => updateStatusMutation.mutate({ id: asset.id, status: "active" })}>
                       Active
                     </Button>
                   )}
                   {asset.status !== "maintenance" && (
-                    <Button variant="outline" size="sm" className="text-[10px] py-1 text-warning" onClick={() => updateStatusMutation.mutate({ id: asset.id, status: "maintenance" })}>
-                      Service
+                    <Button variant="ghost" size="sm" className="text-[10px] py-1 text-warning hover:bg-warning/10" onClick={() => updateStatusMutation.mutate({ id: asset.id, status: "maintenance" })}>
+                      Maintenance
                     </Button>
                   )}
                 </div>
@@ -211,66 +223,115 @@ export const AssetsPage: React.FC = () => {
         </div>
       )}
 
-      {/* REGISTER ASSET MODAL */}
-      <Modal isOpen={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Register IT Hardware Asset">
-        <form onSubmit={handleCreateAsset} className="space-y-4 font-body">
-          {errorMsg && <div className="p-3 bg-danger/10 border border-danger/30 text-danger text-xs rounded-lg">{errorMsg}</div>}
+      {/* PREDICTIVE RISK SCAN MODAL */}
+      {predictiveAsset && (
+        <Modal isOpen={!!predictiveAsset} onClose={() => setPredictiveAsset(null)} title={`AI Predictive Health Scan — ${predictiveAsset.name}`}>
+          <div className="space-y-4 font-body py-1 text-xs">
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl space-y-1">
+              <span className="text-[10px] text-primary font-bold uppercase tracking-wider block font-display flex items-center gap-1">
+                <Sparkles size={13} /> Asset Telemetry Profile
+              </span>
+              <p className="text-text font-semibold">{predictiveAsset.brand} {predictiveAsset.model} ({predictiveAsset.assetTag})</p>
+            </div>
 
-          <Input label="Asset Name *" placeholder="Dell Latitude 5420 Workstation" value={name} onChange={(e) => setName(e.target.value)} required />
+            {predictiveLoading ? (
+              <div className="py-8 text-center space-y-2">
+                <Activity size={28} className="mx-auto text-primary animate-pulse" />
+                <p className="text-xs text-muted font-display">Evaluating SMART disk controllers &amp; thermal risk metrics...</p>
+              </div>
+            ) : predictiveData ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-card/60 border border-border/40 rounded-xl">
+                  <div>
+                    <span className="text-[10px] text-muted block uppercase">Predictive Risk Score</span>
+                    <span className={`text-2xl font-black font-display ${predictiveData.riskScore > 70 ? "text-danger" : predictiveData.riskScore > 40 ? "text-warning" : "text-success"}`}>
+                      {predictiveData.riskScore}%
+                    </span>
+                  </div>
+                  <Badge variant={predictiveData.riskLevel === "critical" ? "danger" : predictiveData.riskLevel === "moderate" ? "warning" : "success"} className="text-[10px] uppercase">
+                    {predictiveData.riskLevel} Risk
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] text-muted uppercase font-bold block">Predicted Failure Window</span>
+                  <span className="text-sm font-bold text-text font-display">{predictiveData.predictedFailureWindow}</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[10px] text-muted uppercase font-bold block">Risk Factors Analyzed</span>
+                  <div className="p-3 bg-black/40 border border-border/40 rounded-xl space-y-1.5 font-mono text-[11px]">
+                    {predictiveData.riskFactors.map((rf: string, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-muted">
+                        <AlertCircle size={13} className="text-warning shrink-0" />
+                        <span>{rf}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 bg-success/10 border border-success/30 rounded-xl space-y-1">
+                  <span className="text-[10px] text-success font-bold block uppercase">Recommended Preventive Action</span>
+                  <p className="text-text font-semibold">{predictiveData.preventiveRecommendation}</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </Modal>
+      )}
+
+      {/* CREATE ASSET MODAL */}
+      <Modal isOpen={newAssetModalOpen} onClose={() => setNewAssetModalOpen(false)} title="Add IT Hardware Asset">
+        <form onSubmit={handleCreateAsset} className="space-y-4 font-body">
+          <Input label="Asset Name *" placeholder="Executive Laptop #14" value={assetName} onChange={(e) => setAssetName(e.target.value)} required />
 
           <Select
-            label="Hardware Type *"
+            label="Asset Category"
             options={[
-              { value: "Laptop", label: "Laptop Workstation" },
-              { value: "Desktop", label: "Desktop PC" },
-              { value: "Server", label: "Rack Server / Appliance" },
-              { value: "Router", label: "Router / Switch / Firewall" },
-              { value: "CCTV", label: "CCTV Surveillance System" },
-              { value: "Printer", label: "Printer / Scanner" },
-              { value: "Other", label: "Other IT Equipment" },
+              { value: "Laptop", label: "Laptop Computer" },
+              { value: "Desktop", label: "Desktop Workstation" },
+              { value: "Server", label: "Rack Server / NAS" },
+              { value: "Router", label: "Network Router / Firewall" },
             ]}
-            value={type}
-            onChange={(e: any) => setType(e.target.value)}
+            value={assetType}
+            onChange={(e: any) => setAssetType(e.target.value)}
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Brand *" placeholder="Dell / Apple / Cisco" value={brand} onChange={(e) => setBrand(e.target.value)} required />
-            <Input label="Model *" placeholder="Latitude 5420" value={model} onChange={(e) => setModel(e.target.value)} required />
+            <Input label="Brand / Manufacturer *" placeholder="Dell / Lenovo" value={assetBrand} onChange={(e) => setAssetBrand(e.target.value)} required />
+            <Input label="Model *" placeholder="Latitude 5430" value={assetModel} onChange={(e) => setAssetModel(e.target.value)} required />
           </div>
 
-          <Input label="Serial Number" placeholder="SN-99401284" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
+          <Input label="Serial Number" placeholder="SN-88492042" value={assetSerial} onChange={(e) => setAssetSerial(e.target.value)} />
 
           <div className="grid grid-cols-2 gap-3">
             <Input label="Purchase Date" type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
-            <Input label="Warranty Expiry Date" type="date" value={warrantyExpiryDate} onChange={(e) => setWarrantyExpiryDate(e.target.value)} />
+            <Input label="Warranty Expiry Date" type="date" value={warrantyExpiry} onChange={(e) => setWarrantyExpiry(e.target.value)} />
           </div>
 
-          <Button variant="primary" type="submit" glow className="w-full mt-2" style={{ backgroundColor: "#8B5CF6", color: "white" }} isLoading={createAssetMutation.isPending}>
-            Generate QR Tag &amp; Save Asset
+          <Button variant="primary" type="submit" glow className="w-full mt-2" isLoading={createAssetMutation.isPending}>
+            Onboard Hardware Asset
           </Button>
         </form>
       </Modal>
 
-      {/* PRINTABLE QR CODE MODAL */}
+      {/* PRINTABLE QR TAG MODAL */}
       {qrModalAsset && (
-        <Modal isOpen={!!qrModalAsset} onClose={() => setQrModalAsset(null)} title="Printable Hardware QR Tag">
-          <div className="text-center space-y-4 font-body py-2">
-            <div className="p-4 bg-white rounded-xl inline-block shadow-lg border border-border">
-              <img src={qrModalAsset.qrCodeUrl} alt={qrModalAsset.assetTag} className="w-48 h-48 mx-auto" />
-              <span className="block text-black font-mono font-bold text-xs mt-2">{qrModalAsset.assetTag}</span>
+        <Modal isOpen={!!qrModalAsset} onClose={() => setQrModalAsset(null)} title={`Asset QR Tag — ${qrModalAsset.assetTag}`}>
+          <div className="space-y-4 font-body text-center py-2">
+            <div className="p-6 bg-white rounded-xl inline-block border-4 border-primary">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`https://remotefix.com/scan/${qrModalAsset.assetTag}`)}`}
+                alt={qrModalAsset.assetTag}
+                className="w-44 h-44 mx-auto"
+              />
+              <span className="text-black font-mono font-bold text-sm block mt-2 tracking-widest">{qrModalAsset.assetTag}</span>
+              <span className="text-gray-600 text-[10px] block">{qrModalAsset.name}</span>
             </div>
 
-            <div>
-              <h4 className="text-sm font-bold font-display text-text">{qrModalAsset.name}</h4>
-              <p className="text-xs text-muted mt-0.5">{qrModalAsset.brand} {qrModalAsset.model}</p>
-              <p className="text-[10px] text-secondary font-mono mt-1">Scan QR code with smartphone to trigger instant repair ticket</p>
-            </div>
-
-            <div className="pt-3 flex items-center justify-center gap-3">
-              <Button variant="primary" size="sm" className="flex items-center gap-1.5" onClick={() => window.print()}>
-                <Download size={14} /> Print Tag Label
-              </Button>
-            </div>
+            <Button variant="primary" size="sm" className="w-full mt-3 flex items-center justify-center gap-2" onClick={() => window.print()}>
+              Print Physical QR Tag Sticker
+            </Button>
           </div>
         </Modal>
       )}

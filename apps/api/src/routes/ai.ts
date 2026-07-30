@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { classifyTicket, diagnoseIncident, smartAssignTechnician } from "../services/aiService.js";
+import { classifyTicket, diagnoseIncident, smartAssignTechnician, predictHardwareFailure } from "../services/aiService.js";
 import { requireAuth, AppEnv } from "../middleware/auth.js";
 
 const aiRouter = new Hono<AppEnv>();
@@ -55,6 +55,23 @@ aiRouter.post("/smart-assign", async (c) => {
     return c.json({ success: true, recommendation });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "Smart assignment failed" }, 500);
+  }
+});
+
+// ==========================================
+// 4. AI PREDICTIVE HARDWARE MAINTENANCE
+// ==========================================
+aiRouter.post("/predict-maintenance", async (c) => {
+  try {
+    const { asset } = await c.req.json();
+    if (!asset || !asset.name) {
+      return c.json({ success: false, error: "Asset details required for predictive Maintenance." }, 400);
+    }
+
+    const prediction = await predictHardwareFailure(asset);
+    return c.json({ success: true, prediction });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Predictive maintenance failed" }, 500);
   }
 });
 

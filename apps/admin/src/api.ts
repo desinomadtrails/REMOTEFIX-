@@ -224,6 +224,13 @@ export const api = {
     });
   },
 
+  async aiPredictMaintenance(asset: any) {
+    return request<any>("/api/ai/predict-maintenance", {
+      method: "POST",
+      body: JSON.stringify({ asset }),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");
