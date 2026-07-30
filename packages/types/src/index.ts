@@ -47,7 +47,19 @@ export const OrganizationCreateSchema = z.object({
   maxEndpoints: z.number().int().min(1).default(50),
   logoUrl: z.string().optional(),
 });
-export type OrganizationCreateInput = z.infer<typeof OrganizationCreateSchema>;
+export const AssetCreateSchema = z.object({
+  organizationId: z.string().uuid().optional(),
+  departmentId: z.string().uuid().optional(),
+  name: z.string().min(2, "Asset name is required"),
+  type: z.enum(["Laptop", "Desktop", "Server", "Router", "CCTV", "Printer", "Other"]),
+  brand: z.string().min(1, "Brand is required"),
+  model: z.string().min(1, "Model is required"),
+  serialNumber: z.string().optional(),
+  purchaseDate: z.string().optional(),
+  warrantyExpiryDate: z.string().optional(),
+  notes: z.string().optional(),
+});
+export type AssetCreateInput = z.infer<typeof AssetCreateSchema>;
 
 export const DepartmentCreateSchema = z.object({
   organizationId: z.string().uuid("Invalid organization ID"),
@@ -344,4 +356,23 @@ export interface AuditLog {
   ipAddress: string | null;
   createdAt: string;
   user?: User;
+}
+
+export interface Asset {
+  id: string;
+  organizationId?: string | null;
+  departmentId?: string | null;
+  assetTag: string;
+  name: string;
+  type: string;
+  brand: string;
+  model: string;
+  serialNumber?: string | null;
+  qrCodeUrl?: string | null;
+  status: string;
+  purchaseDate?: string | null;
+  warrantyExpiryDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -141,6 +141,25 @@ export const api = {
     });
   },
 
+  // Assets ITAM API
+  async getAssets() {
+    return request<any>("/api/admin/assets");
+  },
+
+  async createAsset(body: any) {
+    return request<any>("/api/admin/assets", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async updateAssetStatus(id: string, status: string) {
+    return request<any>(`/api/admin/assets/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

@@ -38,6 +38,33 @@ export const departments = mssqlTable("departments", {
 ]);
 
 // ==========================================
+// 0.2 ASSETS TABLE (ITAM & QR Tracking)
+// ==========================================
+export const assets = mssqlTable("assets", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
+  assetTag: varchar("asset_tag", { length: 100 }).notNull().unique(), // e.g. AST-2026-000101
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'Laptop' | 'Desktop' | 'Server' | 'Router' | 'CCTV' | 'Printer' | 'Other'
+  brand: varchar("brand", { length: 100 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  serialNumber: varchar("serial_number", { length: 100 }),
+  qrCodeUrl: varchar("qr_code_url", { length: 500 }),
+  status: varchar("status", { length: 20 }).notNull().default("active"), // 'active' | 'maintenance' | 'retired'
+  purchaseDate: varchar("purchase_date", { length: 10 }), // YYYY-MM-DD
+  warrantyExpiryDate: varchar("warranty_expiry_date", { length: 10 }), // YYYY-MM-DD
+  notes: text("notes"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_assets_tag").on(table.assetTag),
+  index("idx_assets_org_id").on(table.organizationId),
+  index("idx_assets_status").on(table.status),
+  index("idx_assets_type").on(table.type),
+]);
+
+// ==========================================
 // 1. USERS TABLE
 // ==========================================
 export const users = mssqlTable("users", {
@@ -130,6 +157,7 @@ export const bookings = mssqlTable("bookings", {
   id: varchar("id", { length: 36 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
+  assetId: varchar("asset_id", { length: 36 }).references(() => assets.id),
   customerId: varchar("customer_id", { length: 36 })
     .notNull()
     .references(() => customers.id),
@@ -166,6 +194,7 @@ export const bookings = mssqlTable("bookings", {
   index("idx_bookings_status").on(table.status),
   index("idx_bookings_phone").on(table.phone),
   index("idx_bookings_org_id").on(table.organizationId),
+  index("idx_bookings_asset_id").on(table.assetId),
   index("idx_bookings_created_at").on(table.createdAt),
 ]);
 
@@ -230,6 +259,7 @@ export const tickets = mssqlTable("tickets", {
   id: varchar("id", { length: 36 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
+  assetId: varchar("asset_id", { length: 36 }).references(() => assets.id),
   bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id),
   customerId: varchar("customer_id", { length: 36 })
     .notNull()
@@ -246,6 +276,7 @@ export const tickets = mssqlTable("tickets", {
   index("idx_tickets_engineer_id").on(table.engineerId),
   index("idx_tickets_status").on(table.status),
   index("idx_tickets_org_id").on(table.organizationId),
+  index("idx_tickets_asset_id").on(table.assetId),
 ]);
 
 // ==========================================
