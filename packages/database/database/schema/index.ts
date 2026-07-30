@@ -783,3 +783,38 @@ export const maintenanceSchedule = mssqlTable("maintenance_schedule", {
   index("idx_ms_status").on(table.status),
   index("idx_ms_scheduled_date").on(table.scheduledDate),
 ]);
+
+// ==========================================
+// 32. TICKET FEEDBACK & CSAT TABLE (Customer Ratings & Reviews)
+// ==========================================
+export const ticketFeedback = mssqlTable("ticket_feedback", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  bookingId: varchar("booking_id", { length: 36 }).notNull().references(() => bookings.id),
+  customerId: varchar("customer_id", { length: 36 }),
+  rating: int("rating").notNull().default(5), // 1 - 5 stars
+  feedbackText: text("feedback_text"),
+  technicianRating: int("technician_rating").notNull().default(5),
+  isPublic: bit("is_public").notNull().default(true),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_tf_booking_id").on(table.bookingId),
+  index("idx_tf_rating").on(table.rating),
+]);
+
+// ==========================================
+// 33. KNOWLEDGE BASE ARTICLES TABLE (Customer Self-Service FAQ & Guides)
+// ==========================================
+export const knowledgeBaseArticles = mssqlTable("knowledge_base_articles", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull().default("General"), // 'General' | 'Hardware' | 'Network' | 'Software' | 'Billing'
+  content: text("content").notNull(),
+  tags: varchar("tags", { length: 255 }),
+  views: int("views").notNull().default(0),
+  helpfulCount: int("helpful_count").notNull().default(0),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_kb_category").on(table.category),
+  index("idx_kb_title").on(table.title),
+]);

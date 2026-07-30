@@ -629,3 +629,26 @@ export interface MaintenanceSchedule {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TicketFeedback {
+  id: string;
+  bookingId: string;
+  customerId?: string | null;
+  rating: number;
+  feedbackText?: string | null;
+  technicianRating: number;
+  isPublic: boolean;
+  createdAt: string;
+}
+
+export interface KnowledgeBaseArticle {
+  id: string;
+  title: string;
+  category: "General" | "Hardware" | "Network" | "Software" | "Billing";
+  content: string;
+  tags?: string | null;
+  views: number;
+  helpfulCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
