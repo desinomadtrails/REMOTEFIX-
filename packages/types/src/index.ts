@@ -447,3 +447,20 @@ export interface Permission {
   action: string;
   createdAt: string;
 }
+
+export interface RmmEndpoint {
+  id: string;
+  organizationId?: string | null;
+  assetId?: string | null;
+  hostname: string;
+  osVersion: string;
+  ipAddress?: string | null;
+  macAddress?: string | null;
+  cpuUsagePercent: number;
+  ramUsagePercent: number;
+  diskUsagePercent: number;
+  status: "online" | "offline" | "warning" | "critical";
+  lastHeartbeatAt: string;
+  createdAt: string;
+  updatedAt: string;
+}

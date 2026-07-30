@@ -231,6 +231,11 @@ export const api = {
     });
   },
 
+  // RMM Endpoint Agent Console
+  async getRmmEndpoints() {
+    return request<any>("/api/rmm/admin/endpoints");
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

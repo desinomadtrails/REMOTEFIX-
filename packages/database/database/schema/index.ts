@@ -524,3 +524,28 @@ export const technicianWorkLogs = mssqlTable("technician_work_logs", {
   index("idx_tech_logs_booking_id").on(table.bookingId),
   index("idx_tech_logs_engineer_id").on(table.engineerId),
 ]);
+
+// ==========================================
+// 19. RMM ENDPOINTS TABLE (RMM Agent Telemetry)
+// ==========================================
+export const rmmEndpoints = mssqlTable("rmm_endpoints", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  assetId: varchar("asset_id", { length: 36 }).references(() => assets.id),
+  hostname: varchar("hostname", { length: 255 }).notNull(),
+  osVersion: varchar("os_version", { length: 150 }).notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  macAddress: varchar("mac_address", { length: 50 }),
+  cpuUsagePercent: decimal("cpu_usage_percent", { precision: 5, scale: 2 }).default("0.00"),
+  ramUsagePercent: decimal("ram_usage_percent", { precision: 5, scale: 2 }).default("0.00"),
+  diskUsagePercent: decimal("disk_usage_percent", { precision: 5, scale: 2 }).default("0.00"),
+  status: varchar("status", { length: 20 }).notNull().default("online"), // 'online' | 'offline' | 'warning' | 'critical'
+  lastHeartbeatAt: datetime2("last_heartbeat_at").notNull().default(sql`(getdate())`),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_rmm_hostname").on(table.hostname),
+  index("idx_rmm_status").on(table.status),
+  index("idx_rmm_org_id").on(table.organizationId),
+  index("idx_rmm_last_heartbeat").on(table.lastHeartbeatAt),
+]);
