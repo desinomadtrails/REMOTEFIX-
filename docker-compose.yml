@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  remotefix-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8787:8787"
+    environment:
+      - NODE_ENV=production
+      - PORT=8787
+      - DATABASE_URL=${DATABASE_URL:-sqlserver://remotefix-sql.database.windows.net}
+      - JWT_SECRET=${JWT_SECRET:-super-secret-key-min-32-chars-remotefix}
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8787/health/liveness"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

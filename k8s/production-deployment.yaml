@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remotefix-api-deployment
+  namespace: remotefix-prod
+  labels:
+    app: remotefix-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: remotefix-api
+  template:
+    metadata:
+      labels:
+        app: remotefix-api
+    spec:
+      containers:
+        - name: remotefix-api
+          image: remotefix-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8787
+          envFrom:
+            - secretRef:
+                name: remotefix-secrets
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8787
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8787
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remotefix-api-service
+  namespace: remotefix-prod
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8787
+  selector:
+    app: remotefix-api
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: remotefix-api-hpa
+  namespace: remotefix-prod
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: remotefix-api-deployment
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
