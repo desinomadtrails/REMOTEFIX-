@@ -89,6 +89,7 @@ import { notificationsRouter } from "./routes/notifications.js";
 import { docsRouter } from "./routes/docs.js";
 import { flagsRouter } from "./routes/flags.js";
 import { metricsRouter } from "./routes/metrics.js";
+import { backupRouter } from "./routes/backup.js";
 
 // Health Checks, Prometheus Metrics & Interactive API Docs
 app.route("/health", healthRouter);
@@ -97,6 +98,7 @@ app.route("/metrics", metricsRouter);
 app.route("/api/metrics", metricsRouter);
 app.route("/api/docs", docsRouter);
 app.route("/api/flags", flagsRouter);
+app.route("/api/admin/backups", backupRouter);
 
 // Auth & Core Features
 app.use("/api/auth/*", authRateLimiter);

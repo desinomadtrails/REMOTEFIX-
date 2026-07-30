@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Building2, Palette, Clock, DollarSign, Mail, MessageSquare,
-  Users, Shield, Save, Check, ChevronDown, ChevronUp, Lock, Key, Plus, Globe, CheckCircle2, ToggleLeft, ToggleRight, Sliders
+  Users, Shield, Save, Check, ChevronDown, ChevronUp, Lock, Key, Plus, Globe, CheckCircle2, ToggleLeft, ToggleRight, Sliders, Database, HardDriveDownload, RefreshCw, FileSpreadsheet
 } from "lucide-react";
 import { Card, Button, Input, Modal, Select, Badge } from "@remotefix/ui";
 import { api } from "../../api.js";
+import { formatDateTime } from "@remotefix/utils";
 
 function useSetting<T>(key: string, defaultValue: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
@@ -73,6 +74,26 @@ export const SettingsPage: React.FC = () => {
     queryFn: async () => { const res = await api.getAdminFeatureFlags(); return res.flags || []; },
   });
 
+  const { data: backupsData = [] } = useQuery({
+    queryKey: ["admin-backups"],
+    queryFn: async () => { const res = await api.getBackups(); return res.backups || []; },
+  });
+
+  const triggerBackupMutation = useMutation({
+    mutationFn: () => api.triggerBackup({ backupType: "full_database" }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-backups"] });
+      alert(res.message);
+    },
+    onError: (err: any) => alert(err.message),
+  });
+
+  const restoreBackupMutation = useMutation({
+    mutationFn: (backupId: string) => api.restoreBackup(backupId),
+    onSuccess: (res) => alert(res.message),
+    onError: (err: any) => alert(err.message),
+  });
+
   const toggleFlagMutation = useMutation({
     mutationFn: (flagId: string) => api.toggleFeatureFlag(flagId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
@@ -98,10 +119,79 @@ export const SettingsPage: React.FC = () => {
     <div className="space-y-6 font-body">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-2xl font-black font-display text-text">Platform Settings &amp; Feature Flags</h1>
-          <p className="text-xs text-muted mt-0.5">Manage company profile, SAML SSO, and database-driven feature flags &amp; beta rollouts.</p>
+          <h1 className="text-2xl font-black font-display text-text">Platform Settings &amp; Disaster Recovery</h1>
+          <p className="text-xs text-muted mt-0.5">Manage company profile, SAML SSO, feature flags, and encrypted database disaster recovery backups.</p>
         </div>
       </div>
+
+      {/* DISASTER RECOVERY & BACKUPS SECTION */}
+      <Section icon={<Database size={16} className="text-primary" />} title="Disaster Recovery &amp; Encrypted AES-256 Backups">
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <p className="text-xs text-muted max-w-xl">
+              Automated point-in-time encrypted database snapshots (AES-256) and tenant JSON export dumps for zero-data-loss compliance.
+            </p>
+            <Button
+              variant="primary"
+              glow
+              size="sm"
+              className="flex items-center gap-1.5 text-xs shrink-0"
+              onClick={() => triggerBackupMutation.mutate()}
+              isLoading={triggerBackupMutation.isPending}
+            >
+              <HardDriveDownload size={14} /> Create Encrypted Backup
+            </Button>
+          </div>
+
+          {backupsData.length === 0 ? (
+            <div className="p-6 bg-black/20 border border-border/40 rounded-xl text-center text-xs text-muted">
+              <Database size={32} className="mx-auto mb-2 text-muted/30" />
+              <span>No backup snapshots recorded. Click <strong>Create Encrypted Backup</strong> to trigger an AES-256 snapshot.</span>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left font-body">
+                <thead className="bg-card/60 text-muted uppercase text-[10px] font-bold border-b border-border/40">
+                  <tr>
+                    <th className="px-4 py-3">Snapshot Filename</th>
+                    <th className="px-4 py-3">Type</th>
+                    <th className="px-4 py-3">Encryption</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Created At</th>
+                    <th className="px-4 py-3 text-right">Verification</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {backupsData.map((b: any) => (
+                    <tr key={b.id} className="hover:bg-white/3 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold text-primary">{b.filename}</td>
+                      <td className="px-4 py-3 uppercase font-semibold text-text">{b.backupType.replace("_", " ")}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant="success" className="text-[9px] uppercase">AES-256 Encrypted</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={b.status === "completed" ? "success" : "danger"} className="text-[9px] uppercase">{b.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[10px] text-muted">{formatDateTime(b.createdAt)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-[10px] py-1 text-secondary"
+                          onClick={() => restoreBackupMutation.mutate(b.id)}
+                          isLoading={restoreBackupMutation.isPending}
+                        >
+                          <RefreshCw size={12} /> Verify Restore
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Section>
 
       {/* FEATURE FLAGS SECTION */}
       <Section icon={<Sliders size={16} className="text-primary" />} title="Database-Driven Feature Flags &amp; Beta Rollouts">

@@ -290,6 +290,25 @@ export const api = {
     });
   },
 
+  // Disaster Recovery & Encrypted Backup API
+  async getBackups() {
+    return request<any>("/api/admin/backups");
+  },
+
+  async triggerBackup(body: any = {}) {
+    return request<any>("/api/admin/backups/trigger", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async restoreBackup(backupId: string) {
+    return request<any>("/api/admin/backups/restore", {
+      method: "POST",
+      body: JSON.stringify({ backupId }),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

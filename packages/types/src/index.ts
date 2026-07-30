@@ -550,3 +550,16 @@ export interface FeatureFlag {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface DatabaseBackup {
+  id: string;
+  organizationId?: string | null;
+  filename: string;
+  backupType: "full_database" | "tenant_export" | "scheduled_cron";
+  sizeBytes: number;
+  checksumSha256?: string | null;
+  isEncrypted: boolean;
+  status: "completed" | "failed" | "restoring";
+  createdAt: string;
+  updatedAt: string;
+}

@@ -658,3 +658,23 @@ export const featureFlags = mssqlTable("feature_flags", {
   index("idx_feature_flags_key").on(table.key),
   index("idx_feature_flags_target_org").on(table.targetOrgId),
 ]);
+
+// ==========================================
+// 25. DATABASE BACKUPS TABLE (Disaster Recovery)
+// ==========================================
+export const databaseBackups = mssqlTable("database_backups", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  backupType: varchar("backup_type", { length: 50 }).notNull().default("full_database"), // 'full_database' | 'tenant_export' | 'scheduled_cron'
+  sizeBytes: int("size_bytes").notNull().default(0),
+  checksumSha256: varchar("checksum_sha256", { length: 64 }),
+  isEncrypted: bit("is_encrypted").notNull().default(true),
+  status: varchar("status", { length: 20 }).notNull().default("completed"), // 'completed' | 'failed' | 'restoring'
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_backups_org_id").on(table.organizationId),
+  index("idx_backups_status").on(table.status),
+  index("idx_backups_created_at").on(table.createdAt),
+]);
