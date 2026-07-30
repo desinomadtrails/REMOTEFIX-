@@ -489,3 +489,22 @@ export interface SsoProvider {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AuditEntry {
+  id: string;
+  organizationId?: string | null;
+  departmentId?: string | null;
+  userId?: string | null;
+  action: string;
+  actionType?: string | null;
+  entityType?: string | null;
+  entityId?: string | null;
+  oldValuesJson?: string | null;
+  newValuesJson?: string | null;
+  reason?: string | null;
+  status: string;
+  details: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+}

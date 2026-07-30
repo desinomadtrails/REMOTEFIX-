@@ -84,7 +84,7 @@ export const api = {
 
   // Audit Logs API
   async getAuditLogs() {
-    return request<any>("/api/logs");
+    return request<any>("/api/admin/logs");
   },
 
   // Database Seeding

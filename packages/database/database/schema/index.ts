@@ -427,19 +427,30 @@ export const faqs = mssqlTable("faqs", {
 });
 
 // ==========================================
-// 14. AUDIT LOGS TABLE
+// 14. AUDIT LOGS TABLE (Enterprise Immutable Audit Trail)
 // ==========================================
 export const auditLogs = mssqlTable("audit_logs", {
   id: varchar("id", { length: 36 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
   userId: varchar("user_id", { length: 36 }).references(() => users.id),
   action: varchar("action", { length: 100 }).notNull(),
+  actionType: varchar("action_type", { length: 100 }), // e.g. 'auth.login' | 'ticket.create' | 'rmm.script_dispatch'
+  entityType: varchar("entity_type", { length: 50 }),   // e.g. 'users' | 'tickets' | 'assets' | 'invoices'
+  entityId: varchar("entity_id", { length: 36 }),
+  oldValuesJson: text("old_values_json"),
+  newValuesJson: text("new_values_json"),
+  reason: varchar("reason", { length: 500 }),
+  status: varchar("status", { length: 20 }).notNull().default("success"), // 'success' | 'failed'
   details: text("details").notNull(),
   ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: varchar("user_agent", { length: 500 }),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
 }, (table) => [
   index("idx_audit_logs_user_id").on(table.userId),
   index("idx_audit_logs_action").on(table.action),
+  index("idx_audit_logs_action_type").on(table.actionType),
+  index("idx_audit_logs_entity").on(table.entityType, table.entityId),
   index("idx_audit_logs_org_id").on(table.organizationId),
   index("idx_audit_logs_created_at").on(table.createdAt),
 ]);
