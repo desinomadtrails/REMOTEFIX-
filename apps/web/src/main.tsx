@@ -13,6 +13,7 @@ import { Contact } from "./pages/Contact.js";
 import { Login } from "./pages/Login.js";
 import { Register } from "./pages/Register.js";
 import { CustomerDashboard } from "./pages/CustomerDashboard.js";
+import { CustomerAssets } from "./pages/CustomerAssets.js";
 import { EngineerDashboard } from "./pages/EngineerDashboard.js";
 import { BookSuccess } from "./pages/BookSuccess.js";
 import { TrackService } from "./pages/TrackService.js";
@@ -44,6 +45,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/customer" element={<CustomerDashboard />} />
+            <Route path="/customer/assets" element={<CustomerAssets />} />
             <Route path="/engineer" element={<EngineerDashboard />} />
             <Route path="/about" element={<About />} />
             <Route path="/careers" element={<Careers />} />

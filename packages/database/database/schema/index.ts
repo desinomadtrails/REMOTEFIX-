@@ -728,3 +728,58 @@ export const otpCodes = mssqlTable("otp_codes", {
   index("idx_otp_codes_code").on(table.code),
   index("idx_otp_codes_token").on(table.token),
 ]);
+
+// ==========================================
+// 29. ASSET SERVICE HISTORY TABLE (Chronological Asset Timeline)
+// ==========================================
+export const assetServiceHistory = mssqlTable("asset_service_history", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  assetId: varchar("asset_id", { length: 36 }).notNull().references(() => assets.id),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  eventType: varchar("event_type", { length: 50 }).notNull(), // 'installation' | 'repair' | 'maintenance' | 'parts_replaced' | 'software' | 'firmware' | 'warranty_claim'
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  performedBy: varchar("performed_by", { length: 255 }),
+  partsReplaced: text("parts_replaced"),
+  softwareInstalled: text("software_installed"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_ash_asset_id").on(table.assetId),
+  index("idx_ash_event_type").on(table.eventType),
+  index("idx_ash_created_at").on(table.createdAt),
+]);
+
+// ==========================================
+// 30. CUSTOMER ASSET DOCUMENTS TABLE (Invoices, Warranties & AMC Contracts)
+// ==========================================
+export const customerAssetDocuments = mssqlTable("customer_asset_documents", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  assetId: varchar("asset_id", { length: 36 }).notNull().references(() => assets.id),
+  customerId: varchar("customer_id", { length: 36 }).references(() => customers.id),
+  documentType: varchar("document_type", { length: 50 }).notNull(), // 'invoice' | 'warranty' | 'amc_contract' | 'report' | 'photo'
+  documentName: varchar("document_name", { length: 255 }).notNull(),
+  documentUrl: varchar("document_url", { length: 500 }).notNull(),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_cad_asset_id").on(table.assetId),
+  index("idx_cad_customer_id").on(table.customerId),
+]);
+
+// ==========================================
+// 31. MAINTENANCE SCHEDULE TABLE (Upcoming Preventive Maintenance)
+// ==========================================
+export const maintenanceSchedule = mssqlTable("maintenance_schedule", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  assetId: varchar("asset_id", { length: 36 }).notNull().references(() => assets.id),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  serviceName: varchar("service_name", { length: 255 }).notNull(),
+  scheduledDate: varchar("scheduled_date", { length: 10 }).notNull(), // YYYY-MM-DD
+  status: varchar("status", { length: 20 }).notNull().default("scheduled"), // 'scheduled' | 'in_progress' | 'completed' | 'overdue'
+  assignedEngineerId: varchar("assigned_engineer_id", { length: 36 }).references(() => engineers.id),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_ms_asset_id").on(table.assetId),
+  index("idx_ms_status").on(table.status),
+  index("idx_ms_scheduled_date").on(table.scheduledDate),
+]);

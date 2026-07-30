@@ -594,3 +594,38 @@ export interface OtpCode {
   isUsed: boolean;
   createdAt: string;
 }
+
+export interface AssetServiceHistory {
+  id: string;
+  assetId: string;
+  organizationId?: string | null;
+  eventType: "installation" | "repair" | "maintenance" | "parts_replaced" | "software" | "firmware" | "warranty_claim";
+  title: string;
+  description?: string | null;
+  performedBy?: string | null;
+  partsReplaced?: string | null;
+  softwareInstalled?: string | null;
+  createdAt: string;
+}
+
+export interface CustomerAssetDocument {
+  id: string;
+  assetId: string;
+  customerId?: string | null;
+  documentType: "invoice" | "warranty" | "amc_contract" | "report" | "photo";
+  documentName: string;
+  documentUrl: string;
+  createdAt: string;
+}
+
+export interface MaintenanceSchedule {
+  id: string;
+  assetId: string;
+  organizationId?: string | null;
+  serviceName: string;
+  scheduledDate: string;
+  status: "scheduled" | "in_progress" | "completed" | "overdue";
+  assignedEngineerId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
