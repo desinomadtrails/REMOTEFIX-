@@ -563,3 +563,34 @@ export interface DatabaseBackup {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TrackingToken {
+  id: string;
+  bookingId: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface CustomerProfile {
+  id: string;
+  userId?: string | null;
+  email: string;
+  companyName?: string | null;
+  customerName: string;
+  phoneNumber?: string | null;
+  preferredContactMethod: "email" | "sms" | "phone" | "whatsapp";
+  savedDevicesJson?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OtpCode {
+  id: string;
+  email: string;
+  code: string;
+  token: string;
+  expiresAt: string;
+  isUsed: boolean;
+  createdAt: string;
+}

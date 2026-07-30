@@ -39,7 +39,35 @@ export const TrackService: React.FC = () => {
   useEffect(() => {
     const paramTid = searchParams.get("ticketId");
     const paramPhone = searchParams.get("phone");
-    if (paramTid && paramPhone) {
+    const token = searchParams.get("token");
+
+    if (token) {
+      setLoading(true);
+      fetch(`/api/customer/tracking/${token}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setTrackData({
+              booking: {
+                ticketId: data.ticket.id,
+                status: data.ticket.status,
+                device: data.ticket.type || "IT Device",
+                priority: "Normal",
+                visitDate: data.ticket.scheduledDate || "Scheduled",
+                visitTime: data.ticket.timeSlot || "Standard Slot",
+                problemDescription: data.ticket.issueDescription || "IT Technical Issue",
+              },
+              timeline: [
+                { stage: "Ticket Created & Logged", isCompleted: true, date: data.ticket.createdAt },
+                { stage: "Assigned & Dispatched", isCompleted: data.ticket.status !== "pending" },
+                { stage: "In Progress / Diagnostics", isCompleted: data.ticket.status === "completed" },
+                { stage: "Resolved & Closed", isCompleted: data.ticket.status === "completed" },
+              ],
+            });
+          }
+        })
+        .finally(() => setLoading(false));
+    } else if (paramTid && paramPhone) {
       fetchTracking(paramTid, paramPhone);
     }
   }, []);

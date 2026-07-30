@@ -17,6 +17,7 @@ import { customersRouter } from "./routes/customers.js";
 import { engineersRouter } from "./routes/engineers.js";
 import { healthRouter } from "./routes/health.js";
 import { technicianWorkflowRouter } from "./routes/technicianWorkflow.js";
+import { customerRouter } from "./routes/customer.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -130,6 +131,7 @@ app.route("/api/admin/analytics", analyticsRouter);
 app.route("/api/admin/logs", logsRouter);
 app.route("/api/admin/customers", customersRouter);
 app.route("/api/admin/engineers", engineersRouter);
+app.route("/api/customer", customerRouter);
 
 app.get("/api/test-db", async (c) => {
   try {

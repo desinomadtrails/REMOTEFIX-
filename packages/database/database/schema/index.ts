@@ -678,3 +678,53 @@ export const databaseBackups = mssqlTable("database_backups", {
   index("idx_backups_status").on(table.status),
   index("idx_backups_created_at").on(table.createdAt),
 ]);
+
+// ==========================================
+// 26. TRACKING TOKENS TABLE (Passwordless Guest Ticket Access)
+// ==========================================
+export const trackingTokens = mssqlTable("tracking_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  bookingId: varchar("booking_id", { length: 36 }).notNull().references(() => bookings.id),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  expiresAt: datetime2("expires_at").notNull(),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_tracking_tokens_booking").on(table.bookingId),
+  index("idx_tracking_tokens_token").on(table.token),
+]);
+
+// ==========================================
+// 27. CUSTOMER PROFILES TABLE (Optional Registered Customer Account)
+// ==========================================
+export const customerProfiles = mssqlTable("customer_profiles", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).references(() => users.id),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  companyName: varchar("company_name", { length: 255 }),
+  customerName: varchar("customer_name", { length: 255 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 50 }),
+  preferredContactMethod: varchar("preferred_contact_method", { length: 20 }).notNull().default("email"), // 'email' | 'sms' | 'phone' | 'whatsapp'
+  savedDevicesJson: text("saved_devices_json"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_customer_profiles_user").on(table.userId),
+  index("idx_customer_profiles_email").on(table.email),
+]);
+
+// ==========================================
+// 28. OTP CODES TABLE (Passwordless Magic Link & Verification Codes)
+// ==========================================
+export const otpCodes = mssqlTable("otp_codes", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  code: varchar("code", { length: 10 }).notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  expiresAt: datetime2("expires_at").notNull(),
+  isUsed: bit("is_used").notNull().default(false),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_otp_codes_email").on(table.email),
+  index("idx_otp_codes_code").on(table.code),
+  index("idx_otp_codes_token").on(table.token),
+]);
