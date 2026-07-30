@@ -652,3 +652,24 @@ export interface KnowledgeBaseArticle {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TechnicianDevice {
+  id: string;
+  engineerId: string;
+  deviceToken: string;
+  platform: "android" | "ios";
+  appVersion: string;
+  isRegistered: boolean;
+  lastSyncAt: string;
+  createdAt: string;
+}
+
+export interface OfflineSyncQueueItem {
+  id: string;
+  engineerId: string;
+  actionType: "status_update" | "signature_upload" | "photo_upload" | "qr_scan" | "work_log";
+  payloadJson: string;
+  status: "pending" | "synced" | "failed" | "conflict";
+  retryCount: number;
+  createdAt: string;
+}

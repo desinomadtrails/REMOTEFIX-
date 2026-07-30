@@ -818,3 +818,36 @@ export const knowledgeBaseArticles = mssqlTable("knowledge_base_articles", {
   index("idx_kb_category").on(table.category),
   index("idx_kb_title").on(table.title),
 ]);
+
+// ==========================================
+// 34. TECHNICIAN DEVICES TABLE (Mobile Device Registration & Push Tokens)
+// ==========================================
+export const technicianDevices = mssqlTable("technician_devices", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  engineerId: varchar("engineer_id", { length: 36 }).notNull().references(() => engineers.id),
+  deviceToken: varchar("device_token", { length: 500 }).notNull(),
+  platform: varchar("platform", { length: 20 }).notNull().default("android"), // 'android' | 'ios'
+  appVersion: varchar("app_version", { length: 20 }).notNull().default("1.0.0"),
+  isRegistered: bit("is_registered").notNull().default(true),
+  lastSyncAt: datetime2("last_sync_at").notNull().default(sql`(getdate())`),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_td_engineer_id").on(table.engineerId),
+  index("idx_td_platform").on(table.platform),
+]);
+
+// ==========================================
+// 35. OFFLINE SYNC QUEUE TABLE (Mobile Offline Work Queue & Sync Engine)
+// ==========================================
+export const offlineSyncQueue = mssqlTable("offline_sync_queue", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  engineerId: varchar("engineer_id", { length: 36 }).notNull().references(() => engineers.id),
+  actionType: varchar("action_type", { length: 50 }).notNull(), // 'status_update' | 'signature_upload' | 'photo_upload' | 'qr_scan' | 'work_log'
+  payloadJson: text("payload_json").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // 'pending' | 'synced' | 'failed' | 'conflict'
+  retryCount: int("retry_count").notNull().default(0),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_osq_engineer_id").on(table.engineerId),
+  index("idx_osq_status").on(table.status),
+]);
