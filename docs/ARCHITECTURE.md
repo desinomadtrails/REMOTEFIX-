@@ -1,61 +1,40 @@
-# RemoteFix Enterprise Architecture & Topology
+# RemoteFix Enterprise Platform Architecture
 
-## System Overview
-RemoteFix is a multi-tenant, zero-friction IT Service Management (ITSM) SaaS platform. It combines serverless cloud microservices, reactive frontend web applications, and an enterprise Azure SQL database.
-
-```
-                     ┌───────────────────────────────────────────────────────────┐
-                     │                 RemoteFix Client Applications             │
-                     └─────────────────────────────┬─────────────────────────────┘
-                                                   │
-                       ┌───────────────────────────┴───────────────────────────┐
-                       │                                                       │
-                       ▼                                                       ▼
-       ┌───────────────────────────────┐                       ┌───────────────────────────────┐
-       │   Customer Portal & Web App   │                       │      Admin & Tech Suite       │
-       │     (React 19 + Vite)         │                       │     (React 19 + Vite)         │
-       └───────────────┬───────────────┘                       └───────────────┬───────────────┘
-                       │                                                       │
-                       └───────────────────────────┬───────────────────────────┘
-                                                   │ HTTPS / REST (JWT & CORS)
-                                                   ▼
-                     ┌───────────────────────────────────────────────────────────┐
-                     │               Hono API Gateway Microservice               │
-                     │          (Deployed on Cloudflare Workers Serverless)      │
-                     └─────────────────────────────┬─────────────────────────────┘
-                                                   │
-        ┌──────────────────────────────────────────┼──────────────────────────────────────────┐
-        │                                          │                                          │
-        ▼                                          ▼                                          ▼
-┌───────────────┐                          ┌───────────────┐                          ┌───────────────┐
-│ Azure SQL DB  │                          │  Email / SMS  │                          │ Object Storage│
-│ (Drizzle ORM) │                          │ (SMTP/Twilio) │                          │(R2 / Azure OS)│
-└───────────────┘                          └───────────────┘                          └───────────────┘
-```
-
----
-
-## Shared Workspace Architecture
+## Executive System Overview
+RemoteFix is a multi-tenant enterprise IT Service Management (ITSM), Remote Monitoring & Management (RMM), AI Incident Diagnosis, IT Asset Management (ITAM), and Annual Maintenance Contract (AMC) Billing SaaS platform.
 
 ```
-remotefix/
-├── apps/
-│   ├── web/               ← Customer-facing website & guest booking portal
-│   ├── admin/             ← Admin control suite & technician dispatch portal
-│   └── api/               ← Serverless API Gateway (Hono + Cloudflare Workers)
-└── packages/
-    ├── database/          ← Azure SQL schema, Drizzle ORM models, indexes
-    ├── types/             ← Shared Zod validation schemas & TypeScript interfaces
-    ├── ui/                ← Shared component design system (Tailwind v4)
-    ├── utils/             ← Shared formatting & calculation utilities
-    └── auth/              ← PBKDF2 hashing, JWT signing/verifying, token helpers
+                  ┌─────────────────────────────────────────┐
+                  │   Cloudflare Edge Network / Ingress     │
+                  └────────────────────┬────────────────────┘
+                                       │
+                ┌──────────────────────┴──────────────────────┐
+                │                                             │
+      ┌─────────▼────────┐                          ┌─────────▼────────┐
+      │   apps/web       │                          │   apps/admin     │
+      │ (Customer Portal)│                          │ (Admin Console)  │
+      └─────────┬────────┘                          └─────────┬────────┘
+                │                                             │
+                └──────────────────────┬──────────────────────┘
+                                       │
+                        ┌──────────────▼──────────────┐
+                        │   apps/api (Hono API)       │
+                        └──────────────┬──────────────┘
+                                       │
+        ┌──────────────────────────────┼──────────────────────────────┐
+        │                              │                              │
+┌───────▼────────┐           ┌─────────▼────────┐           ┌─────────▼────────┐
+│ Azure SQL DB   │           │ RMM Telemetry    │           │ SAML SSO / Okta  │
+│ (Drizzle ORM)  │           │ Endpoint Daemon  │           │ Identity Provider│
+└────────────────┘           └──────────────────┘           └──────────────────┘
 ```
 
----
-
-## Security Architecture
-
-1. **Authentication:** Dual-token JWT architecture (Short-lived 1-hour Access Tokens + Long-lived 30-day Refresh Tokens with SHA-256 token rotation).
-2. **Authorization:** Role-Based Access Control (`admin`, `engineer`, `customer`). Admin role possesses absolute override capabilities.
-3. **Data Protection:** All passwords hashed via PBKDF2 with SHA-256 salt iterations. Remote diagnostic sessions protected with AES-256 encryption.
-4. **Network & Headers:** Hardened Content Security Policy (CSP), HTTP Strict Transport Security (HSTS), nosniff, XSS protection, and per-route rate limiting.
+## Workspace Sitemap
+- `apps/web`: High-performance customer portal and public booking UI built with Vite, React, Vanilla CSS, and Framer Motion.
+- `apps/admin`: Enterprise administrative console featuring Multi-Tenant Tenant Switcher, RBAC Matrix, AI Copilot, ITAM Assets, RMM Console, AMC Contracts, SLA Engine, Audit Logs, Notification Center, Feature Flags, and Disaster Recovery.
+- `apps/api`: Edge API microservice built on Hono and Cloudflare Workers runtime.
+- `packages/database`: Azure SQL database schema managed via Drizzle ORM.
+- `packages/types`: Shared TypeScript interfaces and Zod validation schemas.
+- `packages/auth`: JWT authentication, database-driven RBAC checking, and password hashing utilities.
+- `packages/ui`: Cyberpunk-themed reusable React design system component library.
+- `packages/utils`: Date formatting, currency formatters, and utility functions.
