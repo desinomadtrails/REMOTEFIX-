@@ -31,9 +31,31 @@ export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 export const TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
 
+export const ORG_TIERS = ["startup", "smb", "msp", "enterprise"] as const;
+export type OrgTier = (typeof ORG_TIERS)[number];
+
 // ==========================================
 // ZOD SCHEMAS & TYPES
 // ==========================================
+
+// Organization & Department Schemas (Multi-Tenant)
+export const OrganizationCreateSchema = z.object({
+  name: z.string().min(2, "Organization name must be at least 2 characters"),
+  slug: z.string().min(2, "Organization slug is required"),
+  domain: z.string().optional(),
+  tier: z.enum(ORG_TIERS).default("enterprise"),
+  maxEndpoints: z.number().int().min(1).default(50),
+  logoUrl: z.string().optional(),
+});
+export type OrganizationCreateInput = z.infer<typeof OrganizationCreateSchema>;
+
+export const DepartmentCreateSchema = z.object({
+  organizationId: z.string().uuid("Invalid organization ID"),
+  name: z.string().min(2, "Department name is required"),
+  code: z.string().optional(),
+  headUserId: z.string().uuid().optional(),
+});
+export type DepartmentCreateInput = z.infer<typeof DepartmentCreateSchema>;
 
 // Auth Schemas
 export const LoginSchema = z.object({
@@ -145,7 +167,6 @@ export const ServiceRequestCreateSchema = z.object({
 });
 export type ServiceRequestCreateInput = z.infer<typeof ServiceRequestCreateSchema>;
 
-
 // FAQ & Blog Schemas
 export const FaqSchema = z.object({
   id: z.string().uuid().optional(),
@@ -169,8 +190,33 @@ export type BlogPost = z.infer<typeof BlogPostSchema>;
 // SYSTEM MODELS
 // ==========================================
 
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  domain: string | null;
+  tier: OrgTier;
+  maxEndpoints: number;
+  logoUrl: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Department {
+  id: string;
+  organizationId: string;
+  name: string;
+  code: string | null;
+  headUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
+  organizationId?: string | null;
+  departmentId?: string | null;
   email: string;
   fullName: string;
   role: UserRole;
@@ -184,6 +230,7 @@ export interface User {
 export interface Customer {
   id: string;
   userId: string;
+  organizationId?: string | null;
   phone: string;
   companyName: string | null;
   billingAddress: string | null;
@@ -195,6 +242,7 @@ export interface Customer {
 export interface Engineer {
   id: string;
   userId: string;
+  organizationId?: string | null;
   phone: string;
   bio: string | null;
   specialities: string[];
@@ -206,6 +254,8 @@ export interface Engineer {
 
 export interface Booking {
   id: string;
+  organizationId?: string | null;
+  departmentId?: string | null;
   customerId: string;
   serviceId: string | null;
   type: BookingType;
@@ -229,6 +279,8 @@ export interface Booking {
 
 export interface Ticket {
   id: string;
+  organizationId?: string | null;
+  departmentId?: string | null;
   bookingId: string | null;
   customerId: string;
   subject: string;
@@ -253,6 +305,7 @@ export interface TicketMessage {
 
 export interface Invoice {
   id: string;
+  organizationId?: string | null;
   bookingId: string;
   invoiceNumber: string;
   amount: number;
@@ -284,6 +337,7 @@ export interface Review {
 
 export interface AuditLog {
   id: string;
+  organizationId?: string | null;
   userId: string | null;
   action: string;
   details: string;

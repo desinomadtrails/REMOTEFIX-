@@ -77,6 +77,8 @@ app.use("/api/*", apiRateLimiter);
 // ROUTES
 // ==========================================
 
+import { organizationsRouter } from "./routes/organizations.js";
+
 // Health Checks
 app.route("/health", healthRouter);
 app.route("/api/health", healthRouter);
@@ -91,6 +93,7 @@ app.route("/api/tickets", ticketsRouter);
 app.route("/api/invoices", invoicesRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/technician-workflow", technicianWorkflowRouter);
+app.route("/api/admin/organizations", organizationsRouter);
 app.route("/api/admin/analytics", analyticsRouter);
 app.route("/api/admin/logs", logsRouter);
 app.route("/api/admin/customers", customersRouter);

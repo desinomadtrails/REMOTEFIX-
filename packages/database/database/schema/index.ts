@@ -2,10 +2,48 @@ import { mssqlTable, varchar, text, int, decimal, datetime2, bit, index } from "
 import { sql } from "drizzle-orm";
 
 // ==========================================
+// 0. ORGANIZATIONS TABLE (Multi-Tenant)
+// ==========================================
+export const organizations = mssqlTable("organizations", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  domain: varchar("domain", { length: 255 }),
+  tier: varchar("tier", { length: 50 }).notNull().default("enterprise"), // 'startup' | 'smb' | 'msp' | 'enterprise'
+  maxEndpoints: int("max_endpoints").notNull().default(50),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  status: varchar("status", { length: 20 }).notNull().default("active"), // 'active' | 'suspended'
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_orgs_slug").on(table.slug),
+  index("idx_orgs_status").on(table.status),
+]);
+
+// ==========================================
+// 0.1 DEPARTMENTS TABLE (Multi-Tenant)
+// ==========================================
+export const departments = mssqlTable("departments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 })
+    .notNull()
+    .references(() => organizations.id),
+  name: varchar("name", { length: 150 }).notNull(),
+  code: varchar("code", { length: 50 }),
+  headUserId: varchar("head_user_id", { length: 36 }),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_depts_org_id").on(table.organizationId),
+]);
+
+// ==========================================
 // 1. USERS TABLE
 // ==========================================
 export const users = mssqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }), // Can be null for OAuth login
   fullName: varchar("full_name", { length: 255 }).notNull(),
@@ -21,6 +59,7 @@ export const users = mssqlTable("users", {
   index("idx_users_email").on(table.email),
   index("idx_users_role").on(table.role),
   index("idx_users_status").on(table.status),
+  index("idx_users_org_id").on(table.organizationId),
 ]);
 
 // ==========================================
@@ -31,6 +70,7 @@ export const customers = mssqlTable("customers", {
   userId: varchar("user_id", { length: 36 })
     .notNull()
     .references(() => users.id),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   phone: varchar("phone", { length: 20 }).notNull(),
   companyName: varchar("company_name", { length: 255 }),
   billingAddress: varchar("billing_address", { length: 500 }),
@@ -39,6 +79,7 @@ export const customers = mssqlTable("customers", {
 }, (table) => [
   index("idx_customers_user_id").on(table.userId),
   index("idx_customers_phone").on(table.phone),
+  index("idx_customers_org_id").on(table.organizationId),
 ]);
 
 // ==========================================
@@ -49,6 +90,7 @@ export const engineers = mssqlTable("engineers", {
   userId: varchar("user_id", { length: 36 })
     .notNull()
     .references(() => users.id),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   phone: varchar("phone", { length: 20 }).notNull(),
   bio: text("bio"),
   specialities: text("specialities"), // Comma-separated list or JSON
@@ -58,6 +100,7 @@ export const engineers = mssqlTable("engineers", {
 }, (table) => [
   index("idx_engineers_user_id").on(table.userId),
   index("idx_engineers_status").on(table.status),
+  index("idx_engineers_org_id").on(table.organizationId),
 ]);
 
 // ==========================================
@@ -65,6 +108,7 @@ export const engineers = mssqlTable("engineers", {
 // ==========================================
 export const services = mssqlTable("services", {
   id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description").notNull(),
   category: varchar("category", { length: 50 }).notNull(),
@@ -76,6 +120,7 @@ export const services = mssqlTable("services", {
 }, (table) => [
   index("idx_services_category").on(table.category),
   index("idx_services_is_active").on(table.isActive),
+  index("idx_services_org_id").on(table.organizationId),
 ]);
 
 // ==========================================
@@ -83,6 +128,8 @@ export const services = mssqlTable("services", {
 // ==========================================
 export const bookings = mssqlTable("bookings", {
   id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
   customerId: varchar("customer_id", { length: 36 })
     .notNull()
     .references(() => customers.id),
@@ -118,6 +165,7 @@ export const bookings = mssqlTable("bookings", {
   index("idx_bookings_ticket_id").on(table.ticketId),
   index("idx_bookings_status").on(table.status),
   index("idx_bookings_phone").on(table.phone),
+  index("idx_bookings_org_id").on(table.organizationId),
   index("idx_bookings_created_at").on(table.createdAt),
 ]);
 
@@ -140,6 +188,7 @@ export const bookingImages = mssqlTable("booking_images", {
 // ==========================================
 export const invoices = mssqlTable("invoices", {
   id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   bookingId: varchar("booking_id", { length: 36 })
     .notNull()
     .references(() => bookings.id),
@@ -153,6 +202,7 @@ export const invoices = mssqlTable("invoices", {
   index("idx_invoices_booking_id").on(table.bookingId),
   index("idx_invoices_invoice_number").on(table.invoiceNumber),
   index("idx_invoices_status").on(table.status),
+  index("idx_invoices_org_id").on(table.organizationId),
 ]);
 
 // ==========================================
@@ -178,6 +228,8 @@ export const payments = mssqlTable("payments", {
 // ==========================================
 export const tickets = mssqlTable("tickets", {
   id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
   bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id),
   customerId: varchar("customer_id", { length: 36 })
     .notNull()
@@ -193,6 +245,7 @@ export const tickets = mssqlTable("tickets", {
   index("idx_tickets_customer_id").on(table.customerId),
   index("idx_tickets_engineer_id").on(table.engineerId),
   index("idx_tickets_status").on(table.status),
+  index("idx_tickets_org_id").on(table.organizationId),
 ]);
 
 // ==========================================
@@ -262,6 +315,7 @@ export const faqs = mssqlTable("faqs", {
 // ==========================================
 export const auditLogs = mssqlTable("audit_logs", {
   id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   userId: varchar("user_id", { length: 36 }).references(() => users.id),
   action: varchar("action", { length: 100 }).notNull(),
   details: text("details").notNull(),
@@ -270,6 +324,7 @@ export const auditLogs = mssqlTable("audit_logs", {
 }, (table) => [
   index("idx_audit_logs_user_id").on(table.userId),
   index("idx_audit_logs_action").on(table.action),
+  index("idx_audit_logs_org_id").on(table.organizationId),
   index("idx_audit_logs_created_at").on(table.createdAt),
 ]);
 

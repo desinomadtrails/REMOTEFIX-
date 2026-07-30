@@ -118,6 +118,29 @@ export const api = {
     return request<any>(`/api/technician-workflow/log/${bookingId}`);
   },
 
+  // Organizations Multi-Tenant API
+  async getOrganizations() {
+    return request<any>("/api/admin/organizations");
+  },
+
+  async createOrganization(body: any) {
+    return request<any>("/api/admin/organizations", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async getOrgDepartments(orgId: string) {
+    return request<any>(`/api/admin/organizations/${orgId}/departments`);
+  },
+
+  async createOrgDepartment(orgId: string, body: any) {
+    return request<any>(`/api/admin/organizations/${orgId}/departments`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");
