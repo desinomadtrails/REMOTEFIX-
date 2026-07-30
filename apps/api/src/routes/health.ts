@@ -4,6 +4,7 @@ import { AppEnv } from "../middleware/auth.js";
 
 const healthRouter = new Hono<AppEnv>();
 
+// 1. General Health Check
 healthRouter.get("/", async (c) => {
   const startTime = Date.now();
   let dbStatus = "unknown";
@@ -31,10 +32,9 @@ healthRouter.get("/", async (c) => {
   return c.json(
     {
       status: isHealthy ? "healthy" : "unhealthy",
-      service: "RemoteFix API Gateway",
-      version: "1.0.0",
+      service: "RemoteFix Enterprise API",
+      version: "2.4.0",
       timestamp: new Date().toISOString(),
-      uptimeSeconds: Math.floor(process.uptime ? process.uptime() : 0),
       checks: {
         database: {
           status: dbStatus,
@@ -46,6 +46,22 @@ healthRouter.get("/", async (c) => {
     },
     statusCode
   );
+});
+
+// 2. Kubernetes Liveness Probe
+healthRouter.get("/liveness", (c) => {
+  return c.json({ status: "alive", timestamp: new Date().toISOString() }, 200);
+});
+
+// 3. Kubernetes Readiness Probe
+healthRouter.get("/readiness", async (c) => {
+  try {
+    const db = getDb(c.env.DATABASE_URL);
+    await db.$client.request().query("SELECT 1 as ping");
+    return c.json({ status: "ready", database: "connected", timestamp: new Date().toISOString() }, 200);
+  } catch (err: any) {
+    return c.json({ status: "not_ready", database: "disconnected", error: err.message }, 503);
+  }
 });
 
 export { healthRouter };
