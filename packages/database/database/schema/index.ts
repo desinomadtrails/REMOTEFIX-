@@ -38,7 +38,40 @@ export const departments = mssqlTable("departments", {
 ]);
 
 // ==========================================
-// 0.2 ASSETS TABLE (ITAM & QR Tracking)
+// 0.2 ROLES TABLE (Database-Driven RBAC)
+// ==========================================
+export const roles = mssqlTable("roles", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  name: varchar("name", { length: 50 }).notNull(), // 'super_admin' | 'org_admin' | 'manager' | 'dispatcher' | 'technician' | 'finance' | 'viewer'
+  displayName: varchar("display_name", { length: 100 }).notNull(),
+  description: text("description"),
+  isSystem: bit("is_system").notNull().default(false),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_roles_org_id").on(table.organizationId),
+  index("idx_roles_name").on(table.name),
+]);
+
+// ==========================================
+// 0.3 PERMISSIONS TABLE (Database-Driven RBAC)
+// ==========================================
+export const permissions = mssqlTable("permissions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  roleId: varchar("role_id", { length: 36 })
+    .notNull()
+    .references(() => roles.id),
+  resource: varchar("resource", { length: 50 }).notNull(), // 'organizations' | 'departments' | 'users' | 'bookings' | 'tickets' | 'assets' | 'billing' | 'reports'
+  action: varchar("action", { length: 50 }).notNull(),   // 'create' | 'read' | 'update' | 'delete' | 'manage'
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_permissions_role_id").on(table.roleId),
+  index("idx_permissions_resource_action").on(table.resource, table.action),
+]);
+
+// ==========================================
+// 0.4 ASSETS TABLE (ITAM & QR Tracking)
 // ==========================================
 export const assets = mssqlTable("assets", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -65,7 +98,7 @@ export const assets = mssqlTable("assets", {
 ]);
 
 // ==========================================
-// 0.3 SLA POLICIES TABLE (Service Level Agreements)
+// 0.5 SLA POLICIES TABLE (Service Level Agreements)
 // ==========================================
 export const slaPolicies = mssqlTable("sla_policies", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -82,7 +115,7 @@ export const slaPolicies = mssqlTable("sla_policies", {
 ]);
 
 // ==========================================
-// 0.4 AMC CONTRACTS TABLE (Annual Maintenance Contracts)
+// 0.6 AMC CONTRACTS TABLE (Annual Maintenance Contracts)
 // ==========================================
 export const amcContracts = mssqlTable("amc_contracts", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -111,10 +144,11 @@ export const users = mssqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
   departmentId: varchar("department_id", { length: 36 }).references(() => departments.id),
+  roleId: varchar("role_id", { length: 36 }).references(() => roles.id),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }), // Can be null for OAuth login
   fullName: varchar("full_name", { length: 255 }).notNull(),
-  role: varchar("role", { length: 20 }).notNull(), // 'customer' | 'engineer' | 'admin'
+  role: varchar("role", { length: 50 }).notNull(), // Legacy role string or system role name
   status: varchar("status", { length: 20 }).notNull().default("active"), // 'active' | 'suspended' | 'pending'
   emailVerified: bit("email_verified").notNull().default(false),
   emailVerifiedAt: datetime2("email_verified_at"),
@@ -127,6 +161,7 @@ export const users = mssqlTable("users", {
   index("idx_users_role").on(table.role),
   index("idx_users_status").on(table.status),
   index("idx_users_org_id").on(table.organizationId),
+  index("idx_users_role_id").on(table.roleId),
 ]);
 
 // ==========================================

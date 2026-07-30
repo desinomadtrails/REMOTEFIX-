@@ -4,8 +4,11 @@ import { z } from "zod";
 // ENUMS & CONSTANTS
 // ==========================================
 
-export const USER_ROLES = ["customer", "engineer", "admin"] as const;
+export const USER_ROLES = ["customer", "engineer", "admin", "super_admin", "org_admin", "manager", "dispatcher", "technician", "finance", "viewer"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
+
+export const SYSTEM_ROLES = ["super_admin", "org_admin", "manager", "dispatcher", "technician", "finance", "viewer"] as const;
+export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 export const USER_STATUSES = ["active", "suspended", "pending"] as const;
 export type UserStatus = (typeof USER_STATUSES)[number];
@@ -423,4 +426,24 @@ export interface AmcContract {
   status: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Role {
+  id: string;
+  organizationId?: string | null;
+  name: string;
+  displayName: string;
+  description?: string | null;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+  permissions?: Permission[];
+}
+
+export interface Permission {
+  id: string;
+  roleId: string;
+  resource: string;
+  action: string;
+  createdAt: string;
 }

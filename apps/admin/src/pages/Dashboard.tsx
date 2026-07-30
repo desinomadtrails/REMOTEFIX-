@@ -197,7 +197,13 @@ export const Dashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5 mb-6 font-body">
         <div>
           <h1 className="text-2xl font-black font-display text-text">RemoteFix Admin Suite</h1>
-          <span className="text-xs text-muted mt-0.5">Control Center: <span className="text-success font-semibold">Active</span></span>
+          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted">
+            <span>Control Center: <span className="text-success font-semibold">Active</span></span>
+            <span>•</span>
+            <span className="flex items-center gap-1 font-mono text-primary">
+              <Building2 size={12} /> Tenant: <strong className="text-text font-display">Global SuperTenant</strong>
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell onClick={() => setActiveTab("notifications")} />

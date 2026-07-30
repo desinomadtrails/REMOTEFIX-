@@ -190,6 +190,18 @@ export const api = {
     });
   },
 
+  // Roles & RBAC API
+  async getRoles() {
+    return request<any>("/api/admin/roles");
+  },
+
+  async createRole(body: any) {
+    return request<any>("/api/admin/roles", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

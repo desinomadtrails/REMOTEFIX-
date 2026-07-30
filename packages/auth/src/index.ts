@@ -191,6 +191,66 @@ export async function hashToken(token: string): Promise<string> {
 // ==========================================
 
 export function hasRole(userRole: UserRole, allowedRoles: UserRole[]): boolean {
-  if (userRole === "admin") return true; // Admin has absolute permission override
+  if (userRole === "admin" || userRole === "super_admin") return true; // Admin has absolute permission override
   return allowedRoles.includes(userRole);
+}
+
+/** Pre-defined permission mapping for database-driven RBAC evaluation */
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, { resource: string; action: string }[]> = {
+  super_admin: [{ resource: "*", action: "*" }],
+  org_admin: [
+    { resource: "organizations", action: "manage" },
+    { resource: "departments", action: "manage" },
+    { resource: "users", action: "manage" },
+    { resource: "bookings", action: "manage" },
+    { resource: "tickets", action: "manage" },
+    { resource: "assets", action: "manage" },
+    { resource: "billing", action: "manage" },
+    { resource: "reports", action: "read" },
+  ],
+  manager: [
+    { resource: "departments", action: "read" },
+    { resource: "users", action: "read" },
+    { resource: "bookings", action: "manage" },
+    { resource: "tickets", action: "manage" },
+    { resource: "assets", action: "read" },
+    { resource: "reports", action: "read" },
+  ],
+  dispatcher: [
+    { resource: "bookings", action: "manage" },
+    { resource: "tickets", action: "manage" },
+    { resource: "assets", action: "read" },
+  ],
+  technician: [
+    { resource: "bookings", action: "update" },
+    { resource: "tickets", action: "update" },
+    { resource: "assets", action: "read" },
+  ],
+  finance: [
+    { resource: "billing", action: "manage" },
+    { resource: "reports", action: "read" },
+    { resource: "bookings", action: "read" },
+  ],
+  viewer: [
+    { resource: "bookings", action: "read" },
+    { resource: "tickets", action: "read" },
+    { resource: "assets", action: "read" },
+  ],
+};
+
+export function checkPermission(
+  userRole: string,
+  userPermissions: { resource: string; action: string }[] | undefined,
+  resource: string,
+  action: string
+): boolean {
+  if (userRole === "super_admin" || userRole === "admin") return true;
+
+  // Use custom permissions array if present
+  const perms = userPermissions || DEFAULT_ROLE_PERMISSIONS[userRole] || [];
+  return perms.some(
+    (p) =>
+      (p.resource === "*" || p.resource === resource) &&
+      (p.action === "*" || p.action === "manage" || p.action === action)
+  );
 }

@@ -81,6 +81,7 @@ import { organizationsRouter } from "./routes/organizations.js";
 import { assetsRouter } from "./routes/assets.js";
 import { slaRouter } from "./routes/sla.js";
 import { amcRouter } from "./routes/amc.js";
+import { rolesRouter } from "./routes/roles.js";
 
 // Health Checks
 app.route("/health", healthRouter);
@@ -101,6 +102,7 @@ app.route("/api/admin/assets", assetsRouter);
 app.route("/api/admin/organizations", organizationsRouter);
 app.route("/api/admin/sla", slaRouter);
 app.route("/api/admin/amc", amcRouter);
+app.route("/api/admin/roles", rolesRouter);
 app.route("/api/admin/analytics", analyticsRouter);
 app.route("/api/admin/logs", logsRouter);
 app.route("/api/admin/customers", customersRouter);
