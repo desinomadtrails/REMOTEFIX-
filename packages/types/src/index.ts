@@ -673,3 +673,26 @@ export interface OfflineSyncQueueItem {
   retryCount: number;
   createdAt: string;
 }
+
+export interface CustomerDevice {
+  id: string;
+  customerId?: string | null;
+  email: string;
+  deviceToken: string;
+  platform: "android" | "ios";
+  appVersion: string;
+  isRegistered: boolean;
+  lastActiveAt: string;
+  createdAt: string;
+}
+
+export interface PushNotificationItem {
+  id: string;
+  recipientType: "customer" | "engineer" | "admin";
+  recipientId: string;
+  title: string;
+  body: string;
+  payloadJson?: string | null;
+  isRead: boolean;
+  sentAt: string;
+}

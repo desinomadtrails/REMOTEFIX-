@@ -21,6 +21,7 @@ import { customerRouter } from "./routes/customer.js";
 import { customerAssetsRouter } from "./routes/customerAssets.js";
 import { feedbackRouter } from "./routes/feedback.js";
 import { mobileRouter } from "./routes/mobile.js";
+import { customerMobileRouter } from "./routes/customerMobile.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -138,6 +139,7 @@ app.route("/api/customer", customerRouter);
 app.route("/api/customer/assets", customerAssetsRouter);
 app.route("/api/customer/feedback", feedbackRouter);
 app.route("/api/mobile", mobileRouter);
+app.route("/api/customer/mobile", customerMobileRouter);
 
 app.get("/api/test-db", async (c) => {
   try {

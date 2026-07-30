@@ -851,3 +851,38 @@ export const offlineSyncQueue = mssqlTable("offline_sync_queue", {
   index("idx_osq_engineer_id").on(table.engineerId),
   index("idx_osq_status").on(table.status),
 ]);
+
+// ==========================================
+// 36. CUSTOMER DEVICES TABLE (Customer Mobile App & FCM Device Registration)
+// ==========================================
+export const customerDevices = mssqlTable("customer_devices", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  customerId: varchar("customer_id", { length: 36 }).references(() => customers.id),
+  email: varchar("email", { length: 255 }).notNull(),
+  deviceToken: varchar("device_token", { length: 500 }).notNull(),
+  platform: varchar("platform", { length: 20 }).notNull().default("android"), // 'android' | 'ios'
+  appVersion: varchar("app_version", { length: 20 }).notNull().default("1.0.0"),
+  isRegistered: bit("is_registered").notNull().default(true),
+  lastActiveAt: datetime2("last_active_at").notNull().default(sql`(getdate())`),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_cd_customer_id").on(table.customerId),
+  index("idx_cd_email").on(table.email),
+]);
+
+// ==========================================
+// 37. PUSH NOTIFICATIONS TABLE (Real-time FCM / APNs Push Dispatch Engine)
+// ==========================================
+export const pushNotifications = mssqlTable("push_notifications", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  recipientType: varchar("recipient_type", { length: 20 }).notNull(), // 'customer' | 'engineer' | 'admin'
+  recipientId: varchar("recipient_id", { length: 255 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  payloadJson: text("payload_json"),
+  isRead: bit("is_read").notNull().default(false),
+  sentAt: datetime2("sent_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_pn_recipient").on(table.recipientType, table.recipientId),
+  index("idx_pn_sent_at").on(table.sentAt),
+]);
