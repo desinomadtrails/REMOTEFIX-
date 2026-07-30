@@ -1,0 +1,26 @@
+groups:
+  - name: remotefix_alerts
+    rules:
+      - alert: ApiHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP 5xx error rate detected on RemoteFix API Gateway"
+
+      - alert: DatabaseDisconnected
+        expr: remotefix_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Azure SQL Database connectivity lost or worker node unreachable"
+
+      - alert: RmmAgentOfflineSpike
+        expr: delta(remotefix_active_rmm_endpoints[15m]) < -10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Multiple RMM endpoint agents lost heartbeat telemetry simultaneously"

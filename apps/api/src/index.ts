@@ -22,11 +22,16 @@ import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
 import { AppEnv } from "./middleware/auth.js";
 
+import { distributedTracing } from "./middleware/tracing.js";
+
 const app = new Hono<AppEnv>();
 
 // ==========================================
 // MIDDLEWARES
 // ==========================================
+
+// 0. Distributed Tracing & Correlation ID
+app.use("*", distributedTracing);
 
 // 1. Structured Logger
 app.use("*", structuredLogger);
