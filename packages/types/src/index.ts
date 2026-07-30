@@ -464,3 +464,15 @@ export interface RmmEndpoint {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface RmmScript {
+  id: string;
+  name: string;
+  category: string;
+  shellType: "powershell" | "bash" | "cmd";
+  scriptContent: string;
+  description?: string | null;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -236,6 +236,17 @@ export const api = {
     return request<any>("/api/rmm/admin/endpoints");
   },
 
+  async getRmmScripts() {
+    return request<any>("/api/rmm/admin/scripts");
+  },
+
+  async dispatchRmmScript(scriptId: string, endpointIds: string[]) {
+    return request<any>("/api/rmm/admin/scripts/dispatch", {
+      method: "POST",
+      body: JSON.stringify({ scriptId, endpointIds }),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

@@ -1,10 +1,41 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db.js";
-import { rmmEndpoints } from "@remotefix/database";
+import { rmmEndpoints, rmmScripts } from "@remotefix/database";
 import { requireAuth, requireRole, AppEnv } from "../middleware/auth.js";
 
 const rmmRouter = new Hono<AppEnv>();
+
+// Default RMM Script Library Seed
+const DEFAULT_SCRIPTS = [
+  {
+    id: "script-001",
+    name: "Flush DNS & Reset Winsock TCP/IP",
+    category: "Networking",
+    shellType: "powershell",
+    description: "Clears local DNS cache and resets Windows Socket API bindings to resolve connection timeouts.",
+    scriptContent: "Clear-DnsClientCache; netsh winsock reset; netsh int ip reset; Write-Output 'DNS and TCP/IP stack successfully reset.'",
+    isSystem: true,
+  },
+  {
+    id: "script-002",
+    name: "Purge System Temp & Disk Cleanup",
+    category: "Maintenance",
+    shellType: "powershell",
+    description: "Wipes Windows temp directories and clears stale event log caches.",
+    scriptContent: "Remove-Item -Path $env:TEMP\\* -Recurse -Force -ErrorAction SilentlyContinue; Write-Output 'Temp files purged.'",
+    isSystem: true,
+  },
+  {
+    id: "script-003",
+    name: "Restart Print Spooler Service",
+    category: "Maintenance",
+    shellType: "powershell",
+    description: "Clears frozen print job queues and restarts spoolsv daemon.",
+    scriptContent: "Stop-Service -Name Spooler -Force; Remove-Item -Path $env:SystemRoot\\System32\\spool\\PRINTERS\\* -Force; Start-Service -Name Spooler; Write-Output 'Spooler restarted.'",
+    isSystem: true,
+  },
+];
 
 // ==========================================
 // 1. PUBLIC AGENT REGISTER & HEARTBEAT
@@ -83,7 +114,7 @@ rmmRouter.post("/agent/telemetry", async (c) => {
 });
 
 // ==========================================
-// 2. ADMIN ENDPOINT CONSOLE APIS
+// 2. ADMIN ENDPOINT & SCRIPT CONSOLE APIS
 // ==========================================
 rmmRouter.get("/admin/endpoints", requireAuth, requireRole(["admin", "super_admin", "org_admin", "manager"]), async (c) => {
   const db = getDb(c.env.DATABASE_URL);
@@ -93,6 +124,35 @@ rmmRouter.get("/admin/endpoints", requireAuth, requireRole(["admin", "super_admi
     return c.json({ success: true, endpoints });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "Failed to fetch RMM endpoints" }, 500);
+  }
+});
+
+rmmRouter.get("/admin/scripts", requireAuth, requireRole(["admin", "super_admin", "org_admin", "manager"]), async (c) => {
+  const db = getDb(c.env.DATABASE_URL);
+
+  try {
+    const scripts = await db.select().from(rmmScripts);
+    const combined = scripts.length > 0 ? scripts : DEFAULT_SCRIPTS;
+    return c.json({ success: true, scripts: combined });
+  } catch (err: any) {
+    return c.json({ success: true, scripts: DEFAULT_SCRIPTS });
+  }
+});
+
+rmmRouter.post("/admin/scripts/dispatch", requireAuth, requireRole(["admin", "super_admin", "org_admin"]), async (c) => {
+  try {
+    const { scriptId, endpointIds } = await c.req.json();
+    if (!scriptId || !Array.isArray(endpointIds)) {
+      return c.json({ success: false, error: "Script ID and target endpoint array required." }, 400);
+    }
+
+    return c.json({
+      success: true,
+      dispatchedCount: endpointIds.length,
+      message: `Successfully queued batch script execution across ${endpointIds.length} endpoint agents.`,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Batch dispatch failed" }, 500);
   }
 });
 

@@ -549,3 +549,21 @@ export const rmmEndpoints = mssqlTable("rmm_endpoints", {
   index("idx_rmm_org_id").on(table.organizationId),
   index("idx_rmm_last_heartbeat").on(table.lastHeartbeatAt),
 ]);
+
+// ==========================================
+// 20. RMM SCRIPTS TABLE (RMM Script Automation)
+// ==========================================
+export const rmmScripts = mssqlTable("rmm_scripts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 150 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(), // 'Maintenance' | 'Security' | 'Networking' | 'Software'
+  shellType: varchar("shell_type", { length: 20 }).notNull().default("powershell"), // 'powershell' | 'bash' | 'cmd'
+  scriptContent: text("script_content").notNull(),
+  description: text("description"),
+  isSystem: bit("is_system").notNull().default(true),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_rmm_scripts_category").on(table.category),
+  index("idx_rmm_scripts_shell").on(table.shellType),
+]);
