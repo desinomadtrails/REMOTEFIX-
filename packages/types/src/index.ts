@@ -71,6 +71,17 @@ export const SlaPolicyCreateSchema = z.object({
 });
 export type SlaPolicyCreateInput = z.infer<typeof SlaPolicyCreateSchema>;
 
+export const AmcContractCreateSchema = z.object({
+  organizationId: z.string().uuid().optional(),
+  customerId: z.string().uuid().optional(),
+  title: z.string().min(3, "Contract title is required"),
+  deviceCount: z.number().int().min(1, "Device count must be at least 1"),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Start Date must be YYYY-MM-DD"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "End Date must be YYYY-MM-DD"),
+  contractAmount: z.number().min(0, "Contract amount cannot be negative"),
+});
+export type AmcContractCreateInput = z.infer<typeof AmcContractCreateSchema>;
+
 export const DepartmentCreateSchema = z.object({
   organizationId: z.string().uuid("Invalid organization ID"),
   name: z.string().min(2, "Department name is required"),
@@ -395,6 +406,21 @@ export interface SlaPolicy {
   resolutionBufferMinutes: number;
   escalationEmail?: string | null;
   isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AmcContract {
+  id: string;
+  organizationId?: string | null;
+  customerId?: string | null;
+  contractNumber: string;
+  title: string;
+  deviceCount: number;
+  startDate: string;
+  endDate: string;
+  contractAmount: number;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }

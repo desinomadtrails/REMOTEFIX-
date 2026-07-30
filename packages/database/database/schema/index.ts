@@ -82,6 +82,29 @@ export const slaPolicies = mssqlTable("sla_policies", {
 ]);
 
 // ==========================================
+// 0.4 AMC CONTRACTS TABLE (Annual Maintenance Contracts)
+// ==========================================
+export const amcContracts = mssqlTable("amc_contracts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 36 }).references(() => organizations.id),
+  customerId: varchar("customer_id", { length: 36 }).references(() => customers.id),
+  contractNumber: varchar("contract_number", { length: 50 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  deviceCount: int("device_count").notNull().default(1),
+  startDate: varchar("start_date", { length: 10 }).notNull(), // YYYY-MM-DD
+  endDate: varchar("end_date", { length: 10 }).notNull(),   // YYYY-MM-DD
+  contractAmount: decimal("contract_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"), // 'active' | 'expiring' | 'expired'
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_amc_contract_number").on(table.contractNumber),
+  index("idx_amc_status").on(table.status),
+  index("idx_amc_org_id").on(table.organizationId),
+  index("idx_amc_end_date").on(table.endDate),
+]);
+
+// ==========================================
 // 1. USERS TABLE
 // ==========================================
 export const users = mssqlTable("users", {

@@ -178,6 +178,18 @@ export const api = {
     });
   },
 
+  // AMC Contracts API
+  async getAmcContracts() {
+    return request<any>("/api/admin/amc");
+  },
+
+  async createAmcContract(body: any) {
+    return request<any>("/api/admin/amc", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
   // Analytics
   async getAnalytics() {
     return request<any>("/api/admin/analytics");

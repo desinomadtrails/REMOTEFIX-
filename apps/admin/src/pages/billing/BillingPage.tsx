@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Printer, DollarSign, AlertCircle, Percent, Receipt } from "lucide-react";
+import { Search, Plus, Printer, DollarSign, AlertCircle, Percent, Receipt, FileText, CheckCircle2, ShieldCheck, Clock } from "lucide-react";
 import { Card, Badge, Button, Input, Modal, Select } from "@remotefix/ui";
 import { api } from "../../api.js";
 import { formatCurrency, formatDateTime } from "@remotefix/utils";
@@ -13,11 +13,20 @@ const Skeleton: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 export const BillingPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"invoices" | "amc">("invoices");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
+  const [newAmcOpen, setNewAmcOpen] = useState(false);
   const [invForm, setInvForm] = useState({ bookingId: "", amount: "" });
+
+  // AMC Form State
+  const [amcTitle, setAmcTitle] = useState("");
+  const [amcDeviceCount, setAmcDeviceCount] = useState(10);
+  const [amcStartDate, setAmcStartDate] = useState("");
+  const [amcEndDate, setAmcEndDate] = useState("");
+  const [amcAmount, setAmcAmount] = useState("");
 
   const { data: invoicesData, isLoading: invLoading } = useQuery({
     queryKey: ["admin-invoices"],
@@ -27,6 +36,11 @@ export const BillingPage: React.FC = () => {
   const { data: bookingsData } = useQuery({
     queryKey: ["admin-bookings"],
     queryFn: async () => { const r = await api.getBookings(); return r.bookings || []; },
+  });
+
+  const { data: amcData = [] } = useQuery({
+    queryKey: ["admin-amc-contracts"],
+    queryFn: async () => { const r = await api.getAmcContracts(); return r.contracts || []; },
   });
 
   const generateMutation = useMutation({
@@ -41,7 +55,30 @@ export const BillingPage: React.FC = () => {
     onError: (err: any) => alert(err.message),
   });
 
-  // Reports
+  const createAmcMutation = useMutation({
+    mutationFn: (body: any) => api.createAmcContract(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-amc-contracts"] });
+      setNewAmcOpen(false);
+      setAmcTitle("");
+      setAmcAmount("");
+    },
+    onError: (err: any) => alert(err.message),
+  });
+
+  const handleCreateAmc = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!amcTitle || !amcStartDate || !amcEndDate || !amcAmount) return;
+    createAmcMutation.mutate({
+      title: amcTitle,
+      deviceCount: amcDeviceCount,
+      startDate: amcStartDate,
+      endDate: amcEndDate,
+      contractAmount: parseFloat(amcAmount),
+    });
+  };
+
+  // Metrics
   const paidInvoices = (invoicesData || []).filter((i: any) => i.status === "paid");
   const totalCollected = paidInvoices.reduce((s: number, i: any) => s + parseFloat(i.amount), 0);
   const totalOutstanding = (invoicesData || []).filter((i: any) => i.status === "unpaid").reduce((s: number, i: any) => s + parseFloat(i.amount), 0);
@@ -58,174 +95,207 @@ export const BillingPage: React.FC = () => {
 
   if (invLoading) return <div className="space-y-4"><div className="grid grid-cols-3 gap-4">{[...Array(3)].map((_,i) => <Skeleton key={i} className="h-24" />)}</div><Skeleton className="h-96" /></div>;
 
-  const baseAmount = selectedInv ? parseFloat(selectedInv.amount) / (1 + GST_RATE) : 0;
-  const gstAmount = selectedInv ? parseFloat(selectedInv.amount) - baseAmount : 0;
-
   return (
-    <div className="space-y-5 font-body">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { label: "Collected Revenue", value: formatCurrency(totalCollected), icon: <DollarSign size={20} className="text-success" />, cls: "text-success" },
-          { label: "Outstanding Dues", value: formatCurrency(totalOutstanding), icon: <AlertCircle size={20} className="text-warning" />, cls: "text-warning" },
-          { label: "GST Collected (18%)", value: formatCurrency(totalGst), icon: <Percent size={20} className="text-primary" />, cls: "text-primary" },
-        ].map((m, i) => (
-          <Card key={i} glowColor="purple" className="p-5 flex items-center justify-between">
-            <div><span className="text-[10px] text-muted uppercase font-semibold block">{m.label}</span><span className={`text-xl font-black font-display block mt-1 ${m.cls}`}>{m.value}</span></div>
-            {m.icon}
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Invoices list */}
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xs font-bold font-display text-text uppercase">Invoices Registry</h3>
-            <Button variant="cyber" size="sm" className="text-xs" onClick={() => setNewInvoiceOpen(true)}>+ Create</Button>
-          </div>
-          <div className="relative">
-            <Input placeholder="Search invoice #..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 text-xs" />
-            <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
-          </div>
-          <select className="w-full h-10 px-3 bg-[#111827]/60 border border-border text-xs text-text rounded-lg outline-none" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            {[["all","All States"],["unpaid","Unpaid"],["paid","Paid"],["cancelled","Cancelled"],["refunded","Refunded"]].map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          <div className="flex flex-col gap-2 max-h-[460px] overflow-y-auto pr-1">
-            {filtered.length === 0 ? <Card className="text-center py-10 text-muted text-xs">No invoices found.</Card> : filtered.map((inv: any) => (
-              <div key={inv.id} onClick={() => setSelectedId(inv.id)} className={`p-3.5 rounded-xl border cursor-pointer text-xs transition-all ${selectedId === inv.id ? "bg-secondary/15 border-secondary" : "bg-[#111827]/50 border-border hover:border-muted/30"}`}>
-                <div className="flex justify-between mb-1">
-                  <span className="font-mono font-bold text-text">{inv.invoiceNumber}</span>
-                  <Badge variant={inv.status === "paid" ? "success" : inv.status === "unpaid" ? "warning" : "danger"} className="text-[8px]">{inv.status}</Badge>
-                </div>
-                <div className="flex justify-between text-[10px] border-t border-border/10 pt-1.5 mt-1.5">
-                  <span className="text-muted">{formatDateTime(inv.createdAt).split(" ")[0]}</span>
-                  <strong className="text-text">{formatCurrency(parseFloat(inv.amount))}</strong>
-                </div>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-6 font-body">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/40 pb-5">
+        <div>
+          <h1 className="text-2xl font-black font-display text-text">Billing, GST Invoices &amp; AMC Contracts</h1>
+          <p className="text-xs text-muted mt-0.5">Manage transactional GST invoices, payments, and recurring AMC maintenance contracts.</p>
         </div>
 
-        {/* Invoice detail */}
-        <div className="lg:col-span-2">
-          {selectedInv ? (
-            <div className="flex flex-col gap-4">
-              {/* Controls */}
-              <Card className="p-4 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted">Payment Status:</span>
-                  <select className="bg-[#111827]/60 border border-border text-xs text-text font-bold rounded p-1.5 outline-none" value={selectedInv.status} onChange={e => updateMutation.mutate({ id: selectedInv.id, status: e.target.value })}>
-                    {["unpaid","paid","cancelled","refunded"].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
-                  </select>
-                </div>
-                <Button variant="outline" size="sm" className="text-xs flex items-center gap-1.5 text-secondary border-secondary/30" onClick={() => window.print()}>
-                  <Printer size={13} /> Print PDF
-                </Button>
-              </Card>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-card/60 border border-border/50 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab("invoices")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold font-display transition-all ${activeTab === "invoices" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted hover:text-text"}`}
+            >
+              Invoices
+            </button>
+            <button
+              onClick={() => setActiveTab("amc")}
+              className={`px-3 py-1.5 rounded-md text-xs font-semibold font-display transition-all ${activeTab === "amc" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted hover:text-text"}`}
+            >
+              AMC Contracts
+            </button>
+          </div>
 
-              {/* Printable invoice */}
-              <div id="printable-invoice" className="bg-[#111827]/60 border border-border/80 rounded-2xl p-8 text-xs flex flex-col gap-6 print:bg-white print:border-none print:text-black">
-                {/* Header */}
-                <div className="flex justify-between items-start border-b border-border/30 pb-6 print:border-black/20">
-                  <div>
-                    <h3 className="text-2xl font-black font-display text-text print:text-black">RemoteFix Inc.</h3>
-                    <p className="text-muted mt-1 print:text-black/60">Enterprise IT Dispatches &amp; Repairs<br />100 Tech Park Drive, New Delhi - 110020<br />GSTIN: {localStorage.getItem("rf_company_gstin") || "22XXXXX0000X1Z5"}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold font-mono text-primary print:text-black">TAX INVOICE</div>
-                    <h4 className="text-xl font-black font-mono text-text mt-1 print:text-black">{selectedInv.invoiceNumber}</h4>
-                    <div className="text-[10px] text-muted mt-1 print:text-black/60">Issued: {formatDateTime(selectedInv.createdAt)}</div>
-                    <Badge variant={selectedInv.status === "paid" ? "success" : "warning"} className="mt-2">{selectedInv.status.toUpperCase()}</Badge>
-                  </div>
-                </div>
-
-                {/* Bill to / Booking ref */}
-                <div className="grid grid-cols-2 gap-6 border-b border-border/30 pb-6 print:border-black/20">
-                  <div>
-                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block mb-1.5">Bill To:</span>
-                    {selectedBooking ? (
-                      <div className="space-y-0.5 text-text">
-                        <div className="font-bold text-sm">{selectedBooking.name}</div>
-                        <div className="text-muted print:text-black/75">{selectedBooking.email}</div>
-                        <div className="text-muted print:text-black/75">Phone: {selectedBooking.phone}</div>
-                        {selectedBooking.address && <div className="text-muted leading-relaxed print:text-black/75 mt-1">{selectedBooking.address}</div>}
-                      </div>
-                    ) : <span className="text-muted italic">Guest Client</span>}
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-muted uppercase font-bold tracking-wider block mb-1.5">Service Reference:</span>
-                    <div className="space-y-0.5 text-text">
-                      <div>Ticket: <strong className="font-mono">{selectedBooking?.ticketId || "N/A"}</strong></div>
-                      <div>Type: <span className="uppercase font-semibold">{selectedBooking?.type || "Standard"}</span></div>
-                      <div>Priority: <span className="uppercase font-semibold">{selectedBooking?.priority || "Normal"}</span></div>
-                      {selectedBooking?.deviceType && <div>Device: <span>{selectedBooking.brand} {selectedBooking.model} ({selectedBooking.deviceType})</span></div>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Line items */}
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="border-b border-border/40 text-[10px] text-muted uppercase font-bold print:border-black/20 print:text-black/60">
-                    <th className="pb-2">Description</th>
-                    <th className="pb-2 text-right">Taxable</th>
-                    <th className="pb-2 text-right">GST 18%</th>
-                    <th className="pb-2 text-right">Total</th>
-                  </tr></thead>
-                  <tbody>
-                    <tr className="text-text font-semibold border-b border-border/20 print:border-black/10">
-                      <td className="py-4">
-                        <span className="font-bold block">IT Hardware Repair &amp; Diagnostics</span>
-                        <span className="text-muted text-[10px] block mt-0.5">{selectedBooking?.problemDescription || "Platform service dispatch"}</span>
-                      </td>
-                      <td className="py-4 text-right font-mono">{formatCurrency(baseAmount)}</td>
-                      <td className="py-4 text-right font-mono text-primary print:text-black">{formatCurrency(gstAmount)}</td>
-                      <td className="py-4 text-right font-mono font-bold">{formatCurrency(parseFloat(selectedInv.amount))}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                {/* Totals */}
-                <div className="flex justify-end border-t border-border/30 pt-4 print:border-black/20">
-                  <div className="w-60 space-y-1.5 text-xs">
-                    {[["Taxable Value", formatCurrency(baseAmount)], ["CGST (9.0%)", formatCurrency(gstAmount / 2)], ["SGST (9.0%)", formatCurrency(gstAmount / 2)]].map(([l, v]) => (
-                      <div key={l} className="flex justify-between text-muted print:text-black/70"><span>{l}:</span><span className="font-mono">{v}</span></div>
-                    ))}
-                    <div className="flex justify-between border-t border-border/30 pt-2 text-sm font-bold print:border-black/20 print:text-black">
-                      <span className="text-text">Total Payable:</span>
-                      <span className="font-mono text-secondary print:text-black">{formatCurrency(parseFloat(selectedInv.amount))}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {activeTab === "invoices" ? (
+            <Button variant="primary" glow size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setNewInvoiceOpen(true)}>
+              <Plus size={14} /> New Invoice
+            </Button>
           ) : (
-            <Card className="text-center py-24 text-muted">
-              <Receipt size={40} className="mx-auto mb-3 opacity-20" />
-              <p className="text-sm font-semibold">Select an invoice to view &amp; print</p>
-            </Card>
+            <Button variant="primary" glow size="sm" className="flex items-center gap-1.5 text-xs" onClick={() => setNewAmcOpen(true)}>
+              <Plus size={14} /> New AMC Contract
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Generate Invoice Modal */}
-      <Modal isOpen={newInvoiceOpen} onClose={() => setNewInvoiceOpen(false)} title="Generate New Invoice">
-        <form onSubmit={e => { e.preventDefault(); generateMutation.mutate({ bookingId: invForm.bookingId, amount: parseFloat(invForm.amount) }); }} className="flex flex-col gap-4 font-body">
-          <Select
-            label="Booking Reference *"
-            options={(bookingsData || []).filter((b: any) => ["completed","assigned","in_progress"].includes(b.status)).map((b: any) => ({ label: `${b.ticketId} — ${b.name}`, value: b.id }))}
-            value={invForm.bookingId}
-            onChange={(e: any) => setInvForm(f => ({ ...f, bookingId: e.target.value }))}
-          />
-          <Input label="Base Amount (₹) *" placeholder="1500.00" value={invForm.amount} onChange={e => setInvForm(f => ({ ...f, amount: e.target.value }))} required />
-          <div className="bg-secondary/5 border border-secondary/20 rounded-lg p-3 text-[10px] text-muted">
-            GST will be displayed on the invoice as: CGST 9% + SGST 9% = 18% total on the base amount.
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="flex items-center gap-4" glowColor="cyan">
+          <div className="p-3 bg-success/15 border border-success/30 rounded-xl text-success"><DollarSign size={20} /></div>
+          <div><span className="text-[10px] text-muted block uppercase">Collected Revenue</span><span className="text-xl font-black font-display text-text">{formatCurrency(totalCollected)}</span></div>
+        </Card>
+
+        <Card className="flex items-center gap-4" glowColor="purple">
+          <div className="p-3 bg-warning/15 border border-warning/30 rounded-xl text-warning"><AlertCircle size={20} /></div>
+          <div><span className="text-[10px] text-muted block uppercase">Outstanding Unpaid</span><span className="text-xl font-black font-display text-text">{formatCurrency(totalOutstanding)}</span></div>
+        </Card>
+
+        <Card className="flex items-center gap-4" glowColor="cyan">
+          <div className="p-3 bg-primary/15 border border-primary/30 rounded-xl text-primary"><Percent size={20} /></div>
+          <div><span className="text-[10px] text-muted block uppercase">GST Collected (18%)</span><span className="text-xl font-black font-display text-text">{formatCurrency(totalGst)}</span></div>
+        </Card>
+      </div>
+
+      {activeTab === "invoices" ? (
+        <>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-card/40 p-4 rounded-xl border border-border/40">
+            <div className="relative w-full sm:w-72">
+              <Input placeholder="Search invoice number..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 text-xs" />
+              <Search className="absolute left-3 top-3.5 text-muted w-3.5 h-3.5" />
+            </div>
+            <Select options={[{ value: "all", label: "All Statuses" }, { value: "paid", label: "Paid" }, { value: "unpaid", label: "Unpaid" }, { value: "refunded", label: "Refunded" }]} value={statusFilter} onChange={(e: any) => setStatusFilter(e.target.value)} className="text-xs w-full sm:w-44" />
           </div>
-          <Button variant="primary" type="submit" className="w-full" style={{ backgroundColor: "#8B5CF6", color: "white" }} isLoading={generateMutation.isPending}>
-            Generate GST Invoice
-          </Button>
+
+          {/* Table */}
+          <Card className="p-0 overflow-hidden border border-border/40">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-body">
+                <thead className="bg-card/60 text-muted uppercase text-[10px] font-bold border-b border-border/40">
+                  <tr>
+                    <th className="px-4 py-3">Invoice Number</th>
+                    <th className="px-4 py-3">Booking ID</th>
+                    <th className="px-4 py-3">Amount</th>
+                    <th className="px-4 py-3">GST (18%)</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {filtered.map((inv: any) => {
+                    const amt = parseFloat(inv.amount);
+                    const baseAmt = amt / (1 + GST_RATE);
+                    const gstAmt = amt - baseAmt;
+                    return (
+                      <tr key={inv.id} className="hover:bg-white/3 transition-colors">
+                        <td className="px-4 py-3 font-mono font-bold text-primary">{inv.invoiceNumber}</td>
+                        <td className="px-4 py-3 font-mono text-muted">{inv.bookingId.slice(0, 8)}...</td>
+                        <td className="px-4 py-3 font-bold text-text">{formatCurrency(amt)}</td>
+                        <td className="px-4 py-3 text-muted">{formatCurrency(gstAmt)}</td>
+                        <td className="px-4 py-3"><Badge variant={inv.status === "paid" ? "success" : inv.status === "unpaid" ? "warning" : "danger"} className="text-[9px] uppercase">{inv.status}</Badge></td>
+                        <td className="px-4 py-3 text-muted">{formatDateTime(inv.createdAt)}</td>
+                        <td className="px-4 py-3 text-right space-x-2">
+                          <Button variant="ghost" size="sm" className="text-[10px]" onClick={() => setSelectedId(inv.id)}><Printer size={13} /> Print</Button>
+                          {inv.status === "unpaid" && <Button variant="outline" size="sm" className="text-[10px] text-success" onClick={() => updateMutation.mutate({ id: inv.id, status: "paid" })}>Mark Paid</Button>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      ) : (
+        /* AMC Contracts View */
+        <div className="space-y-4 font-body">
+          {amcData.length === 0 ? (
+            <Card className="text-center py-16 text-muted">
+              <ShieldCheck size={40} className="mx-auto mb-3 text-muted/30" />
+              <h3 className="text-base font-bold font-display text-text">No AMC Contracts Configured</h3>
+              <p className="text-xs max-w-sm mx-auto mt-1">Create Annual Maintenance Contracts to track covered corporate devices and auto-renewals.</p>
+              <Button variant="primary" size="sm" className="mt-4" onClick={() => setNewAmcOpen(true)}>Create First AMC Contract</Button>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {amcData.map((amc: any) => (
+                <Card key={amc.id} glowColor="cyan" className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold font-display text-text">{amc.title}</h3>
+                      <span className="text-[10px] text-primary font-mono">{amc.contractNumber}</span>
+                    </div>
+                    <Badge variant={amc.status === "active" ? "success" : "warning"} className="text-[9px] uppercase">{amc.status}</Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs border-t border-b border-border/40 py-2.5">
+                    <div><span className="text-[10px] text-muted block uppercase">Covered Devices</span><span className="font-bold text-text">{amc.deviceCount} Endpoints</span></div>
+                    <div><span className="text-[10px] text-muted block uppercase">Annual Amount</span><span className="font-bold text-primary font-display">{formatCurrency(parseFloat(amc.contractAmount))}</span></div>
+                  </div>
+
+                  <div className="text-[10px] text-muted flex justify-between">
+                    <span>Valid: {amc.startDate}</span>
+                    <span>Expires: {amc.endDate}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* NEW INVOICE MODAL */}
+      <Modal isOpen={newInvoiceOpen} onClose={() => setNewInvoiceOpen(false)} title="Generate GST Invoice">
+        <form onSubmit={(e) => { e.preventDefault(); if (invForm.bookingId && invForm.amount) generateMutation.mutate({ bookingId: invForm.bookingId, amount: parseFloat(invForm.amount) }); }} className="space-y-4 font-body">
+          <Select label="Select Booking *" options={bookingsData ? bookingsData.map((b: any) => ({ value: b.id, label: `#${b.ticketId || b.id.slice(0, 8)} - ${b.name} (${b.serviceId || b.type})` })) : []} value={invForm.bookingId} onChange={(e: any) => setInvForm({ ...invForm, bookingId: e.target.value })} required />
+          <Input label="Invoice Total Amount (Inc. 18% GST) *" type="number" placeholder="1999.00" value={invForm.amount} onChange={(e) => setInvForm({ ...invForm, amount: e.target.value })} required />
+          <Button variant="primary" type="submit" glow className="w-full mt-2" isLoading={generateMutation.isPending}>Issue Printable Invoice</Button>
         </form>
       </Modal>
+
+      {/* NEW AMC MODAL */}
+      <Modal isOpen={newAmcOpen} onClose={() => setNewAmcOpen(false)} title="Create Annual Maintenance Contract (AMC)">
+        <form onSubmit={handleCreateAmc} className="space-y-4 font-body">
+          <Input label="Contract Title *" placeholder="Corporate AMC - Acme Corp 50 Devices" value={amcTitle} onChange={(e) => setAmcTitle(e.target.value)} required />
+          <Input label="Covered Hardware Devices *" type="number" value={amcDeviceCount} onChange={(e) => setAmcDeviceCount(parseInt(e.target.value) || 1)} required />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Start Date *" type="date" value={amcStartDate} onChange={(e) => setAmcStartDate(e.target.value)} required />
+            <Input label="End Date *" type="date" value={amcEndDate} onChange={(e) => setAmcEndDate(e.target.value)} required />
+          </div>
+          <Input label="Contract Amount (USD) *" type="number" placeholder="4999.00" value={amcAmount} onChange={(e) => setAmcAmount(e.target.value)} required />
+          <Button variant="primary" type="submit" glow className="w-full mt-2" isLoading={createAmcMutation.isPending}>Save AMC Contract</Button>
+        </form>
+      </Modal>
+
+      {/* PRINTABLE INVOICE MODAL */}
+      {selectedInv && (
+        <Modal isOpen={!!selectedInv} onClose={() => setSelectedId(null)} title={`GST Invoice ${selectedInv.invoiceNumber}`}>
+          <div className="space-y-4 font-body py-2 text-xs">
+            <div className="flex justify-between border-b border-border/40 pb-3">
+              <div><h3 className="font-bold text-text text-sm">RemoteFix Inc.</h3><p className="text-[10px] text-muted">GSTIN: 27AAAAA0000A1Z5</p></div>
+              <div className="text-right font-mono"><span className="block font-bold text-primary">{selectedInv.invoiceNumber}</span><span className="text-[10px] text-muted">{formatDateTime(selectedInv.createdAt)}</span></div>
+            </div>
+
+            {selectedBooking && (
+              <div className="p-3 bg-black/20 rounded-lg space-y-1">
+                <span className="text-[10px] text-muted block uppercase font-bold">Billed To:</span>
+                <span className="font-bold text-text block">{selectedBooking.name}</span>
+                <span className="text-muted block">{selectedBooking.phone} | {selectedBooking.email}</span>
+              </div>
+            )}
+
+            <table className="w-full border-t border-b border-border/40 py-2">
+              <thead><tr className="text-muted text-[10px] uppercase font-bold text-left"><th className="py-1">Description</th><th className="py-1 text-right">Amount</th></tr></thead>
+              <tbody>
+                <tr><td className="py-1.5">RemoteFix Service Order ({selectedBooking ? selectedBooking.type : "IT Repair"})</td><td className="py-1.5 text-right font-mono">{formatCurrency(parseFloat(selectedInv.amount) / 1.18)}</td></tr>
+                <tr><td className="py-1.5 text-muted">CGST (9%) + SGST (9%)</td><td className="py-1.5 text-right font-mono text-muted">{formatCurrency(parseFloat(selectedInv.amount) - parseFloat(selectedInv.amount) / 1.18)}</td></tr>
+              </tbody>
+            </table>
+
+            <div className="flex justify-between items-center pt-2 font-bold text-sm">
+              <span>Total Payable:</span>
+              <span className="text-primary font-mono">{formatCurrency(parseFloat(selectedInv.amount))}</span>
+            </div>
+
+            <Button variant="primary" size="sm" className="w-full mt-3 flex items-center justify-center gap-1.5" onClick={() => window.print()}><Printer size={14} /> Print Tax Invoice PDF</Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
