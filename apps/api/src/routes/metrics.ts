@@ -6,27 +6,30 @@ import { AppEnv } from "../middleware/auth.js";
 const metricsRouter = new Hono<AppEnv>();
 
 metricsRouter.get("/", async (c) => {
-  const db = getDb(c.env.DATABASE_URL);
-
   let orgCount = 0;
   let rmmCount = 0;
   let bookingCount = 0;
   let auditCount = 0;
 
-  try {
-    const orgs = await db.select().from(organizations);
-    orgCount = orgs.length;
+  const dbUrl = c.env?.DATABASE_URL || process.env.DATABASE_URL;
 
-    const rmms = await db.select().from(rmmEndpoints);
-    rmmCount = rmms.length;
+  if (dbUrl) {
+    try {
+      const db = getDb(dbUrl);
+      const orgs = await db.select().from(organizations);
+      orgCount = orgs.length;
 
-    const bks = await db.select().from(bookings);
-    bookingCount = bks.length;
+      const rmms = await db.select().from(rmmEndpoints);
+      rmmCount = rmms.length;
 
-    const logs = await db.select().from(auditLogs);
-    auditCount = logs.length;
-  } catch (err) {
-    console.error("Failed to query metrics:", err);
+      const bks = await db.select().from(bookings);
+      bookingCount = bks.length;
+
+      const logs = await db.select().from(auditLogs);
+      auditCount = logs.length;
+    } catch (err) {
+      console.error("Failed to query metrics:", err);
+    }
   }
 
   const prometheusMetrics = `# HELP remotefix_active_organizations Total number of registered tenant organizations

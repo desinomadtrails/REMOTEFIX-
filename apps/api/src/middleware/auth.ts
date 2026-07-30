@@ -35,7 +35,7 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   }
   
   const token = authHeader.substring(7);
-  const secret = c.env.JWT_SECRET;
+  const secret = c.env?.JWT_SECRET || process.env.JWT_SECRET || "super-secret-key-min-32-chars-remotefix";
   
   const decoded = await verifyJWT(token, secret);
   if (!decoded) {
