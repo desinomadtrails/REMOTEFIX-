@@ -696,3 +696,25 @@ export interface PushNotificationItem {
   isRead: boolean;
   sentAt: string;
 }
+
+export interface OfflineSyncConflict {
+  id: string;
+  engineerId: string;
+  queueItemId: string;
+  conflictReason: "simultaneous_edit" | "version_mismatch" | "deleted_record";
+  clientTimestamp: string;
+  serverTimestamp: string;
+  resolvedPayloadJson?: string | null;
+  status: "resolved" | "escalated";
+  createdAt: string;
+}
+
+export interface TechnicianLocalInventory {
+  id: string;
+  engineerId: string;
+  partNumber: string;
+  partName: string;
+  quantityOnHand: number;
+  quantityReserved: number;
+  lastSyncedAt: string;
+}

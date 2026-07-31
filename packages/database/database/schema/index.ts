@@ -886,3 +886,37 @@ export const pushNotifications = mssqlTable("push_notifications", {
   index("idx_pn_recipient").on(table.recipientType, table.recipientId),
   index("idx_pn_sent_at").on(table.sentAt),
 ]);
+
+// ==========================================
+// 38. OFFLINE SYNC CONFLICTS TABLE (Conflict Resolution & Server Priority Rules)
+// ==========================================
+export const offlineSyncConflicts = mssqlTable("offline_sync_conflicts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  engineerId: varchar("engineer_id", { length: 36 }).notNull().references(() => engineers.id),
+  queueItemId: varchar("queue_item_id", { length: 36 }).notNull(),
+  conflictReason: varchar("conflict_reason", { length: 255 }).notNull(), // 'simultaneous_edit' | 'version_mismatch' | 'deleted_record'
+  clientTimestamp: datetime2("client_timestamp").notNull(),
+  serverTimestamp: datetime2("server_timestamp").notNull().default(sql`(getdate())`),
+  resolvedPayloadJson: text("resolved_payload_json"),
+  status: varchar("status", { length: 20 }).notNull().default("resolved"), // 'resolved' | 'escalated'
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_osc_engineer_id").on(table.engineerId),
+  index("idx_osc_status").on(table.status),
+]);
+
+// ==========================================
+// 39. TECHNICIAN LOCAL INVENTORY TABLE (Offline Mobile Parts Stock & Reservation)
+// ==========================================
+export const technicianLocalInventory = mssqlTable("technician_local_inventory", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  engineerId: varchar("engineer_id", { length: 36 }).notNull().references(() => engineers.id),
+  partNumber: varchar("part_number", { length: 50 }).notNull(),
+  partName: varchar("part_name", { length: 255 }).notNull(),
+  quantityOnHand: int("quantity_on_hand").notNull().default(0),
+  quantityReserved: int("quantity_reserved").notNull().default(0),
+  lastSyncedAt: datetime2("last_synced_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_tli_engineer_id").on(table.engineerId),
+  index("idx_tli_part_number").on(table.partNumber),
+]);
