@@ -16,3 +16,7 @@ export * from "./orchestrator/toolRegistry.js";
 export * from "./orchestrator/aiCache.js";
 export * from "./orchestrator/memoryLayer.js";
 export * from "./orchestrator/aiOrchestrator.js";
+export * from "./agent/permissionEngine.js";
+export * from "./agent/enterpriseToolRegistry.js";
+export * from "./agent/workflowEngine.js";
+export * from "./agent/agentExecutor.js";

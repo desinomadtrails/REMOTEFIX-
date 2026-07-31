@@ -1027,3 +1027,25 @@ export const aiCopilotMessages = mssqlTable("ai_copilot_messages", {
   index("idx_acm_session_id").on(table.sessionId),
   index("idx_acm_created_at").on(table.createdAt),
 ]);
+
+// ==========================================
+// 46. AI TOOL AUDIT LOGS TABLE (Secure Enterprise Tool Audit Trail)
+// ==========================================
+export const aiToolAuditLogs = mssqlTable("ai_tool_audit_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  tenantId: varchar("tenant_id", { length: 36 }),
+  toolId: varchar("tool_id", { length: 100 }).notNull(),
+  toolCategory: varchar("tool_category", { length: 50 }).notNull(),
+  inputParametersJson: text("input_parameters_json"),
+  executionResultJson: text("execution_result_json"),
+  status: varchar("status", { length: 20 }).notNull().default("success"), // 'success' | 'failed' | 'requires_confirmation' | 'unauthorized'
+  confirmationRequired: bit("confirmation_required").notNull().default(false),
+  confirmedByUserId: varchar("confirmed_by_user_id", { length: 36 }),
+  latencyMs: int("latency_ms").notNull().default(0),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_atal_user_id").on(table.userId),
+  index("idx_atal_tool_id").on(table.toolId),
+  index("idx_atal_created_at").on(table.createdAt),
+]);

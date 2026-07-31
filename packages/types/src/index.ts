@@ -788,3 +788,18 @@ export interface AiCopilotMessage {
   tokensUsed: number;
   createdAt: string;
 }
+
+export interface AiToolAuditLog {
+  id: string;
+  userId: string;
+  tenantId?: string | null;
+  toolId: string;
+  toolCategory: string;
+  inputParametersJson?: string | null;
+  executionResultJson?: string | null;
+  status: "success" | "failed" | "requires_confirmation" | "unauthorized";
+  confirmationRequired: boolean;
+  confirmedByUserId?: string | null;
+  latencyMs: number;
+  createdAt: string;
+}
