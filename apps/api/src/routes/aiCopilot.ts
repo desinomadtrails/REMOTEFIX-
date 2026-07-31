@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db.js";
 import { aiCopilotSessions, aiCopilotMessages } from "@remotefix/database";
 import { requireAuth, AppEnv } from "../middleware/auth.js";
-import { AIOrchestrator, EnterprisePredictiveEngine } from "../services/ai/index.js";
+import { AIOrchestrator, EnterprisePredictiveEngine, EnterpriseAutonomousWorkflowEngine } from "../services/ai/index.js";
 
 const aiCopilotRouter = new Hono<AppEnv>();
 
@@ -20,6 +20,36 @@ aiCopilotRouter.post("/chat", requireAuth, async (c) => {
     }
 
     const queryLower = message.toLowerCase();
+    if (
+      queryLower.includes("automatically schedule") ||
+      queryLower.includes("run predictive maintenance") ||
+      queryLower.includes("critical assets") ||
+      queryLower.includes("amc renewals") ||
+      queryLower.includes("awaiting approval")
+    ) {
+      const userState = c.get("user");
+      const userCtx = {
+        userId: userState?.id || "usr-101",
+        role: userState?.role || "admin",
+        tenantId: userState?.tenantId || "tenant-default",
+      };
+      const wfRes = await EnterpriseAutonomousWorkflowEngine.handleCopilotWorkflowCommand(message, userCtx);
+      return c.json({
+        success: true,
+        sessionId: sessionId || crypto.randomUUID(),
+        reply: wfRes.answer,
+        workflowId: wfRes.workflowId,
+        status: wfRes.status,
+        actionsTaken: wfRes.actionsTaken,
+        providerUsed: "EnterpriseAutonomousWorkflowEngine",
+        suggestedActions: [
+          "View Workflow History",
+          "Inspect Pending Approvals",
+          "View Executive Metrics",
+        ],
+      });
+    }
+
     if (
       queryLower.includes("fail") ||
       queryLower.includes("maintenance") ||
