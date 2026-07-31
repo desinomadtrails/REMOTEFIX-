@@ -23,6 +23,7 @@ import { feedbackRouter } from "./routes/feedback.js";
 import { mobileRouter } from "./routes/mobile.js";
 import { customerMobileRouter } from "./routes/customerMobile.js";
 import { offlineNativeRouter } from "./routes/offlineNative.js";
+import { mobileReleaseRouter } from "./routes/mobileRelease.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -142,6 +143,7 @@ app.route("/api/customer/feedback", feedbackRouter);
 app.route("/api/mobile", mobileRouter);
 app.route("/api/customer/mobile", customerMobileRouter);
 app.route("/api/mobile/offline", offlineNativeRouter);
+app.route("/api/mobile", mobileReleaseRouter);
 
 app.get("/api/test-db", async (c) => {
   try {

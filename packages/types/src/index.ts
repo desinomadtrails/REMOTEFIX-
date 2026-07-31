@@ -718,3 +718,25 @@ export interface TechnicianLocalInventory {
   quantityReserved: number;
   lastSyncedAt: string;
 }
+
+export interface MobileSecurityAudit {
+  id: string;
+  engineerId?: string | null;
+  deviceToken: string;
+  platform: "android" | "ios";
+  isRooted: boolean;
+  isJailbroken: boolean;
+  appIntegrityHash: string;
+  securityCheckPassed: boolean;
+  createdAt: string;
+}
+
+export interface MobileReleaseBuild {
+  id: string;
+  platform: "android" | "ios";
+  buildVersion: string;
+  bundleUrl: string;
+  releaseNotes?: string | null;
+  isMandatoryUpdate: boolean;
+  createdAt: string;
+}

@@ -920,3 +920,37 @@ export const technicianLocalInventory = mssqlTable("technician_local_inventory",
   index("idx_tli_engineer_id").on(table.engineerId),
   index("idx_tli_part_number").on(table.partNumber),
 ]);
+
+// ==========================================
+// 40. MOBILE SECURITY AUDITS TABLE (SSL Pinning, Anti-Tamper & Root/Jailbreak Detection)
+// ==========================================
+export const mobileSecurityAudits = mssqlTable("mobile_security_audits", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  engineerId: varchar("engineer_id", { length: 36 }),
+  deviceToken: varchar("device_token", { length: 500 }).notNull(),
+  platform: varchar("platform", { length: 20 }).notNull().default("android"), // 'android' | 'ios'
+  isRooted: bit("is_rooted").notNull().default(false),
+  isJailbroken: bit("is_jailbroken").notNull().default(false),
+  appIntegrityHash: varchar("app_integrity_hash", { length: 128 }).notNull(),
+  securityCheckPassed: bit("security_check_passed").notNull().default(true),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_msa_device_token").on(table.deviceToken),
+  index("idx_msa_platform").on(table.platform),
+]);
+
+// ==========================================
+// 41. MOBILE RELEASE BUILDS TABLE (App Store & Play Store OTA Bundle Distribution)
+// ==========================================
+export const mobileReleaseBuilds = mssqlTable("mobile_release_builds", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  platform: varchar("platform", { length: 20 }).notNull(), // 'android' | 'ios'
+  buildVersion: varchar("build_version", { length: 20 }).notNull(), // e.g. "1.2.0"
+  bundleUrl: varchar("bundle_url", { length: 500 }).notNull(),
+  releaseNotes: text("release_notes"),
+  isMandatoryUpdate: bit("is_mandatory_update").notNull().default(false),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_mrb_platform").on(table.platform),
+  index("idx_mrb_version").on(table.buildVersion),
+]);
