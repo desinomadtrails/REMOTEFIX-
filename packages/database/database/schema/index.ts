@@ -1049,3 +1049,36 @@ export const aiToolAuditLogs = mssqlTable("ai_tool_audit_logs", {
   index("idx_atal_tool_id").on(table.toolId),
   index("idx_atal_created_at").on(table.createdAt),
 ]);
+
+// ==========================================
+// 47. AI VECTOR KNOWLEDGE STORE TABLE (RAG Indexing & Vector Search Engine)
+// ==========================================
+export const aiVectorKnowledgeStore = mssqlTable("ai_vector_knowledge_store", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  category: varchar("category", { length: 50 }).notNull().default("general"),
+  tags: varchar("tags", { length: 255 }),
+  embeddingVectorJson: text("embedding_vector_json"),
+  tenantId: varchar("tenant_id", { length: 36 }),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_avks_category").on(table.category),
+  index("idx_avks_tenant").on(table.tenantId),
+]);
+
+// ==========================================
+// 48. AI RAG QUERY LOGS TABLE (Retrieval Audit Trail)
+// ==========================================
+export const aiRagQueryLogs = mssqlTable("ai_rag_query_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  queryText: varchar("query_text", { length: 500 }).notNull(),
+  retrievedDocCount: int("retrieved_doc_count").notNull().default(0),
+  topDocTitle: varchar("top_doc_title", { length: 255 }),
+  latencyMs: int("latency_ms").notNull().default(0),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_arql_user_id").on(table.userId),
+  index("idx_arql_created_at").on(table.createdAt),
+]);

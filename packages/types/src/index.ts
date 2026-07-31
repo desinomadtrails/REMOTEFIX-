@@ -803,3 +803,24 @@ export interface AiToolAuditLog {
   latencyMs: number;
   createdAt: string;
 }
+
+export interface AiVectorKnowledgeItem {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags?: string | null;
+  embeddingVectorJson?: string | null;
+  tenantId?: string | null;
+  createdAt: string;
+}
+
+export interface AiRagQueryLog {
+  id: string;
+  userId: string;
+  queryText: string;
+  retrievedDocCount: number;
+  topDocTitle?: string | null;
+  latencyMs: number;
+  createdAt: string;
+}
