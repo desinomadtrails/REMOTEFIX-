@@ -22,3 +22,8 @@ export * from "./agent/workflowEngine.js";
 export * from "./agent/agentExecutor.js";
 export * from "./rag/ragStore.js";
 export * from "./rag/ragEngine.js";
+export * from "./rag/embeddings.js";
+export * from "./rag/vectorStore.js";
+export * from "./rag/documentIngestion.js";
+export * from "./rag/enterpriseRAGEngine.js";
+export * from "./orchestrator/enterpriseMemoryManager.js";
