@@ -27,3 +27,5 @@ export * from "./rag/vectorStore.js";
 export * from "./rag/documentIngestion.js";
 export * from "./rag/enterpriseRAGEngine.js";
 export * from "./orchestrator/enterpriseMemoryManager.js";
+export * from "./predictive/index.js";
+

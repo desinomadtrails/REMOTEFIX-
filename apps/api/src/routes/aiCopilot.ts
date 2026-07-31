@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db.js";
 import { aiCopilotSessions, aiCopilotMessages } from "@remotefix/database";
 import { requireAuth, AppEnv } from "../middleware/auth.js";
-import { AIOrchestrator } from "../services/ai/index.js";
+import { AIOrchestrator, EnterprisePredictiveEngine } from "../services/ai/index.js";
 
 const aiCopilotRouter = new Hono<AppEnv>();
 
@@ -17,6 +17,30 @@ aiCopilotRouter.post("/chat", requireAuth, async (c) => {
     const { message, customerName, assetTag, ticketId, sessionId } = await c.req.json();
     if (!message) {
       return c.json({ success: false, error: "User message is required." }, 400);
+    }
+
+    const queryLower = message.toLowerCase();
+    if (
+      queryLower.includes("fail") ||
+      queryLower.includes("maintenance") ||
+      queryLower.includes("declining") ||
+      queryLower.includes("spare parts") ||
+      queryLower.includes("reorder")
+    ) {
+      const predRes = await EnterprisePredictiveEngine.handleCopilotPredictiveQuery(message);
+      return c.json({
+        success: true,
+        sessionId: sessionId || crypto.randomUUID(),
+        reply: predRes.answer,
+        relevantAssets: predRes.relevantAssets,
+        recommendations: predRes.recommendations,
+        providerUsed: "EnterprisePredictiveEngine",
+        suggestedActions: [
+          "Schedule Preventive Maintenance",
+          "Create Purchase Order for Parts",
+          "Review Asset Health Dashboard",
+        ],
+      });
     }
 
     // Execute via Enterprise AI Orchestrator

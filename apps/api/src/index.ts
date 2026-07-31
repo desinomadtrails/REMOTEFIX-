@@ -26,6 +26,7 @@ import { offlineNativeRouter } from "./routes/offlineNative.js";
 import { mobileReleaseRouter } from "./routes/mobileRelease.js";
 import { aiCopilotRouter } from "./routes/aiCopilot.js";
 import { aiRagRouter } from "./routes/aiRag.js";
+import { aiPredictiveRouter } from "./routes/aiPredictive.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -148,6 +149,7 @@ app.route("/api/mobile/offline", offlineNativeRouter);
 app.route("/api/mobile", mobileReleaseRouter);
 app.route("/api/ai/copilot", aiCopilotRouter);
 app.route("/api/ai/rag", aiRagRouter);
+app.route("/api/ai/predictive", aiPredictiveRouter);
 
 app.get("/api/test-db", async (c) => {
   try {

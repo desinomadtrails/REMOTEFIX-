@@ -14,6 +14,7 @@ export interface Variables {
     id: string;
     email: string;
     role: UserRole;
+    tenantId?: string;
   };
 }
 
@@ -52,6 +53,7 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
     id: decoded.id,
     email: decoded.email,
     role: decoded.role,
+    tenantId: decoded.tenantId,
   });
   
   await next();
