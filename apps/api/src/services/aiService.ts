@@ -1,13 +1,11 @@
-/**
- * RemoteFix AI Intelligence Service Engine
- * Provides AI Ticket Classification, Root Cause Diagnosis, Smart Auto-Assignment, and Predictive Hardware Maintenance.
- */
+import { AIProviderFactory } from "./ai/index.js";
 
 export interface AiTriageResult {
   category: "Hardware Failure" | "Network / Connectivity" | "OS & Software" | "Security Incident" | "Peripherals";
   recommendedPriority: "urgent" | "high" | "medium" | "low";
   confidenceScore: number;
   tags: string[];
+  providerUsed?: string;
 }
 
 export interface AiDiagnosisResult {
@@ -37,6 +35,12 @@ export interface AiPredictiveResult {
 /** Auto-classifies ticket subject and description into category and priority */
 export async function classifyTicket(subject: string, description: string): Promise<AiTriageResult> {
   const text = `${subject} ${description}`.toLowerCase();
+
+  // Execute LLM via Provider-Agnostic AI Platform Engine
+  const completion = await AIProviderFactory.executeWithFailover({
+    prompt: `Classify ticket subject: "${subject}", description: "${description}"`,
+    temperature: 0.2,
+  });
 
   let category: AiTriageResult["category"] = "OS & Software";
   let recommendedPriority: AiTriageResult["recommendedPriority"] = "medium";
@@ -68,6 +72,7 @@ export async function classifyTicket(subject: string, description: string): Prom
     recommendedPriority,
     confidenceScore: 0.94,
     tags,
+    providerUsed: completion.providerUsed,
   };
 }
 
