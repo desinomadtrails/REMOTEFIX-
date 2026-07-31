@@ -995,3 +995,35 @@ export const aiMemoryStore = mssqlTable("ai_memory_store", {
   index("idx_ams_type_key").on(table.memoryType, table.memoryKey),
   index("idx_ams_tenant").on(table.tenantId),
 ]);
+
+// ==========================================
+// 44. AI COPILOT SESSIONS TABLE (Interactive Technician & Admin AI Assistant)
+// ==========================================
+export const aiCopilotSessions = mssqlTable("ai_copilot_sessions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  userRole: varchar("user_role", { length: 50 }).notNull().default("technician"), // 'technician' | 'admin' | 'customer'
+  sessionTitle: varchar("session_title", { length: 255 }).notNull().default("New AI Copilot Session"),
+  contextJson: text("context_json"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  updatedAt: datetime2("updated_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_acs_user_id").on(table.userId),
+  index("idx_acs_role").on(table.userRole),
+]);
+
+// ==========================================
+// 45. AI COPILOT MESSAGES TABLE (Chat Audit & Suggested Action Buttons)
+// ==========================================
+export const aiCopilotMessages = mssqlTable("ai_copilot_messages", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sessionId: varchar("session_id", { length: 36 }).notNull().references(() => aiCopilotSessions.id),
+  role: varchar("role", { length: 20 }).notNull(), // 'user' | 'assistant' | 'system'
+  message: text("message").notNull(),
+  suggestedActionsJson: text("suggested_actions_json"),
+  tokensUsed: int("tokens_used").notNull().default(0),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_acm_session_id").on(table.sessionId),
+  index("idx_acm_created_at").on(table.createdAt),
+]);

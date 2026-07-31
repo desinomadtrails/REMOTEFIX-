@@ -768,3 +768,23 @@ export interface AiMemoryStoreItem {
   expiresAt?: string | null;
   createdAt: string;
 }
+
+export interface AiCopilotSession {
+  id: string;
+  userId: string;
+  userRole: "technician" | "admin" | "customer";
+  sessionTitle: string;
+  contextJson?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiCopilotMessage {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant" | "system";
+  message: string;
+  suggestedActionsJson?: string | null;
+  tokensUsed: number;
+  createdAt: string;
+}
