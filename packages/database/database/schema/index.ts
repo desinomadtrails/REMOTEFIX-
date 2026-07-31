@@ -954,3 +954,44 @@ export const mobileReleaseBuilds = mssqlTable("mobile_release_builds", {
   index("idx_mrb_platform").on(table.platform),
   index("idx_mrb_version").on(table.buildVersion),
 ]);
+
+// ==========================================
+// 42. AI ORCHESTRATOR LOGS TABLE (Observability, Latency & Cost Audit)
+// ==========================================
+export const aiOrchestratorLogs = mssqlTable("ai_orchestrator_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  requestType: varchar("request_type", { length: 50 }).notNull(),
+  providerUsed: varchar("provider_used", { length: 50 }).notNull(),
+  modelUsed: varchar("model_used", { length: 100 }).notNull(),
+  promptVersion: varchar("prompt_version", { length: 20 }).notNull().default("v1.0"),
+  promptTokens: int("prompt_tokens").notNull().default(0),
+  completionTokens: int("completion_tokens").notNull().default(0),
+  totalTokens: int("total_tokens").notNull().default(0),
+  latencyMs: int("latency_ms").notNull().default(0),
+  estimatedCostUsd: varchar("estimated_cost_usd", { length: 20 }).notNull().default("0.0000"),
+  cacheHit: bit("cache_hit").notNull().default(false),
+  fallbackUsed: bit("fallback_used").notNull().default(false),
+  toolsExecuted: text("tools_executed"),
+  tenantId: varchar("tenant_id", { length: 36 }),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_aol_request_type").on(table.requestType),
+  index("idx_aol_provider").on(table.providerUsed),
+  index("idx_aol_created_at").on(table.createdAt),
+]);
+
+// ==========================================
+// 43. AI MEMORY STORE TABLE (Conversation & Session Memory Abstraction)
+// ==========================================
+export const aiMemoryStore = mssqlTable("ai_memory_store", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  memoryType: varchar("memory_type", { length: 50 }).notNull(), // 'session' | 'conversation' | 'customer' | 'asset' | 'tenant'
+  memoryKey: varchar("memory_key", { length: 255 }).notNull(),
+  memoryValueJson: text("memory_value_json").notNull(),
+  tenantId: varchar("tenant_id", { length: 36 }),
+  expiresAt: datetime2("expires_at"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_ams_type_key").on(table.memoryType, table.memoryKey),
+  index("idx_ams_tenant").on(table.tenantId),
+]);

@@ -740,3 +740,31 @@ export interface MobileReleaseBuild {
   isMandatoryUpdate: boolean;
   createdAt: string;
 }
+
+export interface AiOrchestratorLog {
+  id: string;
+  requestType: string;
+  providerUsed: string;
+  modelUsed: string;
+  promptVersion: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  latencyMs: number;
+  estimatedCostUsd: string;
+  cacheHit: boolean;
+  fallbackUsed: boolean;
+  toolsExecuted?: string | null;
+  tenantId?: string | null;
+  createdAt: string;
+}
+
+export interface AiMemoryStoreItem {
+  id: string;
+  memoryType: "session" | "conversation" | "customer" | "asset" | "tenant";
+  memoryKey: string;
+  memoryValueJson: string;
+  tenantId?: string | null;
+  expiresAt?: string | null;
+  createdAt: string;
+}
