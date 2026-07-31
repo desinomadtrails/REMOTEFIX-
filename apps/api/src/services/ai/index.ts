@@ -29,5 +29,7 @@ export * from "./rag/enterpriseRAGEngine.js";
 export * from "./orchestrator/enterpriseMemoryManager.js";
 export * from "./predictive/index.js";
 export * from "./workflow/index.js";
+export * from "./multiAgent/index.js";
+
 
 

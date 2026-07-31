@@ -28,6 +28,7 @@ import { aiCopilotRouter } from "./routes/aiCopilot.js";
 import { aiRagRouter } from "./routes/aiRag.js";
 import { aiPredictiveRouter } from "./routes/aiPredictive.js";
 import { aiWorkflowsRouter } from "./routes/aiWorkflows.js";
+import { aiMultiAgentRouter } from "./routes/aiMultiAgent.js";
 import { getDb } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
@@ -152,6 +153,7 @@ app.route("/api/ai/copilot", aiCopilotRouter);
 app.route("/api/ai/rag", aiRagRouter);
 app.route("/api/ai/predictive", aiPredictiveRouter);
 app.route("/api/ai/workflows", aiWorkflowsRouter);
+app.route("/api/ai/agents", aiMultiAgentRouter);
 
 app.get("/api/test-db", async (c) => {
   try {

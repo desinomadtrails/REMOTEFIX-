@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db.js";
 import { aiCopilotSessions, aiCopilotMessages } from "@remotefix/database";
 import { requireAuth, AppEnv } from "../middleware/auth.js";
-import { AIOrchestrator, EnterprisePredictiveEngine, EnterpriseAutonomousWorkflowEngine } from "../services/ai/index.js";
+import { AIOrchestrator, EnterprisePredictiveEngine, EnterpriseAutonomousWorkflowEngine, EnterpriseAgentCoordinator } from "../services/ai/index.js";
 
 const aiCopilotRouter = new Hono<AppEnv>();
 
@@ -20,6 +20,34 @@ aiCopilotRouter.post("/chat", requireAuth, async (c) => {
     }
 
     const queryLower = message.toLowerCase();
+    if (
+      queryLower.includes("together") ||
+      queryLower.includes("reporting agent") ||
+      queryLower.includes("multiple agents") ||
+      queryLower.includes("coordinate preventive maintenance")
+    ) {
+      const userState = c.get("user");
+      const userCtx = {
+        userId: userState?.id || "usr-101",
+        role: userState?.role || "admin",
+        tenantId: userState?.tenantId || "tenant-default",
+      };
+      const maRes = await EnterpriseAgentCoordinator.handleCopilotMultiAgentCommand(message, userCtx);
+      return c.json({
+        success: true,
+        sessionId: sessionId || crypto.randomUUID(),
+        reply: maRes.answer,
+        agentsInvolved: maRes.agentsInvolved,
+        summary: maRes.summary,
+        providerUsed: "EnterpriseAgentCoordinator",
+        suggestedActions: [
+          "View Multi-Agent Observability",
+          "Inspect Shared Memory Context",
+          "View Multi-Agent Session History",
+        ],
+      });
+    }
+
     if (
       queryLower.includes("automatically schedule") ||
       queryLower.includes("run predictive maintenance") ||
