@@ -8,6 +8,9 @@ import { getDb } from "../db.js";
 import { projects } from "@remotefix/database";
 import { RepositoryScanner } from "../services/ai/runtime/RepositoryScanner.js";
 import { AppEnv } from "../middleware/auth.js";
+import { PlanningEngine } from "../services/ai/PlanningEngine.js";
+import { ReviewEngine } from "../services/ai/ReviewEngine.js";
+import { ImplementationEngine } from "../services/ai/ImplementationEngine.js";
 
 const projectsRouter = new Hono<AppEnv>();
 
@@ -1089,6 +1092,197 @@ projectsRouter.get("/:id/context", async (c) => {
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "Failed to analyze workspace context" }, 500);
+  }
+});
+
+// 7. GET PLANNING ENGINE PLAN
+projectsRouter.get("/:id/plan", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const promptText = c.req.query("prompt") || c.req.query("request") || c.req.query("query") || "";
+
+    if (!promptText) {
+      return c.json({ success: false, error: "User request prompt is required." }, 400);
+    }
+
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Load workspace context (does one traversal scan)
+    const workspaceContext = scanWorkspace(repoPath);
+
+    // Invoke Planning Engine to generate the implementation plan
+    const plan = await PlanningEngine.generatePlan(workspaceContext, promptText);
+
+    return c.json({
+      success: true,
+      plan,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to generate planning engine plan" }, 500);
+  }
+});
+
+// 8. POST REVIEW ENGINE PLAN
+projectsRouter.post("/:id/review", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { request, plan } = await c.req.json();
+
+    if (!request || !plan) {
+      return c.json({ success: false, error: "Original request and plan are required in request body." }, 400);
+    }
+
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Load workspace context (does one traversal scan)
+    const workspaceContext = scanWorkspace(repoPath);
+
+    // Invoke Review Engine to evaluate the proposed plan
+    const review = await ReviewEngine.reviewPlan(workspaceContext, request, plan);
+
+    return c.json({
+      success: true,
+      review,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to generate plan review" }, 500);
+  }
+});
+
+// 9. POST IMPLEMENT ENGINE PROPOSAL
+projectsRouter.post("/:id/implement", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { request, plan, review } = await c.req.json();
+
+    if (!request || !plan || !review) {
+      return c.json({ success: false, error: "Original request, plan, and review are required in request body." }, 400);
+    }
+
+    // Validate Review Approval
+    if (review.recommendation !== "Approve") {
+      return c.json({ success: false, error: "Implementation requires an approved review recommendation." }, 400);
+    }
+
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Load workspace context (does one traversal scan)
+    const workspaceContext = scanWorkspace(repoPath);
+
+    // Invoke Implementation Engine to generate the implementation proposal
+    const proposal = await ImplementationEngine.generateProposal(workspaceContext, request, plan, review);
+
+    return c.json({
+      success: true,
+      proposal,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to generate implementation proposal" }, 500);
   }
 });
 

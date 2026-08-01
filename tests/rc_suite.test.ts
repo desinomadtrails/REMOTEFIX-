@@ -249,6 +249,157 @@ async function runRcTestSuite() {
     }
   });
 
+  await assert("Planning Engine (/api/projects/:id/plan)", async () => {
+    const res = await app.request(`/api/projects/${testProjectId}/plan?prompt=Add+project+settings+page+to+frontend`);
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    
+    const data = await res.json();
+    if (!data.success || !data.plan) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { summary, featureType, complexity, affectedAreas, filesLikelyToChange, implementationSteps, dependencies, risks, validationPlan } = data.plan;
+
+    // Validate existence of all 9 required keys
+    if (summary === undefined) throw new Error("Expected summary key");
+    if (featureType === undefined) throw new Error("Expected featureType key");
+    if (complexity === undefined) throw new Error("Expected complexity key");
+    if (affectedAreas === undefined || !Array.isArray(affectedAreas)) throw new Error("Expected affectedAreas array key");
+    if (filesLikelyToChange === undefined || !Array.isArray(filesLikelyToChange)) throw new Error("Expected filesLikelyToChange array key");
+    if (implementationSteps === undefined || !Array.isArray(implementationSteps)) throw new Error("Expected implementationSteps array key");
+    if (dependencies === undefined || !Array.isArray(dependencies)) throw new Error("Expected dependencies array key");
+    if (risks === undefined || !Array.isArray(risks)) throw new Error("Expected risks array key");
+    if (validationPlan === undefined || !Array.isArray(validationPlan)) throw new Error("Expected validationPlan array key");
+  });
+
+  await assert("Review Engine (/api/projects/:id/review)", async () => {
+    const sampleRequest = "Add project settings page to frontend";
+    const samplePlan = {
+      summary: "Add a project settings panel",
+      featureType: "feature",
+      complexity: "medium",
+      affectedAreas: ["frontend"],
+      filesLikelyToChange: ["apps/web/src/pages/settings.tsx"],
+      implementationSteps: ["Create settings UI", "Register settings route"],
+      dependencies: [],
+      risks: [],
+      validationPlan: ["Verify page rendering"]
+    };
+
+    const res = await app.request(`/api/projects/${testProjectId}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: sampleRequest, plan: samplePlan }),
+    });
+
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    
+    const data = await res.json();
+    if (!data.success || !data.review) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { overallAssessment, approved, confidence, leanCompliance, architectureReview, affectedAreasReview, missingFiles, unnecessaryFiles, riskAssessment, alternativeApproaches, verificationChecklist, recommendation } = data.review;
+
+    // Validate existence of all 12 required review keys
+    if (overallAssessment === undefined) throw new Error("Expected overallAssessment key");
+    if (approved === undefined || typeof approved !== "boolean") throw new Error("Expected approved boolean key");
+    if (confidence === undefined) throw new Error("Expected confidence key");
+    if (leanCompliance === undefined) throw new Error("Expected leanCompliance key");
+    if (architectureReview === undefined) throw new Error("Expected architectureReview key");
+    if (affectedAreasReview === undefined || !Array.isArray(affectedAreasReview)) throw new Error("Expected affectedAreasReview array key");
+    if (missingFiles === undefined || !Array.isArray(missingFiles)) throw new Error("Expected missingFiles array key");
+    if (unnecessaryFiles === undefined || !Array.isArray(unnecessaryFiles)) throw new Error("Expected unnecessaryFiles array key");
+    if (riskAssessment === undefined || !Array.isArray(riskAssessment)) throw new Error("Expected riskAssessment array key");
+    if (alternativeApproaches === undefined || !Array.isArray(alternativeApproaches)) throw new Error("Expected alternativeApproaches array key");
+    if (verificationChecklist === undefined || !Array.isArray(verificationChecklist)) throw new Error("Expected verificationChecklist array key");
+    if (recommendation === undefined) throw new Error("Expected recommendation key");
+  });
+
+  await assert("Implementation Engine - Reject when not approved (/api/projects/:id/implement)", async () => {
+    const sampleRequest = "Add project settings page to frontend";
+    const samplePlan = {
+      summary: "Add a project settings panel",
+      featureType: "feature",
+      complexity: "medium",
+      affectedAreas: ["frontend"],
+      filesLikelyToChange: ["apps/web/src/pages/settings.tsx"],
+      implementationSteps: ["Create settings UI", "Register settings route"],
+      dependencies: [],
+      risks: [],
+      validationPlan: ["Verify page rendering"]
+    };
+    const rejectedReview = {
+      recommendation: "Reject",
+      approved: false
+    };
+
+    const res = await app.request(`/api/projects/${testProjectId}/implement`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: sampleRequest, plan: samplePlan, review: rejectedReview }),
+    });
+
+    if (res.status !== 400) throw new Error(`Expected 400, got ${res.status}`);
+    const data = await res.json();
+    if (data.success) throw new Error("Expected failure for rejected review");
+  });
+
+  await assert("Implementation Engine - Accept when approved (/api/projects/:id/implement)", async () => {
+    const sampleRequest = "Add project settings page to frontend";
+    const samplePlan = {
+      summary: "Add a project settings panel",
+      featureType: "feature",
+      complexity: "medium",
+      affectedAreas: ["frontend"],
+      filesLikelyToChange: ["apps/web/src/pages/settings.tsx"],
+      implementationSteps: ["Create settings UI", "Register settings route"],
+      dependencies: [],
+      risks: [],
+      validationPlan: ["Verify page rendering"]
+    };
+    const approvedReview = {
+      recommendation: "Approve",
+      approved: true
+    };
+
+    const res = await app.request(`/api/projects/${testProjectId}/implement`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: sampleRequest, plan: samplePlan, review: approvedReview }),
+    });
+
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    
+    const data = await res.json();
+    if (!data.success || !data.proposal) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { summary, status, filesToModify, filesToCreate, filesToDelete, implementationOrder, changes, diffs, estimatedImpact, validationChecklist } = data.proposal;
+
+    // Validate existence of all required proposal keys
+    if (summary === undefined) throw new Error("Expected summary key");
+    if (status !== "proposed") throw new Error(`Expected status to be proposed, got ${status}`);
+    if (filesToModify === undefined || !Array.isArray(filesToModify)) throw new Error("Expected filesToModify array key");
+    if (filesToCreate === undefined || !Array.isArray(filesToCreate)) throw new Error("Expected filesToCreate array key");
+    if (filesToDelete === undefined || !Array.isArray(filesToDelete)) throw new Error("Expected filesToDelete array key");
+    if (implementationOrder === undefined || !Array.isArray(implementationOrder)) throw new Error("Expected implementationOrder array key");
+    if (changes === undefined || !Array.isArray(changes)) throw new Error("Expected changes array key");
+    if (diffs === undefined || !Array.isArray(diffs)) throw new Error("Expected diffs array key");
+    if (estimatedImpact === undefined) throw new Error("Expected estimatedImpact key");
+    if (validationChecklist === undefined || !Array.isArray(validationChecklist)) throw new Error("Expected validationChecklist array key");
+
+    // Validate change list properties
+    if (changes.length > 0) {
+      const change = changes[0];
+      if (change.file === undefined) throw new Error("Expected change.file key");
+      if (change.reason === undefined) throw new Error("Expected change.reason key");
+      if (change.changeType === undefined) throw new Error("Expected change.changeType key");
+      if (change.description === undefined) throw new Error("Expected change.description key");
+    }
+  });
+
   await assert("Delete Project (/api/projects/:id)", async () => {
     const res = await app.request(`/api/projects/${testProjectId}`, {
       method: "DELETE",
