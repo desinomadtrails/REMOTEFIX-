@@ -104,6 +104,118 @@ async function runRcTestSuite() {
     if (!data.diagnosis || !data.diagnosis.recommendedSteps) throw new Error("Diagnostic recommendedSteps missing");
   });
 
+  // 8. Project Management API Tests
+  let testProjectId = "";
+  await assert("Create Project (/api/projects)", async () => {
+    const res = await app.request("/api/projects", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "RemoteFix Test Project",
+        path: process.cwd(),
+        description: "Test description for RemoteFix workspace",
+      }),
+    });
+    if (res.status !== 201) throw new Error(`Expected 201, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.project || !data.project.id) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+    testProjectId = data.project.id;
+    if (data.project.metadata.isGit !== true) throw new Error("Expected project to be identified as Git");
+    if (data.project.metadata.hasPackageJson !== true) throw new Error("Expected project to have package.json");
+    if (data.project.metadata.structure === undefined) throw new Error("Expected RepositoryScanner structure scan to run on match");
+  });
+
+  await assert("List Projects (/api/projects)", async () => {
+    const res = await app.request("/api/projects");
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.projects)) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+    const found = data.projects.find((p: any) => p.id === testProjectId);
+    if (!found) throw new Error("Test project not found in list");
+    if (found.name !== "RemoteFix Test Project") throw new Error("Project name mismatch in list");
+  });
+
+  await assert("Open Project (/api/projects/:id/open)", async () => {
+    const res = await app.request(`/api/projects/${testProjectId}/open`, {
+      method: "POST",
+    });
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.project || !data.project.lastOpened) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+    if (data.project.metadata.isGit !== true) throw new Error("Expected opened project metadata to verify git");
+  });
+
+  await assert("Repository Intelligence (/api/projects/:id/repository)", async () => {
+    const res = await app.request(`/api/projects/${testProjectId}/repository`);
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    
+    const data = await res.json();
+    if (!data.success || !data.repository) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { summary, technologies, frameworks, packageManagers, statistics, structureSummary } = data.repository;
+    
+    // 1. Summary checks
+    if (!summary.name || !summary.path || !summary.currentBranch || !summary.gitStatus || !summary.lastCommit) {
+      throw new Error(`Missing summary details: ${JSON.stringify(summary)}`);
+    }
+
+    // 2. Technology detection checks
+    if (!technologies.includes("Node.js")) {
+      throw new Error("Expected Node.js technology to be detected");
+    }
+
+    // 3. Framework detection checks
+    if (!frameworks.includes("Hono") && !frameworks.includes("React")) {
+      throw new Error(`Expected Hono or React framework to be detected. Found: ${JSON.stringify(frameworks)}`);
+    }
+
+    // 4. Package manager detection checks
+    if (!packageManagers.includes("npm")) {
+      throw new Error("Expected npm package manager to be detected");
+    }
+
+    // 5. Statistics checks
+    if (statistics.totalFiles === 0 || statistics.sourceFiles === 0 || statistics.configFiles === 0 || statistics.projectSize === 0) {
+      throw new Error(`Invalid statistics: ${JSON.stringify(statistics)}`);
+    }
+
+    // 6. Structure summary checks
+    if (!structureSummary.directories.includes("apps/") || !structureSummary.directories.includes("packages/")) {
+      throw new Error(`Missing expected root directories: ${JSON.stringify(structureSummary.directories)}`);
+    }
+    if (!structureSummary.configFiles.includes("package.json") || !structureSummary.configFiles.includes("tsconfig.json")) {
+      throw new Error(`Missing expected config files: ${JSON.stringify(structureSummary.configFiles)}`);
+    }
+    if (!structureSummary.tooling.includes("TypeScript")) {
+      throw new Error(`Expected TypeScript tooling to be detected. Found: ${JSON.stringify(structureSummary.tooling)}`);
+    }
+  });
+
+  await assert("Delete Project (/api/projects/:id)", async () => {
+    const res = await app.request(`/api/projects/${testProjectId}`, {
+      method: "DELETE",
+    });
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success) throw new Error("Failed to delete project registration");
+
+    // Double check it's gone from list
+    const listRes = await app.request("/api/projects");
+    const listData = await listRes.json();
+    const found = listData.projects.find((p: any) => p.id === testProjectId);
+    if (found) throw new Error("Project still exists in list after deletion");
+  });
+
   console.log("--------------------------------------------------");
   console.log(`  RESULTS: ${passed} PASSED, ${failed} FAILED`);
   console.log("==================================================");

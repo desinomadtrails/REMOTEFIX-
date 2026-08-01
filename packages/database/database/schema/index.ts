@@ -1080,5 +1080,19 @@ export const aiRagQueryLogs = mssqlTable("ai_rag_query_logs", {
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
 }, (table) => [
   index("idx_arql_user_id").on(table.userId),
-  index("idx_arql_created_at").on(table.createdAt),
 ]);
+
+// ==========================================
+// 49. PROJECTS TABLE (Project Management MVP)
+// ==========================================
+export const projects = mssqlTable("projects", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  path: varchar("path", { length: 500 }).notNull().unique(),
+  description: text("description"),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+  lastOpened: datetime2("last_opened"),
+}, (table) => [
+  index("idx_projects_path").on(table.path),
+]);
+

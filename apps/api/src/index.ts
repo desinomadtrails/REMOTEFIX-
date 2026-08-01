@@ -107,6 +107,7 @@ import { docsRouter } from "./routes/docs.js";
 import { flagsRouter } from "./routes/flags.js";
 import { metricsRouter } from "./routes/metrics.js";
 import { backupRouter } from "./routes/backup.js";
+import { projectsRouter } from "./routes/projects.js";
 
 // Health Checks, Prometheus Metrics & Interactive API Docs
 app.route("/health", healthRouter);
@@ -123,6 +124,7 @@ app.route("/api/auth", authRouter);
 app.route("/api/auth", ssoRouter);
 app.route("/api/admin/sso", ssoRouter);
 app.route("/api/notifications", notificationsRouter);
+app.route("/api/projects", projectsRouter);
 app.route("/api/services", servicesRouter);
 app.route("/api/bookings", bookingsRouter);
 app.route("/api/service-request", serviceRequestRouter);
