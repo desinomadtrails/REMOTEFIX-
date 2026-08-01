@@ -1,26 +1,5 @@
 import { AIProviderFactory } from "./aiFactory.js";
-import { WorkspaceContext, ImplementationPlan } from "./PlanningEngine.js";
-import { ReviewResult } from "./ReviewEngine.js";
-
-export interface ChangeItem {
-  file: string;
-  reason: string;
-  changeType: "modify" | "create" | "delete";
-  description: string;
-}
-
-export interface ImplementationProposal {
-  summary: string;
-  status: "proposed";
-  filesToModify: string[];
-  filesToCreate: string[];
-  filesToDelete: string[];
-  implementationOrder: string[];
-  changes: ChangeItem[];
-  diffs: string[];
-  estimatedImpact: string;
-  validationChecklist: string[];
-}
+import { WorkspaceContext, ImplementationPlan, ReviewResult, ImplementationProposal } from "@remotefix/types";
 
 export class ImplementationEngine {
   public static async generateProposal(

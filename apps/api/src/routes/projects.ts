@@ -11,6 +11,8 @@ import { AppEnv } from "../middleware/auth.js";
 import { PlanningEngine } from "../services/ai/PlanningEngine.js";
 import { ReviewEngine } from "../services/ai/ReviewEngine.js";
 import { ImplementationEngine } from "../services/ai/ImplementationEngine.js";
+import { VerificationEngine } from "../services/ai/VerificationEngine.js";
+import { WorkspaceContext } from "@remotefix/types";
 
 const projectsRouter = new Hono<AppEnv>();
 
@@ -715,27 +717,7 @@ projectsRouter.get("/:id/repository", async (c) => {
   }
 });
 
-// Helper types and single-traversal workspace context scanner
-interface WorkspaceContext {
-  workspaceType: "monorepo" | "single";
-  entryPoints: string[];
-  backend: string[];
-  frontend: string[];
-  database: string[];
-  sharedPackages: string[];
-  routes: string[];
-  tests: string[];
-  documentation: string[];
-  configuration: string[];
-  tooling: string[];
-  repository: {
-    branch: string;
-    frameworks: string[];
-    languages: string[];
-    packageManagers: string[];
-  };
-}
-
+// Single-traversal workspace context scanner
 function scanWorkspace(repoPath: string): WorkspaceContext {
   const context: WorkspaceContext = {
     workspaceType: "single",
@@ -1283,6 +1265,68 @@ projectsRouter.post("/:id/implement", async (c) => {
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "Failed to generate implementation proposal" }, 500);
+  }
+});
+
+// 10. POST VERIFY PROPOSAL
+projectsRouter.post("/:id/verify", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { request, plan, review, implementation } = await c.req.json();
+
+    if (!request || !plan || !review || !implementation) {
+      return c.json({ success: false, error: "Original request, plan, review, and implementation proposal are required in request body." }, 400);
+    }
+
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Load workspace context (does one traversal scan)
+    const workspaceContext = scanWorkspace(repoPath);
+
+    // Invoke Verification Engine to evaluate proposal consistency
+    const verification = await VerificationEngine.verifyProposal(workspaceContext, request, plan, review, implementation);
+
+    return c.json({
+      success: true,
+      verification,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to verify proposal" }, 500);
   }
 });
 

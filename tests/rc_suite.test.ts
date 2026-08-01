@@ -400,6 +400,145 @@ async function runRcTestSuite() {
     }
   });
 
+  await assert("Verification Engine - Reject inconsistent proposal (/api/projects/:id/verify)", async () => {
+    const sampleRequest = "Add project settings page to frontend";
+    const samplePlan = {
+      summary: "Add a project settings panel",
+      featureType: "feature",
+      complexity: "medium",
+      affectedAreas: ["frontend"],
+      filesLikelyToChange: ["apps/web/src/pages/settings.tsx"],
+      implementationSteps: ["Create settings UI", "Register settings route"],
+      dependencies: [],
+      risks: [],
+      validationPlan: ["Verify page rendering"]
+    };
+    const approvedReview = {
+      recommendation: "Approve",
+      approved: true,
+      overallAssessment: "Good plan",
+      confidence: "High",
+      leanCompliance: "Clean",
+      architectureReview: "Clean",
+      affectedAreasReview: [],
+      missingFiles: [],
+      unnecessaryFiles: [],
+      riskAssessment: [],
+      alternativeApproaches: [],
+      verificationChecklist: [],
+    };
+    const inconsistentProposal = {
+      summary: "Add settings panel",
+      status: "proposed",
+      filesToModify: ["apps/api/src/routes/projects.ts"],
+      filesToCreate: [],
+      filesToDelete: [],
+      implementationOrder: ["apps/api/src/routes/projects.ts"],
+      changes: [{
+        file: "apps/api/src/routes/projects.ts",
+        reason: "Inconsistent change",
+        changeType: "modify",
+        description: "Modifying wrong file"
+      }],
+      diffs: [],
+      estimatedImpact: "Low",
+      validationChecklist: []
+    };
+
+    const res = await app.request(`/api/projects/${testProjectId}/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request: sampleRequest,
+        plan: samplePlan,
+        review: approvedReview,
+        implementation: inconsistentProposal
+      }),
+    });
+
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.verification) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { passed, recommendation, failures } = data.verification;
+    if (passed) throw new Error("Expected verification to fail for inconsistent proposal");
+    if (recommendation === "Proceed") throw new Error("Expected recommendation to be Revise or Reject");
+    if (failures.length === 0) throw new Error("Expected failures explanation list");
+  });
+
+  await assert("Verification Engine - Accept consistent proposal (/api/projects/:id/verify)", async () => {
+    const sampleRequest = "Add project settings page to frontend";
+    const samplePlan = {
+      summary: "Add a project settings panel",
+      featureType: "feature",
+      complexity: "medium",
+      affectedAreas: ["frontend"],
+      filesLikelyToChange: ["apps/web/src/pages/settings.tsx"],
+      implementationSteps: ["Create settings UI", "Register settings route"],
+      dependencies: [],
+      risks: [],
+      validationPlan: ["Verify page rendering"]
+    };
+    const approvedReview = {
+      recommendation: "Approve",
+      approved: true,
+      overallAssessment: "Good plan",
+      confidence: "High",
+      leanCompliance: "Clean",
+      architectureReview: "Clean",
+      affectedAreasReview: [],
+      missingFiles: [],
+      unnecessaryFiles: [],
+      riskAssessment: [],
+      alternativeApproaches: [],
+      verificationChecklist: [],
+    };
+    const consistentProposal = {
+      summary: "Add settings panel",
+      status: "proposed",
+      filesToModify: ["apps/web/src/pages/settings.tsx"],
+      filesToCreate: [],
+      filesToDelete: [],
+      implementationOrder: ["apps/web/src/pages/settings.tsx"],
+      changes: [{
+        file: "apps/web/src/pages/settings.tsx",
+        reason: "Matches plan",
+        changeType: "modify",
+        description: "Modifying settings UI"
+      }],
+      diffs: [],
+      estimatedImpact: "Low",
+      validationChecklist: []
+    };
+
+    const res = await app.request(`/api/projects/${testProjectId}/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request: sampleRequest,
+        plan: samplePlan,
+        review: approvedReview,
+        implementation: consistentProposal
+      }),
+    });
+
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.verification) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { summary, passed, durationMs, assertionsCount, failures } = data.verification;
+
+    if (summary === undefined) throw new Error("Expected summary key");
+    if (passed !== true) throw new Error("Expected passed to be true for consistent proposal");
+    if (durationMs === undefined) throw new Error("Expected durationMs key");
+    if (assertionsCount === undefined) throw new Error("Expected assertionsCount key");
+    if (failures === undefined || !Array.isArray(failures) || failures.length > 0) throw new Error("Expected empty failures array");
+  });
+
   await assert("Delete Project (/api/projects/:id)", async () => {
     const res = await app.request(`/api/projects/${testProjectId}`, {
       method: "DELETE",
