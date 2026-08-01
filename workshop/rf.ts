@@ -59,7 +59,8 @@ Commands:
 `);
 }
 
-main().catch((error) => {
-  console.error(`Execution error: ${error.message}`);
+main().catch((error: unknown) => {
+  const msg = error instanceof Error ? error.message : String(error);
+  console.error(`Execution error: ${msg}`);
   process.exit(1);
 });

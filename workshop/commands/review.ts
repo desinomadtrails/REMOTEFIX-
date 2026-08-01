@@ -1,4 +1,4 @@
-import { AIService } from "../services/AIService.js";
+import { AIEngine } from "../../apps/api/src/services/ai/runtime/AIEngine.js";
 
 export async function handleReview(targetFile: string): Promise<void> {
   if (!targetFile) {
@@ -9,7 +9,7 @@ export async function handleReview(targetFile: string): Promise<void> {
 
   console.log(`Starting AI review for target file: ${targetFile}...`);
   try {
-    const report = await AIService.review(targetFile);
+    const report = await AIEngine.review(targetFile);
     console.log(`\n==================================================`);
     console.log(`AI Review Report: ${targetFile}`);
     console.log(`==================================================`);
@@ -23,8 +23,9 @@ export async function handleReview(targetFile: string): Promise<void> {
       console.log(`\nNo quality or lean code compliance issues detected.`);
     }
     console.log(`==================================================`);
-  } catch (error: any) {
-    console.error(`AI Review execution failed: ${error.message}`);
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error(`AI Review execution failed: ${errMsg}`);
     process.exit(1);
   }
 }

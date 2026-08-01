@@ -15,7 +15,7 @@ export async function handleTest(): Promise<void> {
     console.log("\n==================================================");
     console.log("RESULTS: ALL VALIDATIONS PASSED");
     console.log("==================================================");
-  } catch (error: any) {
+  } catch {
     console.error(`\n✗ Validation run failed. See details above.`);
     process.exit(1);
   }
