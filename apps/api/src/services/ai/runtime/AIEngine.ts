@@ -64,7 +64,7 @@ export class AIEngine {
   }
 
   public static async generate(templateName: string): Promise<string> {
-    const tmplPath = path.resolve(process.cwd(), ".agents", "templates", templateName);
+    const tmplPath = path.join(RuntimeBootstrap.getAgentsPath(), "templates", templateName);
     return fs.existsSync(tmplPath) ? fs.readFileSync(tmplPath, "utf-8") : "Template not found.";
   }
 }
