@@ -227,7 +227,7 @@ async function runRcTestSuite() {
     if (!sharedPackages.includes("packages/utils") || !sharedPackages.includes("packages/types")) throw new Error("Expected shared packages");
 
     // 4. Scanned Routes check
-    if (routes.length === 0 || !routes.some(r => r.startsWith("apps/api/src/routes/"))) {
+    if (routes.length === 0 || !routes.some((r: string) => r.startsWith("apps/api/src/routes/"))) {
       throw new Error(`Missing scanned routes in context. Found: ${JSON.stringify(routes)}`);
     }
 
