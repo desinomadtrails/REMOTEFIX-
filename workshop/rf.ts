@@ -4,6 +4,9 @@ import { handleTest } from "./commands/test.js";
 import { handleReview } from "./commands/review.js";
 import { handlePlan } from "./commands/plan.js";
 import { handleCommit } from "./commands/commit.js";
+import { handlePush } from "./commands/push.js";
+import { handlePull } from "./commands/pull.js";
+import { handleDoctor } from "./commands/doctor.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -30,6 +33,15 @@ async function main() {
     case "commit":
       await handleCommit(args.slice(1).join(" "));
       break;
+    case "push":
+      await handlePush();
+      break;
+    case "pull":
+      await handlePull();
+      break;
+    case "doctor":
+      await handleDoctor();
+      break;
     case "help":
     case "-h":
     case "--help":
@@ -55,6 +67,9 @@ Commands:
   review <file>         Run AI OS code and lean-code compliance review
   plan "<task>"         Generate implementation plan via the AI OS
   commit "<msg>"        Stage all changes and commit with conventional message
+  push                  Push local commits to remote origin repository
+  pull                  Pull latest updates from remote origin repository
+  doctor                Run diagnostics for Git, Node, npm, TS, SSH, and AI OS
   help, -h, --help      Show this help info
 `);
 }
