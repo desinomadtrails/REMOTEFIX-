@@ -712,4 +712,384 @@ projectsRouter.get("/:id/repository", async (c) => {
   }
 });
 
+// Helper types and single-traversal workspace context scanner
+interface WorkspaceContext {
+  workspaceType: "monorepo" | "single";
+  entryPoints: string[];
+  backend: string[];
+  frontend: string[];
+  database: string[];
+  sharedPackages: string[];
+  routes: string[];
+  tests: string[];
+  documentation: string[];
+  configuration: string[];
+  tooling: string[];
+  repository: {
+    branch: string;
+    frameworks: string[];
+    languages: string[];
+    packageManagers: string[];
+  };
+}
+
+function scanWorkspace(repoPath: string): WorkspaceContext {
+  const context: WorkspaceContext = {
+    workspaceType: "single",
+    entryPoints: [],
+    backend: [],
+    frontend: [],
+    database: [],
+    sharedPackages: [],
+    routes: [],
+    tests: [],
+    documentation: [],
+    configuration: [],
+    tooling: [],
+    repository: {
+      branch: "main",
+      frameworks: [],
+      languages: [],
+      packageManagers: [],
+    },
+  };
+
+  const detectedLanguages = new Set<string>();
+  const detectedFrameworks = new Set<string>();
+  const detectedPackageManagers = new Set<string>();
+  const detectedTooling = new Set<string>();
+
+  // Determine workspace type
+  const packagesExist = fs.existsSync(path.join(repoPath, "packages"));
+  const appsExist = fs.existsSync(path.join(repoPath, "apps"));
+  if (packagesExist && appsExist) {
+    context.workspaceType = "monorepo";
+  }
+
+  // Get current git branch
+  try {
+    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+      cwd: repoPath,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    context.repository.branch = branch;
+  } catch {}
+
+  const IGNORED_DIRS = new Set([
+    ".git",
+    "node_modules",
+    "venv",
+    ".venv",
+    "env",
+    ".env",
+    "dist",
+    "build",
+    "out",
+    ".next",
+    "bin",
+    "obj",
+    "target",
+    "vendor",
+  ]);
+
+  const configFilesList = new Set([
+    "package.json",
+    "tsconfig.json",
+    "dockerfile",
+    "docker-compose.yml",
+    "readme.md",
+    ".env.example",
+    "turbo.json",
+    "nx.json",
+    "eslint.config.js",
+    "eslint.config.mjs",
+    "eslint.config.ts",
+    "prettier.config.js",
+    "composer.json",
+    "go.mod",
+    "cargo.toml",
+    "pyproject.toml",
+    "requirements.txt"
+  ]);
+
+  const entryPointFiles = new Set([
+    "index.ts",
+    "server.ts",
+    "app.ts",
+    "main.tsx",
+    "index.tsx",
+    "main.py",
+    "app.py",
+    "manage.py"
+  ]);
+
+  function traverse(currentDir: string) {
+    let files: string[] = [];
+    try {
+      files = fs.readdirSync(currentDir);
+    } catch {
+      return;
+    }
+
+    for (const file of files) {
+      const fullPath = path.join(currentDir, file);
+      const relPath = path.relative(repoPath, fullPath).replace(/\\/g, "/");
+      let stat: fs.Stats;
+      try {
+        stat = fs.statSync(fullPath);
+      } catch {
+        continue;
+      }
+
+      if (stat.isDirectory()) {
+        if (IGNORED_DIRS.has(file)) continue;
+
+        const lowFile = file.toLowerCase();
+
+        // 1. Semantic directory classification
+        if (lowFile === "tests" || lowFile === "test" || lowFile === "__tests__") {
+          context.tests.push(relPath);
+        } else if (lowFile === "docs" || lowFile === "documentation" || lowFile === "wiki") {
+          context.documentation.push(relPath);
+        } else if (lowFile === "routes" || lowFile === "controllers") {
+          context.routes.push(relPath);
+        }
+
+        // Subdirectories checks for monorepo components
+        if (context.workspaceType === "monorepo") {
+          const parentDir = path.basename(currentDir);
+          if (parentDir === "apps") {
+            if (lowFile === "api" || lowFile === "backend") {
+              context.backend.push(relPath);
+            } else if (lowFile === "web" || lowFile === "admin" || lowFile === "mobile" || lowFile === "frontend" || lowFile === "client") {
+              context.frontend.push(relPath);
+            } else {
+              const hasReact = fs.existsSync(path.join(fullPath, "node_modules", "react")) || 
+                               fs.existsSync(path.join(fullPath, "src", "main.tsx")) || 
+                               fs.existsSync(path.join(fullPath, "src", "index.tsx"));
+              if (hasReact) {
+                context.frontend.push(relPath);
+              } else {
+                context.backend.push(relPath);
+              }
+            }
+          } else if (parentDir === "packages") {
+            if (lowFile === "database" || lowFile === "db") {
+              context.database.push(relPath);
+            } else {
+              context.sharedPackages.push(relPath);
+            }
+          }
+        }
+
+        traverse(fullPath);
+      } else if (stat.isFile()) {
+        const lowFile = file.toLowerCase();
+        const ext = path.extname(file).toLowerCase();
+
+        // 2. Entry point detection
+        if (entryPointFiles.has(lowFile)) {
+          context.entryPoints.push(relPath);
+        }
+
+        // 3. Important file detection
+        if (configFilesList.has(lowFile) || lowFile.startsWith(".env") || lowFile.startsWith(".eslintrc") || lowFile.startsWith(".prettierrc")) {
+          context.configuration.push(relPath);
+        }
+
+        // 4. Technology / Language detection
+        if (lowFile === "package.json") {
+          detectedLanguages.add("Node.js");
+          try {
+            const content = fs.readFileSync(fullPath, "utf8");
+            const pkg = JSON.parse(content);
+            const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+            
+            if (deps["react"]) detectedFrameworks.add("React");
+            if (deps["next"]) detectedFrameworks.add("Next.js");
+            if (deps["vue"]) detectedFrameworks.add("Vue");
+            if (deps["@angular/core"]) detectedFrameworks.add("Angular");
+            if (deps["express"]) detectedFrameworks.add("Express");
+            if (deps["@nestjs/core"]) detectedFrameworks.add("NestJS");
+            if (deps["hono"]) detectedFrameworks.add("Hono");
+
+            if (deps["typescript"]) detectedTooling.add("TypeScript");
+            if (deps["eslint"]) detectedTooling.add("ESLint");
+            if (deps["prettier"]) detectedTooling.add("Prettier");
+            if (deps["turbo"]) detectedTooling.add("Turborepo");
+            if (deps["nx"]) detectedTooling.add("Nx");
+          } catch {}
+        }
+        if (lowFile === "requirements.txt" || lowFile === "pyproject.toml" || lowFile === "pipfile") {
+          detectedLanguages.add("Python");
+          try {
+            const content = fs.readFileSync(fullPath, "utf8").toLowerCase();
+            if (content.includes("fastapi")) detectedFrameworks.add("FastAPI");
+            if (content.includes("flask")) detectedFrameworks.add("Flask");
+            if (content.includes("django")) detectedFrameworks.add("Django");
+          } catch {}
+        }
+        if (lowFile === "go.mod") {
+          detectedLanguages.add("Go");
+        }
+        if (lowFile === "cargo.toml") {
+          detectedLanguages.add("Rust");
+        }
+        if (lowFile === "pom.xml" || lowFile === "build.gradle") {
+          detectedLanguages.add("Java");
+        }
+        if (ext === ".csproj" || lowFile === "sln") {
+          detectedLanguages.add(".NET");
+        }
+        if (lowFile === "composer.json") {
+          detectedLanguages.add("PHP");
+        }
+
+        // 5. Package manager detection
+        if (lowFile === "package-lock.json") detectedPackageManagers.add("npm");
+        if (lowFile === "pnpm-lock.yaml") detectedPackageManagers.add("pnpm");
+        if (lowFile === "yarn.lock") detectedPackageManagers.add("yarn");
+        if (lowFile === "bun.lockb" || lowFile === "bun.lock") detectedPackageManagers.add("bun");
+        if (lowFile === "poetry.lock") detectedPackageManagers.add("poetry");
+        if (lowFile === "cargo.lock") detectedPackageManagers.add("cargo");
+        if (lowFile === "go.sum") detectedPackageManagers.add("go");
+        if (lowFile === "requirements.txt" || lowFile === "pipfile") {
+          detectedPackageManagers.add("pip");
+        }
+
+        // 6. Tooling detection
+        if (lowFile === "tsconfig.json") detectedTooling.add("TypeScript");
+        if (lowFile === "dockerfile" || lowFile === "docker-compose.yml") detectedTooling.add("Docker");
+        if (lowFile === "turbo.json") detectedTooling.add("Turborepo");
+        if (lowFile === "nx.json") detectedTooling.add("Nx");
+        if (lowFile === "eslint.config.js" || lowFile === "eslint.config.mjs" || lowFile === "eslint.config.ts" || lowFile.startsWith(".eslintrc")) detectedTooling.add("ESLint");
+        if (lowFile === "prettier.config.js" || lowFile.startsWith(".prettierrc")) detectedTooling.add("Prettier");
+      }
+    }
+  }
+
+  traverse(repoPath);
+
+  // Check for .github/workflows directory at root
+  const workflowsPath = path.join(repoPath, ".github", "workflows");
+  if (fs.existsSync(workflowsPath) && fs.statSync(workflowsPath).isDirectory()) {
+    try {
+      const workflowFiles = fs.readdirSync(workflowsPath).filter(f => f.endsWith(".yml") || f.endsWith(".yaml"));
+      if (workflowFiles.length > 0) {
+        context.configuration.push(".github/workflows");
+        detectedTooling.add("GitHub Actions");
+      }
+    } catch {}
+  }
+
+  // Single project default mapping
+  if (context.workspaceType === "single") {
+    const hasBackend = detectedLanguages.has("Go") || detectedLanguages.has("Rust") || detectedLanguages.has("PHP") || detectedLanguages.has("Java") || detectedLanguages.has(".NET") || detectedFrameworks.has("Express") || detectedFrameworks.has("Hono") || detectedFrameworks.has("FastAPI") || detectedFrameworks.has("Flask") || detectedFrameworks.has("Django");
+    const hasFrontend = detectedFrameworks.has("React") || detectedFrameworks.has("Next.js") || detectedFrameworks.has("Vue") || detectedFrameworks.has("Angular");
+    
+    if (hasBackend) context.backend.push(".");
+    if (hasFrontend || (!hasBackend && context.entryPoints.length > 0)) context.frontend.push(".");
+  }
+
+  // Clean up pip package manager if poetry.lock was found
+  if (detectedPackageManagers.has("poetry")) {
+    detectedPackageManagers.delete("pip");
+  }
+
+  // Populate repository context metadata
+  context.repository.languages = Array.from(detectedLanguages);
+  context.repository.frameworks = Array.from(detectedFrameworks);
+  context.repository.packageManagers = Array.from(detectedPackageManagers);
+  context.tooling = Array.from(detectedTooling);
+
+  // Reuse RepositoryScanner if applicable to gather precise route paths
+  if (context.workspaceType === "monorepo") {
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(repoPath);
+      const scannerResult = RepositoryScanner.scan();
+      if (scannerResult.routes && scannerResult.routes.length > 0) {
+        const apiRoutesPath = "apps/api/src/routes";
+        for (const r of scannerResult.routes) {
+          context.routes.push(`${apiRoutesPath}/${r}`);
+        }
+      }
+    } catch {
+    } finally {
+      process.chdir(originalCwd);
+    }
+  }
+
+  // Clean up and sort files/directories arrays for stable responses
+  context.entryPoints.sort();
+  context.backend.sort();
+  context.frontend.sort();
+  context.database.sort();
+  context.sharedPackages.sort();
+  context.routes.sort();
+  context.tests.sort();
+  context.documentation.sort();
+  context.configuration.sort();
+  context.tooling.sort();
+  context.repository.languages.sort();
+  context.repository.frameworks.sort();
+  context.repository.packageManagers.sort();
+
+  return context;
+}
+
+// 6. GET WORKSPACE CONTEXT ENGINE
+projectsRouter.get("/:id/context", async (c) => {
+  try {
+    const id = c.req.param("id");
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Perform single-pass workspace scan
+    const workspaceContext = scanWorkspace(repoPath);
+
+    return c.json({
+      success: true,
+      context: workspaceContext,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to analyze workspace context" }, 500);
+  }
+});
+
 export { projectsRouter };

@@ -201,6 +201,54 @@ async function runRcTestSuite() {
     }
   });
 
+  await assert("Workspace Context Engine (/api/projects/:id/context)", async () => {
+    const res = await app.request(`/api/projects/${testProjectId}/context`);
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    
+    const data = await res.json();
+    if (!data.success || !data.context) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { workspaceType, entryPoints, backend, frontend, database, sharedPackages, routes, tests, documentation, configuration, tooling, repository } = data.context;
+
+    // 1. Workspace detection check
+    if (workspaceType !== "monorepo") throw new Error(`Expected workspaceType to be monorepo, got ${workspaceType}`);
+
+    // 2. Entry point detection check
+    if (!entryPoints.includes("apps/api/src/server.ts") && !entryPoints.includes("apps/web/src/main.tsx")) {
+      throw new Error(`Missing expected entry points. Found: ${JSON.stringify(entryPoints)}`);
+    }
+
+    // 3. Component classification checks
+    if (!backend.includes("apps/api")) throw new Error("Expected apps/api in backend");
+    if (!frontend.includes("apps/web") || !frontend.includes("apps/admin")) throw new Error("Expected apps/web/admin in frontend");
+    if (!database.includes("packages/database")) throw new Error("Expected packages/database in database");
+    if (!sharedPackages.includes("packages/utils") || !sharedPackages.includes("packages/types")) throw new Error("Expected shared packages");
+
+    // 4. Scanned Routes check
+    if (routes.length === 0 || !routes.some(r => r.startsWith("apps/api/src/routes/"))) {
+      throw new Error(`Missing scanned routes in context. Found: ${JSON.stringify(routes)}`);
+    }
+
+    // 5. Tests & documentation checks
+    if (!tests.includes("tests")) throw new Error("Expected tests folder");
+    if (!documentation.includes("docs")) throw new Error("Expected docs folder");
+
+    // 6. Important configuration files checks
+    if (!configuration.includes("package.json") || !configuration.includes("tsconfig.json")) {
+      throw new Error("Missing package.json/tsconfig.json in configuration");
+    }
+
+    // 7. Tooling & repository metadata checks
+    if (!tooling.includes("TypeScript") || !tooling.includes("Docker")) {
+      throw new Error(`Missing expected tooling. Found: ${JSON.stringify(tooling)}`);
+    }
+    if (!repository.languages.includes("Node.js") || !repository.packageManagers.includes("npm")) {
+      throw new Error(`Invalid repository metadata: ${JSON.stringify(repository)}`);
+    }
+  });
+
   await assert("Delete Project (/api/projects/:id)", async () => {
     const res = await app.request(`/api/projects/${testProjectId}`, {
       method: "DELETE",
