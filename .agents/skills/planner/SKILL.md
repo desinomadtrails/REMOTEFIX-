@@ -10,6 +10,7 @@ Decompose incoming requests into manageable tasks and outline verification plans
 
 ## Responsibilities
 - Intakes user requests and classifies task categories.
+- Evaluates whether implementation is necessary, whether existing architecture already supports the feature, and whether refactoring is preferable.
 - Generates implementation plans and task checklists.
 - Defines rollback steps.
 
@@ -31,6 +32,7 @@ Decompose incoming requests into manageable tasks and outline verification plans
 
 ## Rules Enforced
 - [rules/git.md](../../rules/git.md)
+- [rules/lean-code.md](../../rules/lean-code.md)
 
 ## Playbooks Used
 - [playbooks/new-feature.md](../../playbooks/new-feature.md)

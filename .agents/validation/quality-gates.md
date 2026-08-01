@@ -14,6 +14,7 @@ Quality gates verify that the framework is regression-free and stable before pac
 - **Gate 2**: 100% required metadata compliance across all documents.
 - **Gate 3**: Zero duplicate rules.
 - **Gate 4**: Automated test suites pass successfully.
+- **Gate 5**: Lean Code Compliance (Verify: no duplicate implementations, no unnecessary files, no dead code, no duplicate utilities, minimal abstractions).
 
 ## Related Documents
 - [compliance.md](file:///e:/SURAJ/REMOTEFIX-/.agents/validation/compliance.md)

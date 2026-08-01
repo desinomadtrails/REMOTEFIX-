@@ -9,6 +9,8 @@ description: Responsible for writing production code, selecting templates, follo
 Apply code modifications to satisfy feature plans or bug fixes safely.
 
 ## Responsibilities
+- Enforce the **LEAN CODE FIRST** engineering philosophy.
+- Execute the execution pipeline before writing code: **REUSE** -> **SIMPLIFY** -> **REDUCE** -> **GENERATE**. Never generate first.
 - Write type-safe TypeScript code.
 - Implement UI page routing and backend handlers.
 
@@ -31,6 +33,7 @@ Apply code modifications to satisfy feature plans or bug fixes safely.
 ## Rules Enforced
 - [rules/typescript.md](../../rules/typescript.md)
 - [rules/react.md](../../rules/react.md)
+- [rules/lean-code.md](../../rules/lean-code.md)
 
 ## Playbooks Used
 - [playbooks/new-feature.md](../../playbooks/new-feature.md)

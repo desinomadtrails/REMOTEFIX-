@@ -30,9 +30,9 @@ graph TD
 2. **Load Context**: Retrieve target files and rules.
 3. **Select Templates**: Identify blueprints from `templates/`.
 4. **Create Plan**: Write to `implementation_plan.md` and await approval.
-5. **Implement**: Modify source code.
+5. **Implement**: Modify source code. Always follow the **LEAN CODE FIRST** sequence: **REUSE** -> **SIMPLIFY** -> **REDUCE** -> **GENERATE** (never generate first).
 6. **Run Checks**: Enforce compliance using lists from `checks/`.
-7. **Run Verification**: Execute the Hono test suite locally.
+7. **Run Verification**: Execute the Hono test suite locally and run Lean Code Compliance checks.
 8. **Summarize**: Update `walkthrough.md`.
 
 ## Examples

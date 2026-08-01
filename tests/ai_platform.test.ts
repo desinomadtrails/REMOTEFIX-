@@ -2,6 +2,8 @@ import { classifyTicket, diagnoseIncident } from "../apps/api/src/services/aiSer
 import { AIProviderFactory, MODEL_REGISTRY } from "../apps/api/src/services/ai/index.js";
 import { TokenRouterProvider } from "../apps/api/src/services/ai/providers/TokenRouterProvider.js";
 import { MockProvider } from "../apps/api/src/services/ai/providers/MockProvider.js";
+import { ValidationManager } from "../apps/api/src/services/ai/runtime/ValidationManager.js";
+import { AIEngine } from "../apps/api/src/services/ai/runtime/AIEngine.js";
 
 async function runAiPlatformTests() {
   console.log("==================================================");
@@ -53,6 +55,29 @@ async function runAiPlatformTests() {
   await assert("AI Ticket Triage Classification (/api/ai/triage)", async () => {
     const triage = await classifyTicket("BSOD crash on Dell XPS", "RAM page fault in nonpaged area");
     if (!triage.category || triage.category !== "Hardware Failure") throw new Error("AI ticket triage classification failed");
+  });
+
+  // 6. Lean Code Compliance Check Validation
+  await assert("Lean Code Compliance Validation Checks", async () => {
+    const cleanCode = `
+      import { A } from "mod1";
+      import { B } from "mod2";
+      export function execute() { return 42; }
+    `;
+    const cleanReport = ValidationManager.validate(cleanCode, ["lean-code"]);
+    if (!cleanReport.valid) throw new Error(`Clean code should be valid: ${cleanReport.errors.join(", ")}`);
+
+    const dirtyCode = `
+      import { A } from "mod1";
+      import { B } from "mod1"; // duplicate import
+      // TODO: implement later
+      export class UserWrapper {
+        constructor() {}
+      }
+    `;
+    const dirtyReport = ValidationManager.validate(dirtyCode, ["lean-code"]);
+    if (dirtyReport.valid) throw new Error("Dirty code should be invalid");
+    if (dirtyReport.errors.length < 3) throw new Error(`Expected at least 3 validation errors, got ${dirtyReport.errors.length}`);
   });
 
   console.log("--------------------------------------------------");

@@ -49,7 +49,7 @@ export class AIEngine {
     const filePath = path.join(process.cwd(), targetFile);
     const code = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf-8") : "";
 
-    const validation = ValidationManager.validate(code, ["typescript"]);
+    const validation = ValidationManager.validate(code, ["typescript", "lean-code"]);
     const report = `# Review Report\n\nTarget: ${targetFile}\n\nValidation Status: ${validation.valid ? "PASSED" : "FAILED"}`;
     fs.writeFileSync(path.join(process.cwd(), "review_report.md"), report, "utf-8");
 

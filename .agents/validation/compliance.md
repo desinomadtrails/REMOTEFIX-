@@ -11,6 +11,7 @@ Aggregates reports from structural, link, and schema validators.
 
 ## Standards
 - Run compliance checks via custom verification scripts.
+- Verify Lean Code Compliance (no duplicate implementations, no unnecessary files, no dead code, no duplicate utilities, minimal abstractions).
 
 ## Related Documents
 - [quality-gates.md](file:///e:/SURAJ/REMOTEFIX-/.agents/validation/quality-gates.md)

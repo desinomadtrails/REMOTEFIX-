@@ -17,10 +17,15 @@ Planning ensures that changes are systematically designed and analyzed before im
 - **Large Feature / Breaking Change**: Requires full implementation plan. Must include a risk analysis and rollback steps.
 
 ### Planning Steps
-1. **Research**: Grep codebase to verify dependencies.
-2. **Design**: Map schemas and route structures.
-3. **Risk Analysis**: Audit for data loss or service downtime risks.
-4. **Rollback plan**: Define commands to revert changes if verification fails.
+1. **Lean Evaluation**: Prior to any design work, evaluate the following:
+   - Is implementation necessary?
+   - Does existing architecture already support this feature?
+   - Is refactoring preferable to new code?
+   - Can custom code be replaced or functions merged?
+2. **Research**: Grep codebase to verify dependencies.
+3. **Design**: Map schemas and route structures.
+4. **Risk Analysis**: Audit for data loss or service downtime risks.
+5. **Rollback plan**: Define commands to revert changes if verification fails.
 
 ## Examples
 *Rollback planning checklist:*

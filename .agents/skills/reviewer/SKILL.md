@@ -11,6 +11,7 @@ Audit modified code files to enforce standards compliance.
 ## Responsibilities
 - Validate type safety parameters.
 - Verify file naming conventions.
+- Detect code quality regressions: duplicate code, dead code, unused utilities, unnecessary files, over-abstraction, wrapper classes, large functions, and code that should be deleted.
 
 ## Inputs
 - Implemented file diffs.
@@ -29,6 +30,7 @@ Audit modified code files to enforce standards compliance.
 
 ## Rules Enforced
 - [rules/naming.md](../../rules/naming.md)
+- [rules/lean-code.md](../../rules/lean-code.md)
 
 ## Playbooks Used
 - [playbooks/security-review.md](../../playbooks/security-review.md)

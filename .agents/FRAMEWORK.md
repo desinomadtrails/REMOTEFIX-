@@ -1,7 +1,7 @@
 # RemoteFix AI Operating System Framework
 
 ## Architecture Overview
-The RemoteFix AI OS is a self-validating multi-agent orchestration framework designed to align code generation models with monorepo constraints.
+The RemoteFix AI OS is a self-validating multi-agent orchestration framework designed to align code generation models with monorepo constraints, guided by a mandatory **LEAN CODE FIRST** engineering philosophy.
 
 ## Directory Map
 - `knowledge/`: Single source of truth.
@@ -19,9 +19,9 @@ See [FRAMEWORK_DEPENDENCY_GRAPH.md](file:///e:/SURAJ/REMOTEFIX-/.agents/FRAMEWOR
 
 ## Lifecycle
 1. **Intake**: Classify task.
-2. **Plan**: Write plan and obtain user approval.
-3. **Execute**: Edit files.
-4. **Verify**: Run validations.
+2. **Plan**: Write plan, evaluate Lean Code requirements, and obtain user approval.
+3. **Execute**: Edit files following the REUSE -> SIMPLIFY -> REDUCE -> GENERATE pipeline.
+4. **Verify**: Run validations and Lean Code Compliance checks.
 
 ## Upgrade Process
 Upgrades require incrementing `VERSION`, updating `CHANGELOG.md`, and running `RELEASE_CHECKLIST.md`.

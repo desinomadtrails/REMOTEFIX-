@@ -22,6 +22,7 @@ Never sacrifice architecture for convenience.
 
 Always
 
+- Enforce **LEAN CODE FIRST** engineering philosophy: simplify before generating new code.
 - Write production-ready code.
 - Prefer readability over cleverness.
 - Keep files focused.
@@ -42,6 +43,31 @@ Never
 - Bypass security.
 - Ignore type errors.
 - Skip testing.
+
+---
+
+# Lean Code First Philosophy
+
+Mandatory Engineering Principles:
+1. Prefer existing project code before creating new code.
+2. Prefer language/framework features before custom implementations.
+3. Prefer mature libraries before reinventing functionality.
+4. Delete duplicate code whenever possible.
+5. Merge duplicate logic.
+6. Avoid unnecessary wrappers.
+7. Avoid pass-through classes.
+8. Avoid abstractions created "for future use".
+9. Every new file must justify its existence.
+10. Smaller codebases are preferred.
+
+Mandatory Review Questions before any implementation completes:
+- Can existing code solve this?
+- Can this be simplified?
+- Can files be removed?
+- Can dependencies be reduced?
+- Can custom code be replaced?
+- Can functions be merged?
+- Is this abstraction necessary?
 
 ---
 

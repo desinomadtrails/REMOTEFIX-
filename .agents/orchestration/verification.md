@@ -21,6 +21,7 @@ graph TD
     Security --> Perform[5. Performance Checks]
     Perform --> Schema[6. Database Schemas Validate]
     Schema --> Compliance[7. Templates & Rules Compliance]
+    Compliance --> Lean[8. Lean Code Compliance]
 ```
 
 1. **Compilation**: Enforce typecheck compiles: `npm run typecheck`.
@@ -30,6 +31,7 @@ graph TD
 5. **Performance**: Ensure maximum pool sizes are not exceeded.
 6. **Database**: Check that clustered indexes are present on new tables.
 7. **Compliance**: Verify edits match rules in `rules/` and templates in `templates/`.
+8. **Lean**: Verify Lean Code Compliance (no duplicate implementations, no unnecessary files, no dead code, no duplicate utilities, minimal abstractions).
 
 ## Examples
 - *Verification check run*: If `npm run typecheck` fails, halt the pipeline and revert changes.
