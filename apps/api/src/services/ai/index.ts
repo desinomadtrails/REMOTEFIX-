@@ -35,6 +35,7 @@ export * from "./PlanningEngine.js";
 export * from "./ReviewEngine.js";
 export * from "./ImplementationEngine.js";
 export * from "./VerificationEngine.js";
+export * from "./ExecutionEngine.js";
 
 
 

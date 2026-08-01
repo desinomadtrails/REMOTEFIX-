@@ -12,6 +12,7 @@ import { PlanningEngine } from "../services/ai/PlanningEngine.js";
 import { ReviewEngine } from "../services/ai/ReviewEngine.js";
 import { ImplementationEngine } from "../services/ai/ImplementationEngine.js";
 import { VerificationEngine } from "../services/ai/VerificationEngine.js";
+import { ExecutionEngine } from "../services/ai/ExecutionEngine.js";
 import { WorkspaceContext } from "@remotefix/types";
 
 const projectsRouter = new Hono<AppEnv>();
@@ -1327,6 +1328,83 @@ projectsRouter.post("/:id/verify", async (c) => {
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "Failed to verify proposal" }, 500);
+  }
+});
+
+// 11. POST EXECUTE PROPOSAL
+projectsRouter.post("/:id/execute", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { request, plan, review, implementation, verification } = await c.req.json();
+
+    if (!request || !plan || !review || !implementation || !verification) {
+      return c.json({ success: false, error: "Original request, plan, review, implementation proposal, and verification result are required in request body." }, 400);
+    }
+
+    // Validate that verification is passed/verified and recommendation is Proceed
+    const isVerified = verification.verified === true || verification.passed === true;
+    const isProceed = verification.recommendation === "Proceed";
+    if (!isVerified || !isProceed) {
+      return c.json({ success: false, error: "Execution blocked: VerificationResult must be verified and recommendation must be Proceed." }, 400);
+    }
+
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Load workspace context (does one traversal scan)
+    const workspaceContext = scanWorkspace(repoPath);
+
+    // Invoke Safe Execution Engine
+    const report = await ExecutionEngine.executeProposal(
+      workspaceContext,
+      request,
+      plan,
+      review,
+      implementation,
+      verification,
+      repoPath
+    );
+
+    return c.json({
+      success: report.status === "success",
+      report,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to execute proposal" }, 500);
   }
 });
 

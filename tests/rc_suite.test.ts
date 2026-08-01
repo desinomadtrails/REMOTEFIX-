@@ -1,5 +1,7 @@
 import { app } from "../apps/api/src/index.js";
 import { signJWT } from "@remotefix/auth";
+import * as fs from "fs";
+import * as path from "path";
 
 async function runRcTestSuite() {
   console.log("==================================================");
@@ -537,6 +539,167 @@ async function runRcTestSuite() {
     if (durationMs === undefined) throw new Error("Expected durationMs key");
     if (assertionsCount === undefined) throw new Error("Expected assertionsCount key");
     if (failures === undefined || !Array.isArray(failures) || failures.length > 0) throw new Error("Expected empty failures array");
+  });
+
+  await assert("Execution Engine - Reject when verification recommendation is not Proceed (/api/projects/:id/execute)", async () => {
+    const sampleRequest = "Add project settings page to frontend";
+    const samplePlan = {
+      summary: "Add a project settings panel",
+      featureType: "feature",
+      complexity: "medium",
+      affectedAreas: ["frontend"],
+      filesLikelyToChange: ["apps/web/src/pages/settings.tsx"],
+      implementationSteps: ["Create settings UI", "Register settings route"],
+      dependencies: [],
+      risks: [],
+      validationPlan: ["Verify page rendering"]
+    };
+    const approvedReview = {
+      recommendation: "Approve",
+      approved: true,
+      overallAssessment: "Good plan",
+      confidence: "High",
+      leanCompliance: "Clean",
+      architectureReview: "Clean",
+      affectedAreasReview: [],
+      missingFiles: [],
+      unnecessaryFiles: [],
+      riskAssessment: [],
+      alternativeApproaches: [],
+      verificationChecklist: [],
+    };
+    const consistentProposal = {
+      summary: "Add settings panel",
+      status: "proposed",
+      filesToModify: ["apps/web/src/pages/settings.tsx"],
+      filesToCreate: [],
+      filesToDelete: [],
+      implementationOrder: ["apps/web/src/pages/settings.tsx"],
+      changes: [{
+        file: "apps/web/src/pages/settings.tsx",
+        reason: "Matches plan",
+        changeType: "modify",
+        description: "Modifying settings UI"
+      }],
+      diffs: [],
+      estimatedImpact: "Low",
+      validationChecklist: []
+    };
+    const failedVerification = {
+      summary: "Verification failed due to manual cancellation",
+      passed: false,
+      verified: false,
+      durationMs: 45,
+      assertionsCount: 2,
+      failures: ["Manual rejection"],
+      recommendation: "Reject"
+    };
+
+    const res = await app.request(`/api/projects/${testProjectId}/execute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request: sampleRequest,
+        plan: samplePlan,
+        review: approvedReview,
+        implementation: consistentProposal,
+        verification: failedVerification
+      }),
+    });
+
+    if (res.status !== 400) throw new Error(`Expected 400, got ${res.status}`);
+  });
+
+  await assert("Execution Engine - Accept and isolate workspace (/api/projects/:id/execute)", async () => {
+    const sampleRequest = "Modify mock file";
+    const samplePlan = {
+      summary: "Change mock file",
+      featureType: "refactor",
+      complexity: "low",
+      affectedAreas: ["tests"],
+      filesLikelyToChange: ["tests/mock_exec_temp.txt"],
+      implementationSteps: ["Modify file"],
+      dependencies: [],
+      risks: [],
+      validationPlan: []
+    };
+    const approvedReview = {
+      recommendation: "Approve",
+      approved: true,
+      overallAssessment: "Good plan",
+      confidence: "High",
+      leanCompliance: "Clean",
+      architectureReview: "Clean",
+      affectedAreasReview: [],
+      missingFiles: [],
+      unnecessaryFiles: [],
+      riskAssessment: [],
+      alternativeApproaches: [],
+      verificationChecklist: [],
+    };
+    const consistentProposal = {
+      summary: "Modify mock file content",
+      status: "proposed",
+      filesToModify: ["tests/mock_exec_temp.txt"],
+      filesToCreate: [],
+      filesToDelete: [],
+      implementationOrder: ["tests/mock_exec_temp.txt"],
+      changes: [{
+        file: "tests/mock_exec_temp.txt",
+        reason: "Test",
+        changeType: "modify",
+        description: "Test execution"
+      }],
+      diffs: [
+        "--- old/tests/mock_exec_temp.txt\n+++ new/tests/mock_exec_temp.txt\n@@\n- initial content\n+ modified content"
+      ],
+      estimatedImpact: "Low",
+      validationChecklist: []
+    };
+    const passedVerification = {
+      summary: "Passed",
+      passed: true,
+      verified: true,
+      durationMs: 120,
+      assertionsCount: 5,
+      failures: [],
+      recommendation: "Proceed"
+    };
+
+    const mockFilePath = path.join(process.cwd(), "tests", "mock_exec_temp.txt");
+    fs.writeFileSync(mockFilePath, "initial content\n", "utf8");
+
+    try {
+      const res = await app.request(`/api/projects/${testProjectId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          request: sampleRequest,
+          plan: samplePlan,
+          review: approvedReview,
+          implementation: consistentProposal,
+          verification: passedVerification
+        }),
+      });
+
+      if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+      const data = await res.json();
+      if (!data.success || !data.report) {
+        throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+      }
+
+      const { status, workspace, patchesApplied, filesModified, typecheck, tests } = data.report;
+      if (status !== "success") throw new Error(`Expected report status success, got ${status}`);
+      if (!workspace.startsWith("feature/remotefix-execution-")) throw new Error(`Expected workspace branch name, got ${workspace}`);
+      if (patchesApplied !== 1) throw new Error(`Expected 1 patch applied, got ${patchesApplied}`);
+      if (!filesModified.includes("tests/mock_exec_temp.txt")) throw new Error("Expected tests/mock_exec_temp.txt in filesModified");
+      if (typecheck !== "PASS") throw new Error("Expected typecheck to be PASS");
+      if (tests !== "PASS") throw new Error("Expected tests to be PASS");
+    } finally {
+      if (fs.existsSync(mockFilePath)) {
+        fs.unlinkSync(mockFilePath);
+      }
+    }
   });
 
   await assert("Delete Project (/api/projects/:id)", async () => {
