@@ -73,7 +73,8 @@ OUTPUT SCHEMA:
         durationMs: Date.now() - startTime,
         assertionsCount: Number(parsed.assertionsCount) || 5,
         failures: Array.isArray(parsed.failures) ? parsed.failures : [],
-      };
+        recommendation: parsed.recommendation || (parsed.passed ? "Proceed" : "Reject"),
+      } as any;
     } catch (err) {
       console.warn("[Verification Engine] AI completion failed or returned invalid JSON. Falling back to default verification result...", err);
       
@@ -107,7 +108,8 @@ OUTPUT SCHEMA:
         durationMs: Date.now() - startTime,
         assertionsCount,
         failures,
-      };
+        recommendation: passed ? "Proceed" : "Revise",
+      } as any;
     }
   }
 }

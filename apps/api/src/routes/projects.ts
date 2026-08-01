@@ -13,6 +13,7 @@ import { ReviewEngine } from "../services/ai/ReviewEngine.js";
 import { ImplementationEngine } from "../services/ai/ImplementationEngine.js";
 import { VerificationEngine } from "../services/ai/VerificationEngine.js";
 import { ExecutionEngine } from "../services/ai/ExecutionEngine.js";
+import { OrchestratorAgent } from "../services/ai/OrchestratorAgent.js";
 import { WorkspaceContext } from "@remotefix/types";
 
 const projectsRouter = new Hono<AppEnv>();
@@ -1405,6 +1406,68 @@ projectsRouter.post("/:id/execute", async (c) => {
     });
   } catch (err: any) {
     return c.json({ success: false, error: err.message || "Failed to execute proposal" }, 500);
+  }
+});
+
+// 12. POST RUN ORCHESTRATOR WORKFLOW
+projectsRouter.post("/:id/run", async (c) => {
+  try {
+    const id = c.req.param("id");
+    const { request } = await c.req.json();
+
+    if (!request) {
+      return c.json({ success: false, error: "Goal request is required in request body." }, 400);
+    }
+
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    const repoPath = project.path;
+
+    // Verify path exists and is a directory
+    if (!fs.existsSync(repoPath) || !fs.statSync(repoPath).isDirectory()) {
+      return c.json({ success: false, error: "The local repository path no longer exists on disk." }, 400);
+    }
+
+    // Verify Git repository
+    const isGit = fs.existsSync(path.join(repoPath, ".git"));
+    if (!isGit) {
+      return c.json({ success: false, error: "The local repository is not a valid Git repository." }, 400);
+    }
+
+    // Load workspace context (does one traversal scan)
+    const workspaceContext = scanWorkspace(repoPath);
+
+    // Invoke Orchestrator Agent
+    const report = await OrchestratorAgent.runWorkflow(workspaceContext, request, repoPath);
+
+    return c.json({
+      success: report.status === "Completed",
+      report,
+    });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to run orchestrator workflow" }, 500);
   }
 });
 

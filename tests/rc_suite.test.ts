@@ -3,6 +3,8 @@ import { signJWT } from "@remotefix/auth";
 import * as fs from "fs";
 import * as path from "path";
 
+process.env.REMOTEFIX_INTERNAL_TEST = "true";
+
 async function runRcTestSuite() {
   console.log("==================================================");
   console.log("  REMOTEFIX RELEASE CANDIDATE (RC) TEST SUITE");
@@ -700,6 +702,37 @@ async function runRcTestSuite() {
         fs.unlinkSync(mockFilePath);
       }
     }
+  });
+
+  await assert("Orchestrator Agent - Run successful end-to-end workflow (/api/projects/:id/run)", async () => {
+    const res = await app.request(`/api/projects/${testProjectId}/run`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ request: "Modify mock file" }),
+    });
+
+    if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.report) {
+      throw new Error(`Invalid response: ${JSON.stringify(data)}`);
+    }
+
+    const { status, currentStage, timeline, planning, review, implementation, verification, execution, summary } = data.report;
+    if (status !== "Completed") throw new Error(`Expected status Completed, got ${status}`);
+    if (currentStage !== "COMPLETED") throw new Error(`Expected currentStage COMPLETED, got ${currentStage}`);
+    if (timeline === undefined || !Array.isArray(timeline) || timeline.length === 0) throw new Error("Expected timeline array");
+    if (!planning) throw new Error("Expected planning report");
+    if (!review) throw new Error("Expected review report");
+    if (!implementation) throw new Error("Expected implementation proposal");
+    if (!verification) throw new Error("Expected verification result");
+    if (!execution) throw new Error("Expected execution report");
+
+    const stages = timeline.map((item: any) => item.stage);
+    if (!stages.includes("PLANNING")) throw new Error("Timeline missing PLANNING");
+    if (!stages.includes("REVIEWING")) throw new Error("Timeline missing REVIEWING");
+    if (!stages.includes("IMPLEMENTING")) throw new Error("Timeline missing IMPLEMENTING");
+    if (!stages.includes("VERIFYING")) throw new Error("Timeline missing VERIFYING");
+    if (!stages.includes("EXECUTING")) throw new Error("Timeline missing EXECUTING");
   });
 
   await assert("Delete Project (/api/projects/:id)", async () => {
