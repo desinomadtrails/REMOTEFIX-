@@ -199,4 +199,37 @@ export const api = {
       body: JSON.stringify({ ticketId, phone }),
     });
   },
+
+  // Project Registry & AI pipeline API
+  async getProjects() {
+    return request<{ success: boolean; projects: any[] }>("/api/projects");
+  },
+
+  async createProject(body: { name: string; path: string; description?: string }) {
+    return request<{ success: boolean; project: any }>("/api/projects", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async deleteProject(id: string) {
+    return request<{ success: boolean }>(`/api/projects/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  async getRepositoryIntelligence(id: string) {
+    return request<{ success: boolean; summary: any }>(`/api/projects/${id}/repository`);
+  },
+
+  async getWorkspaceContext(id: string) {
+    return request<{ success: boolean; context: any }>(`/api/projects/${id}/context`);
+  },
+
+  async runOrchestrator(id: string, body: { request: string }) {
+    return request<{ success: boolean; report: any }>(`/api/projects/${id}/run`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
 };

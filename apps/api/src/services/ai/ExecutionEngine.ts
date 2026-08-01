@@ -42,6 +42,12 @@ export class ExecutionEngine {
       nextStep: "Verification Failed",
     };
 
+    // Ensure git path is added if not present (especially for Windows environments where Git might not be in PATH)
+    const gitCorePath = "C:\\Program Files\\Git\\mingw64\\libexec\\git-core";
+    if (fs.existsSync(gitCorePath) && !process.env.PATH?.includes(gitCorePath)) {
+      process.env.PATH = `${process.env.PATH};${gitCorePath}`;
+    }
+
     // 1. Verify Verification Result is Proceed and verified/passed
     const isVerified = verification.passed === true || (verification as any).verified === true;
     const isProceed = (verification as any).recommendation === "Proceed";
@@ -52,13 +58,13 @@ export class ExecutionEngine {
 
     try {
       // Create isolated branch
-      execSync(`git branch ${branchName}`, { cwd: repoPath, stdio: "ignore" });
+      execSync(`git branch ${branchName}`, { cwd: repoPath });
       
       // Ensure temp/tmp directory exists
       fs.mkdirSync(path.dirname(tempWorktreePath), { recursive: true });
 
       // Create Git Worktree
-      execSync(`git worktree add "${tempWorktreePath}" ${branchName}`, { cwd: repoPath, stdio: "ignore" });
+      execSync(`git worktree add "${tempWorktreePath}" ${branchName}`, { cwd: repoPath });
 
       // Link node_modules so compilation tools and packages resolve dependencies
       this.symlinkWorkspaceNodeModules(repoPath, tempWorktreePath);

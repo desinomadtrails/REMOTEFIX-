@@ -5,6 +5,12 @@ import * as path from "path";
 
 process.env.REMOTEFIX_INTERNAL_TEST = "true";
 
+// Ensure git path is added if not present (especially for Windows environments where Git might not be in PATH)
+const gitCorePath = "C:\\Program Files\\Git\\mingw64\\libexec\\git-core";
+if (fs.existsSync(gitCorePath) && !process.env.PATH?.includes(gitCorePath)) {
+  process.env.PATH = `${process.env.PATH};${gitCorePath}`;
+}
+
 async function runRcTestSuite() {
   console.log("==================================================");
   console.log("  REMOTEFIX RELEASE CANDIDATE (RC) TEST SUITE");

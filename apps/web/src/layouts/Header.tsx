@@ -51,61 +51,20 @@ export const Header: React.FC = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           <Link to="/" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            Home
+            Dashboard
           </Link>
-          <Link to="/services" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            Services
-          </Link>
-          <Link to="/track" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            Track Service
-          </Link>
-          <Link to="/pricing" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            Pricing
-          </Link>
-          <Link to="/faq" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            FAQ
-          </Link>
-          <Link to="/blog" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            Blog
-          </Link>
-          <Link to="/contact" className="text-sm font-medium text-muted hover:text-text transition-colors">
-            Contact
+          <Link to="/settings" className="text-sm font-medium text-muted hover:text-text transition-colors">
+            Settings
           </Link>
         </nav>
 
         {/* CTA Actions */}
         <div className="hidden md:flex items-center gap-4">
-          {token ? (
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => navigate(userRole === "engineer" ? "/engineer" : "/customer")}
-              >
-                <LayoutDashboard size={16} />
-                Dashboard
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2 text-danger hover:text-danger hover:bg-danger/10"
-                onClick={handleLogout}
-              >
-                <LogOut size={16} />
-                Sign Out
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm font-medium text-muted hover:text-text transition-colors px-3 py-2">
-                Sign In
-              </Link>
-              <Button variant="primary" size="sm" onClick={() => navigate("/book")}>
-                Book Support
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <span className="text-xs bg-[#00E5FF]/10 text-[#00E5FF] px-2 py-1 rounded border border-[#00E5FF]/20 font-mono">
+              v1.0.0-MVP
+            </span>
+          </div>
         </div>
 
         {/* Mobile menu trigger */}
@@ -125,49 +84,14 @@ export const Header: React.FC = () => {
             onClick={() => setIsOpen(false)}
             className="text-base font-medium text-muted hover:text-text transition-colors"
           >
-            Home
+            Dashboard
           </Link>
           <Link
-            to="/services"
+            to="/settings"
             onClick={() => setIsOpen(false)}
             className="text-base font-medium text-muted hover:text-text transition-colors"
           >
-            Services
-          </Link>
-          <Link
-            to="/track"
-            onClick={() => setIsOpen(false)}
-            className="text-base font-medium text-muted hover:text-text transition-colors"
-          >
-            Track Service
-          </Link>
-          <Link
-            to="/pricing"
-            onClick={() => setIsOpen(false)}
-            className="text-base font-medium text-muted hover:text-text transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link
-            to="/faq"
-            onClick={() => setIsOpen(false)}
-            className="text-base font-medium text-muted hover:text-text transition-colors"
-          >
-            FAQ
-          </Link>
-          <Link
-            to="/blog"
-            onClick={() => setIsOpen(false)}
-            className="text-base font-medium text-muted hover:text-text transition-colors"
-          >
-            Blog
-          </Link>
-          <Link
-            to="/contact"
-            onClick={() => setIsOpen(false)}
-            className="text-base font-medium text-muted hover:text-text transition-colors"
-          >
-            Contact
+            Settings
           </Link>
           <div className="pt-4 border-t border-border/50 flex flex-col gap-3">
             {token ? (
