@@ -11,7 +11,8 @@ Audit modified code files to enforce standards compliance.
 ## Responsibilities
 - Validate type safety parameters.
 - Verify file naming conventions.
-- Detect code quality regressions: duplicate code, dead code, unused utilities, unnecessary files, over-abstraction, wrapper classes, large functions, and code that should be deleted.
+- Detect code quality regressions: duplicate code, dead code, unused utilities, unnecessary files, over-abstraction, and code that should be deleted.
+- Reject wrappers that only forward calls or provide no measurable engineering value.
 
 ## Inputs
 - Implemented file diffs.

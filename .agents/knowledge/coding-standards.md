@@ -10,7 +10,7 @@ Applies to all source files, configurations, and packages across the repository.
 Code quality is enforced via strict TypeScript compiler settings, ESLint, and import rules.
 
 ## Standards
-- **Lean Code First**: Enforce minimization of code, files, dependencies, and unnecessary wrappers/abstractions. Always attempt to simplify and reuse before generating.
+- **Lean Code First**: Enforce minimization of code, files, dependencies, and unnecessary wrappers/abstractions. Every wrapper must justify its existence and provide documented engineering value. Always attempt to simplify and reuse before generating.
 - **Strict Types**: No implicit `any`. Use explicit type declarations or Zod casting.
 - **Imports**: Use `import type` for type-only imports to improve bundler optimization.
 - **Naming**: PascalCase for React components, camelCase for hooks, and kebab-case for directories.

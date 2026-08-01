@@ -10,7 +10,7 @@ Apply code modifications to satisfy feature plans or bug fixes safely.
 
 ## Responsibilities
 - Enforce the **LEAN CODE FIRST** engineering philosophy.
-- Execute the execution pipeline before writing code: **REUSE** -> **SIMPLIFY** -> **REDUCE** -> **GENERATE**. Never generate first.
+- Execute the execution pipeline before writing code: **REUSE** -> **SIMPLIFY** -> **REMOVE** -> **GENERATE** (prefer direct function calls over wrapper classes; never generate first).
 - Write type-safe TypeScript code.
 - Implement UI page routing and backend handlers.
 

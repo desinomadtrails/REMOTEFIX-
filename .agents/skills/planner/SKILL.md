@@ -10,7 +10,7 @@ Decompose incoming requests into manageable tasks and outline verification plans
 
 ## Responsibilities
 - Intakes user requests and classifies task categories.
-- Evaluates whether implementation is necessary, whether existing architecture already supports the feature, and whether refactoring is preferable.
+- Evaluates whether implementation is necessary, whether existing architecture already supports the feature, whether refactoring is preferable, and questions every proposed wrapper to determine whether an existing API can be called directly.
 - Generates implementation plans and task checklists.
 - Defines rollback steps.
 
