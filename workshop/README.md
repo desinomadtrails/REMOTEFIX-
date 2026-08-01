@@ -51,6 +51,18 @@ rf pull
 
 # Run system health diagnostics (Git, Node, npm, TS, SSH, and AI OS)
 rf doctor
+
+# Display project, Workshop, OS, Git, Node, and npm versions
+rf info
+
+# Display a compact Plain-text development dashboard suitable for SSH
+rf dashboard
+
+# Safely remove temporary development artifacts
+rf clean
+
+# Run git pull and npm install update sequence
+rf update
 ```
 
 ## Mobile SSH Workflow

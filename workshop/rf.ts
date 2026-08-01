@@ -7,6 +7,10 @@ import { handleCommit } from "./commands/commit.js";
 import { handlePush } from "./commands/push.js";
 import { handlePull } from "./commands/pull.js";
 import { handleDoctor } from "./commands/doctor.js";
+import { handleInfo } from "./commands/info.js";
+import { handleDashboard } from "./commands/dashboard.js";
+import { handleClean } from "./commands/clean.js";
+import { handleUpdate } from "./commands/update.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -42,6 +46,18 @@ async function main() {
     case "doctor":
       await handleDoctor();
       break;
+    case "info":
+      await handleInfo();
+      break;
+    case "dashboard":
+      await handleDashboard();
+      break;
+    case "clean":
+      await handleClean();
+      break;
+    case "update":
+      await handleUpdate();
+      break;
     case "help":
     case "-h":
     case "--help":
@@ -56,7 +72,7 @@ async function main() {
 
 function printHelp() {
   console.log(`
-RemoteFix Developer Workshop CLI (rf) - v0.1.0
+RemoteFix Developer Workshop CLI (rf) - v1.0.0
 
 Usage:
   rf <command> [arguments]
@@ -70,6 +86,10 @@ Commands:
   push                  Push local commits to remote origin repository
   pull                  Pull latest updates from remote origin repository
   doctor                Run diagnostics for Git, Node, npm, TS, SSH, and AI OS
+  info                  Display project system versions and branch info
+  dashboard             Display a compact plain-text development dashboard
+  clean                 Remove temporary development artifacts safely
+  update                Execute git pull and npm install update sequence
   help, -h, --help      Show this help info
 `);
 }
