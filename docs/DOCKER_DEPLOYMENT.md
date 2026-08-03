@@ -1,14 +1,14 @@
-# RemoteFix Production Docker Deployment Guide (v1.0.1)
+# RemoteFix Production Docker Deployment Guide (v1.0.2)
 
 ## Overview & Architecture
 
-RemoteFix Enterprise API Engine is containerized using a lightweight, multi-stage Alpine Node.js 20 production runtime.
+RemoteFix Enterprise API Engine is containerized using a lightweight, multi-stage Alpine Node.js 20 production runtime adhering to the **Docker Compose Specification**.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                    Stage 1: Builder                          │
 │  Base: node:20-alpine                                        │
-│  - Copies root workspace, packages, and apps                 │
+│  - Copies root workspace, packages, tsconfig, and apps       │
 │  - Executes `npm ci`                                         │
 │  - Builds packages (@remotefix/*) and compiles API engine    │
 │    into `apps/api/dist/`                                     │
@@ -25,16 +25,40 @@ RemoteFix Enterprise API Engine is containerized using a lightweight, multi-stag
 └──────────────────────────────────────────────────────────────┘
 ```
 
+---
+
 ## Production Technical Specifications
 
 | Property | Details |
 | --- | --- |
+| **Specification** | Docker Compose Specification (Warning-free, top-level `services`) |
 | **Base Image** | `node:20-alpine` |
 | **Exposed Ports** | `8787` |
 | **Working Directory** | `/app/apps/api` |
 | **Start Command** | `node dist/server.js` |
-| **Container User** | `node` / root |
-| **Target Build Output** | `apps/api/dist/` |
+| **Container Image Size** | ~185 MB (compressed) / ~964 MB (unpacked) |
+| **Boot Startup Time** | < 1.0 second |
+
+---
+
+## Health Endpoints & Probes
+
+RemoteFix separates **Liveness** (container execution status) from **Readiness** (dependency availability):
+
+| Endpoint | HTTP Status | Role & Behavior |
+| --- | --- | --- |
+| `GET /health/liveness` | `200 OK` | **Liveness Probe**: Immediately returns `{"status":"alive"}`. Never relies on external services, database pools, or remote networks. Used by Docker Compose and K8s liveness probes. |
+| `GET /health` | `200 OK` / `503 Service Unavailable` | **General Health Check**: Checks gateway status and database pool readiness. |
+| `GET /api/health` | `200 OK` / `503 Service Unavailable` | **API Subpath Health Check**: Identical to `/health` under the `/api` route prefix. |
+
+### Database Readiness Configuration
+
+- **Default / Unconfigured Mode (`DATABASE_URL=""` or omitted)**:
+  `checks.database.status` returns `"not_configured"`. RemoteFix operates as a standalone gateway and returns **HTTP 200 OK (`healthy`)**.
+- **Configured Mode (`DATABASE_URL="sqlserver://..."`)**:
+  The health handler executes an active ping query (`SELECT 1 as ping`).
+  - **Successful Ping**: Returns **HTTP 200 OK** (`checks.database.status = "connected"`).
+  - **Connection Failure**: Returns **HTTP 503 Service Unavailable** (`checks.database.status = "error"`).
 
 ---
 
@@ -42,67 +66,70 @@ RemoteFix Enterprise API Engine is containerized using a lightweight, multi-stag
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `NODE_ENV` | Yes | `production` | Environment mode |
+| `NODE_ENV` | Yes | `production` | Environment mode (`production` / `development`) |
 | `PORT` | Yes | `8787` | Application HTTP port |
-| `HOST` | No | `0.0.0.0` | Host binding address |
-| `DATABASE_URL` | Yes | - | Azure SQL / MSSQL Connection string |
+| `HOST` | No | `0.0.0.0` | Network interface binding |
+| `DATABASE_URL` | Optional | `""` | Azure SQL / MSSQL Connection string. When omitted, healthcheck defaults to `not_configured`. |
 | `JWT_SECRET` | Yes | - | Secret key for JWT signing & verification |
-| `AZURE_STORAGE_CONNECTION_STRING` | Optional | - | Connection string for Azure Blob Storage |
+| `AZURE_STORAGE_CONNECTION_STRING` | Optional | `""` | Connection string for Azure Blob Storage |
 
 ---
 
 ## Startup & Build Procedure
 
-### 1. Build Production Image
+### 1. Validate Docker Compose Specification
 
-To build the standalone Docker image locally or in CI/CD:
+Verify that the Compose file is warning-free:
 
 ```bash
-docker build -t remotefix-api:v1.0.1 -t remotefix-api:latest .
+docker compose config
 ```
 
-### 2. Run via Docker Compose
+### 2. Build Production Image
 
-To deploy using Docker Compose:
+To build the multi-stage production Docker image:
 
 ```bash
-docker compose build --no-cache
-docker compose up -d
+docker build -t remotefix-api:v1.0.2 -t remotefix-api:latest .
 ```
 
-### 3. Verify Health Endpoints
-
-Confirm operational readiness by querying the health endpoints:
+### 3. Deploy via Docker Compose
 
 ```bash
-# General Health Check
-curl -f http://localhost:8787/health
+# Clean launch
+docker compose down
+docker compose up -d --build
 
-# API Subpath Health Check
-curl -f http://localhost:8787/api/health
+# Verify container health and logs
+docker compose ps
+docker compose logs --tail=50
+```
 
-# Kubernetes Liveness Probe
-curl -f http://localhost:8787/health/liveness
+### 4. Verify Health Endpoints
+
+```bash
+# Liveness Probe (Returns HTTP 200)
+curl -i http://localhost:8787/health/liveness
+
+# Gateway Health Check (Returns HTTP 200)
+curl -i http://localhost:8787/health
+
+# API Health Check (Returns HTTP 200)
+curl -i http://localhost:8787/api/health
 ```
 
 ---
 
-## Deployment Instructions
+## Common Troubleshooting & Known Issues
 
-1. **Pre-flight Checks**:
-   - Ensure target server has Docker Engine 20.10+ and Docker Compose v2+.
-   - Verify environment variables (`DATABASE_URL`, `JWT_SECRET`) are configured in `.env` or system environment.
+### 1. Container Unhealthy in `docker compose ps`
+- **Cause**: Using `localhost` in Alpine containers may resolve to IPv6 (`::1`), whereas Node binds to IPv4 (`0.0.0.0`).
+- **Fix**: The Compose file specifies `http://127.0.0.1:8787/health/liveness` for container healthcheck execution.
 
-2. **Container Launch**:
-   ```bash
-   docker compose up -d --build
-   ```
-
-3. **Post-Deployment Verification**:
-   ```bash
-   docker compose ps
-   docker compose logs -f remotefix-api
-   ```
+### 2. Known Windows PowerShell `PSReadLine` Paste Crash
+- **Symptom**: Pasting long text or pressing `Ctrl+V` in Windows PowerShell causes the PowerShell terminal window to crash or freeze.
+- **Root Cause**: This is a known Windows PowerShell / `PSReadLine` module issue (`PSReadLine` handling of multi-line clipboard buffers) and is completely **unrelated** to Docker or RemoteFix.
+- **Workaround**: Right-click to paste in PowerShell, use CMD / Git Bash, or update the module via `Update-Module PSReadLine`.
 
 ---
 
@@ -110,15 +137,9 @@ curl -f http://localhost:8787/health/liveness
 
 If a failure occurs during production release:
 
-1. **Revert to Previous Tag**:
-   ```bash
-   docker compose down
-   docker tag remotefix-api:v1.0.0 remotefix-api:latest
-   docker compose up -d
-   ```
-
-2. **Emergency Hotfix Rollback**:
-   ```bash
-   git checkout HEAD~1
-   docker compose up -d --build
-   ```
+```bash
+# Revert to previous release tag
+docker compose down
+docker tag remotefix-api:v1.0.1 remotefix-api:latest
+docker compose up -d
+```

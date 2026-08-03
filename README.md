@@ -173,12 +173,21 @@ npm run dev
 Open your browser to `http://localhost:5173` to access the developer dashboard.
 
 ### 6. Production Docker Deployment
-To build and run the multi-stage production container:
+To build and run the multi-stage production container (following the Docker Compose Specification):
 ```bash
-docker compose build
-docker compose up -d
+# Validate compose spec
+docker compose config
+
+# Build and start production container
+docker compose up -d --build
 ```
-For detailed architecture, configuration, and rollback procedures, see [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md).
+
+Health Endpoints:
+* Liveness probe: `GET /health/liveness` (HTTP 200)
+* Gateway health: `GET /health` (HTTP 200)
+* API health: `GET /api/health` (HTTP 200)
+
+For complete architecture, Liveness vs Readiness specifications, environment variable documentation, and troubleshooting (including Windows PowerShell PSReadLine details), see [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md).
 
 ---
 
