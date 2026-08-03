@@ -221,7 +221,41 @@ projectsRouter.post("/", async (c) => {
   }
 });
 
-// 2. LIST PROJECTS
+// 2. GET PROJECT BY ID
+projectsRouter.get("/:id", async (c) => {
+  try {
+    const id = c.req.param("id");
+    let project: ProjectData | undefined;
+
+    try {
+      const db = getDb(c.env.DATABASE_URL);
+      const rows = await db.select().from(projects).where(eq(projects.id, id));
+      if (rows.length > 0) {
+        const r = rows[0];
+        project = {
+          id: r.id,
+          name: r.name,
+          path: r.path,
+          description: r.description,
+          createdAt: r.createdAt.toISOString(),
+          lastOpened: r.lastOpened ? r.lastOpened.toISOString() : null,
+        };
+      }
+    } catch (dbErr) {
+      project = memoryDb.find((p) => p.id === id);
+    }
+
+    if (!project) {
+      return c.json({ success: false, error: "Project not found." }, 404);
+    }
+
+    return c.json({ success: true, project });
+  } catch (err: any) {
+    return c.json({ success: false, error: err.message || "Failed to fetch project" }, 500);
+  }
+});
+
+// 3. LIST PROJECTS
 projectsRouter.get("/", async (c) => {
   try {
     let list: ProjectData[] = [];

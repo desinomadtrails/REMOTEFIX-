@@ -205,6 +205,10 @@ export const api = {
     return request<{ success: boolean; projects: any[] }>("/api/projects");
   },
 
+  async getProjectById(id: string) {
+    return request<{ success: boolean; project: any }>(`/api/projects/${id}`);
+  },
+
   async createProject(body: { name: string; path: string; description?: string }) {
     return request<{ success: boolean; project: any }>("/api/projects", {
       method: "POST",
@@ -219,7 +223,7 @@ export const api = {
   },
 
   async getRepositoryIntelligence(id: string) {
-    return request<{ success: boolean; summary: any }>(`/api/projects/${id}/repository`);
+    return request<{ success: boolean; repository?: any; summary?: any }>(`/api/projects/${id}/repository`);
   },
 
   async getWorkspaceContext(id: string) {
