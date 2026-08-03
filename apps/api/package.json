@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "dev": "wrangler dev",
     "dev:node": "tsx watch src/server.ts",
-    "start:node": "tsx src/server.ts",
+    "start:node": "node dist/server.js",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit"
   },

@@ -172,6 +172,14 @@ npm run dev
 ```
 Open your browser to `http://localhost:5173` to access the developer dashboard.
 
+### 6. Production Docker Deployment
+To build and run the multi-stage production container:
+```bash
+docker compose build
+docker compose up -d
+```
+For detailed architecture, configuration, and rollback procedures, see [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md).
+
 ---
 
 ## Example Workflow

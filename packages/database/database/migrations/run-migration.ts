@@ -1,6 +1,6 @@
 import { migrate } from "drizzle-orm/node-mssql/migrator";
 import { getConnectedDbClient } from "../client.js";
-import path from "path";
+import * as path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,7 +17,7 @@ async function run() {
     console.log("✅ Database migration completed successfully!");
     
     // Close connection pool to exit cleanly
-    await db.$client.close();
+    await (db.$client as any).close();
     process.exit(0);
   } catch (err) {
     console.error("❌ Database migration failed:", err);

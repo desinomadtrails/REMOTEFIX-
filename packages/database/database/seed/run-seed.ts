@@ -13,7 +13,7 @@ async function run() {
     
     if (sCount[0].value > 0) {
       console.log("✅ Database already seeded with services.");
-      await db.$client.close();
+      await (db.$client as any).close();
       process.exit(0);
     }
     
@@ -78,7 +78,7 @@ async function run() {
     await db.insert(services).values(coreServices as any);
     console.log(`✅ Database services catalog seeded successfully with ${coreServices.length} items.`);
     
-    await db.$client.close();
+    await (db.$client as any).close();
     process.exit(0);
   } catch (err) {
     console.error("❌ Database seeding failed:", err);

@@ -1,6 +1,6 @@
 # ==========================================
 # REMOTEFIX ENTERPRISE PRODUCTION DOCKERFILE
-# Multi-Stage Build for API Engine & Node Server
+# Multi-Stage Production Build for API Engine
 # ==========================================
 
 # ── Stage 1: Build Dependencies & Packages ──
@@ -8,6 +8,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+COPY tsconfig.json ./
 COPY packages/ ./packages/
 COPY apps/ ./apps/
 
@@ -24,8 +25,10 @@ ENV PORT=8787
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps ./apps
+COPY --from=builder /app/apps/api ./apps/api
 
 EXPOSE 8787
 
-CMD ["npm", "run", "start", "--workspace=apps/api"]
+WORKDIR /app/apps/api
+
+CMD ["node", "dist/server.js"]

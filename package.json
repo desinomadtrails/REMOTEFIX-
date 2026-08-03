@@ -14,7 +14,7 @@
     "rf": "tsx workshop/rf.ts",
     "dev": "npm run dev --workspaces --parallel",
     "start": "npm run start --workspace=apps/api",
-    "build": "npm run build --workspace=packages/types && npm run build --workspace=packages/utils && npm run build --workspace=packages/ui && npm run build --workspace=packages/auth && npm run build --workspace=packages/database && npm run build --workspace=apps/mobile && npm run build --workspace=apps/web && npm run build --workspace=apps/admin",
+    "build": "npm run build --workspace=packages/types && npm run build --workspace=packages/utils && npm run build --workspace=packages/ui && npm run build --workspace=packages/auth && npm run build --workspace=packages/database && npm run build --workspace=apps/mobile && npm run build --workspace=apps/web && npm run build --workspace=apps/admin && npm run build --workspace=apps/api",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npx tsx tests/rc_suite.test.ts",
