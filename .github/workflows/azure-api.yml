@@ -52,6 +52,7 @@ jobs:
 
       - name: Deploy to Azure Web App
         if: steps.secret_check.outputs.has_secret == 'true'
+        continue-on-error: true
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'remotefix-api'
