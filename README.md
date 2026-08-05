@@ -6,9 +6,9 @@ RemoteFix is an autonomous, developer-first AI software engineering assistant de
 
 ---
 
-## 🚧 Project Status: Public Beta
+## 🚀 Project Status: v1.1.0 Release Candidate (v1.1.0-rc1)
 
-RemoteFix is currently in **Public Beta**. We are active in dogfooding and refining the reasoning engine daily. We welcome feedback, issue reports, and community contributions to make autonomous AI development safe, robust, and delightful.
+RemoteFix is currently at **v1.1.0-rc1 (Release Candidate)** status following Phase 3.3 Production Hardening. Monorepo builds, typechecks, unit tests, Docker containerization, Azure deployment pipelines, and Playwright E2E verification pass 100% cleanly.
 
 ---
 
