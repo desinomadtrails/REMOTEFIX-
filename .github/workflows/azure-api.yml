@@ -6,31 +6,32 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-deploy:
+    name: Build and Deploy API Service
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Workspace Packages
-        run: |
-          npm run build --workspace=packages/types
-          npm run build --workspace=packages/utils
-          npm run build --workspace=packages/auth
-          npm run build --workspace=packages/database
+      - name: Build Monorepo Workspaces
+        run: npm run build
 
-      - name: Prepare Deployment Package
+      - name: Prepare Deployment Artifact
         run: |
           mkdir -p deploy_dist
           cp -r apps/api deploy_dist/
