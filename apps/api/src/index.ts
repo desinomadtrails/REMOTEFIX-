@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { compress } from "hono/compress";
 import { logger as honoLogger } from "hono/logger";
 import { securityHeaders } from "./middleware/security.js";
 import { apiRateLimiter, authRateLimiter } from "./middleware/rateLimiter.js";
@@ -36,24 +37,78 @@ import { AppEnv } from "./middleware/auth.js";
 
 import { distributedTracing } from "./middleware/tracing.js";
 
+// ==========================================
+// STARTUP VALIDATION: JWT SECRET GUARD
+// ==========================================
+const validateJwtSecret = () => {
+  const env = process.env.NODE_ENV || "development";
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    if (env === "production") {
+      throw new Error("CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing in production!");
+    } else {
+      console.warn("⚠️ SECURITY WARNING: Using development fallback JWT_SECRET. Do not use in production.");
+    }
+  } else if (jwtSecret.length < 32 && env === "production") {
+    throw new Error("CRITICAL SECURITY ERROR: JWT_SECRET must be at least 32 characters long in production!");
+  }
+};
+
+validateJwtSecret();
+
 const app = new Hono<AppEnv>();
 
 // ==========================================
 // MIDDLEWARES
 // ==========================================
 
-// 0. Distributed Tracing & Correlation ID
+// 0. Response Compression
+app.use("*", compress());
+
+// 0.5. Distributed Tracing & Correlation ID
 app.use("*", distributedTracing);
 
 // 1. Structured Logger
 app.use("*", structuredLogger);
 app.use("*", honoLogger());
 
-// 2. CORS configurations
+// 2. Environment-Based CORS Resolution
+const resolveCorsOrigin = (origin: string): string => {
+  const env = process.env.NODE_ENV || "development";
+  const configuredOrigins = process.env.CORS_ALLOWED_ORIGINS
+    ? process.env.CORS_ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    : [];
+
+  if (env === "production" || env === "staging") {
+    if (configuredOrigins.length > 0) {
+      if (configuredOrigins.includes(origin)) {
+        return origin;
+      }
+      return configuredOrigins[0];
+    }
+    return origin || "";
+  }
+
+  // Development/Test environment: allow localhost origins
+  const devDefaultOrigins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ];
+
+  if (!origin || devDefaultOrigins.includes(origin) || configuredOrigins.includes(origin)) {
+    return origin || devDefaultOrigins[0];
+  }
+
+  return origin;
+};
+
 app.use(
   "*",
   cors({
-    origin: (origin) => origin || "*",
+    origin: (origin) => resolveCorsOrigin(origin),
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Request-ID"],
     exposeHeaders: ["Content-Length", "X-Kuma-Revision", "X-Request-ID"],

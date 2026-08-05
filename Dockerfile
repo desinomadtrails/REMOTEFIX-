@@ -7,12 +7,27 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package*.json ./
-COPY tsconfig.json ./
+# Copy root manifest & tsconfig
+COPY package*.json tsconfig.json ./
+
+# Copy workspace package manifests for optimized layer caching
+COPY packages/auth/package*.json ./packages/auth/
+COPY packages/database/package*.json ./packages/database/
+COPY packages/types/package*.json ./packages/types/
+COPY packages/ui/package*.json ./packages/ui/
+COPY packages/utils/package*.json ./packages/utils/
+
+COPY apps/admin/package*.json ./apps/admin/
+COPY apps/api/package*.json ./apps/api/
+COPY apps/mobile/package*.json ./apps/mobile/
+COPY apps/web/package*.json ./apps/web/
+
+RUN npm ci
+
+# Copy source tree after cached npm ci
 COPY packages/ ./packages/
 COPY apps/ ./apps/
 
-RUN npm ci
 RUN npm run build
 
 # ── Stage 2: Production Execution Runtime ──
