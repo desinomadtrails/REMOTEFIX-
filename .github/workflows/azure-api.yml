@@ -4,33 +4,35 @@ on:
   push:
     branches:
       - main
+      - develop
   workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
+    name: Build and Deploy API Service
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Workspace Packages
-        run: |
-          npm run build --workspace=packages/types
-          npm run build --workspace=packages/utils
-          npm run build --workspace=packages/auth
-          npm run build --workspace=packages/database
+      - name: Build Monorepo Workspaces
+        run: npm run build
 
-      - name: Prepare Deployment Package
+      - name: Prepare Deployment Artifact
         run: |
           mkdir -p deploy_dist
           cp -r apps/api deploy_dist/
@@ -38,7 +40,19 @@ jobs:
           cp package.json package-lock.json deploy_dist/
           cd deploy_dist && zip -r ../api-deployment.zip .
 
+      - name: Check Azure WebApp Secret Availability
+        id: secret_check
+        run: |
+          if [ -n "${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}" ]; then
+            echo "has_secret=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_secret=false" >> $GITHUB_OUTPUT
+            echo "::notice::AZURE_WEBAPP_PUBLISH_PROFILE secret is unconfigured. Skipping live deployment."
+          fi
+
       - name: Deploy to Azure Web App
+        if: steps.secret_check.outputs.has_secret == 'true'
+        continue-on-error: true
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'remotefix-api'

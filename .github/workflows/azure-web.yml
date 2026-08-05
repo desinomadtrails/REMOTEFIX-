@@ -4,7 +4,12 @@ on:
   push:
     branches:
       - main
+      - develop
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   build_and_deploy_job:
@@ -16,26 +21,31 @@ jobs:
           submodules: true
           lfs: false
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Build Customer Web Application
+      - name: Build Monorepo Workspaces
+        run: npm run build
+
+      - name: Check Azure Web Secret Availability
+        id: secret_check
         run: |
-          npm run build --workspace=packages/types
-          npm run build --workspace=packages/utils
-          npm run build --workspace=packages/ui
-          npm run build --workspace=packages/auth
-          npm run build --workspace=apps/web
-        env:
-          VITE_API_URL: https://remotefix-api.azurewebsites.net
+          if [ -n "${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WEB }}" ]; then
+            echo "has_secret=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_secret=false" >> $GITHUB_OUTPUT
+            echo "::notice::AZURE_STATIC_WEB_APPS_API_TOKEN_WEB secret is unconfigured. Skipping live Static Web App deployment."
+          fi
 
       - name: Deploy to Azure Static Web Apps
+        if: steps.secret_check.outputs.has_secret == 'true'
+        continue-on-error: true
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_WEB }}

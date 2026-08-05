@@ -38,3 +38,10 @@ RemoteFix is a multi-tenant enterprise IT Service Management (ITSM), Remote Moni
 - `packages/auth`: JWT authentication, database-driven RBAC checking, and password hashing utilities.
 - `packages/ui`: Cyberpunk-themed reusable React design system component library.
 - `packages/utils`: Date formatting, currency formatters, and utility functions.
+
+## CI/CD Pipeline Architecture (Phase 3.1 Consolidated)
+- **`ci.yml`**: Unified Quality Gate pipeline enforcing `npm run typecheck`, `npm run test`, `npm run build`, and Docker container build verification on `develop`, `main`, `release/*`, and Pull Requests.
+- **`azure-api.yml`**: Continuous deployment pipeline for `apps/api` to Azure App Service.
+- **`azure-web.yml`**: Continuous deployment pipeline for `apps/web` to Azure Static Web Apps.
+- **`azure-admin.yml`**: Continuous deployment pipeline for `apps/admin` to Azure Static Web Apps.
+
