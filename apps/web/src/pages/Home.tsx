@@ -278,25 +278,31 @@ export const Home: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviews.map((rev, idx) => (
-              <Card key={idx} className="flex flex-col gap-4 relative overflow-hidden" glowColor="none">
-                <div className="flex gap-1 text-primary">
-                  {[...Array(rev.rating)].map((_, i) => (
-                    <Star key={i} size={14} fill="currentColor" />
-                  ))}
-                </div>
-                <p className="text-xs text-muted leading-relaxed italic">"{rev.comment}"</p>
-                <div className="flex items-center gap-2 border-t border-border/50 pt-3 mt-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-xs text-primary font-display">
-                    {rev.name[0]}
+            {reviews.length > 0 ? (
+              reviews.map((rev, idx) => (
+                <Card key={idx} className="flex flex-col gap-4 relative overflow-hidden" glowColor="none">
+                  <div className="flex gap-1 text-primary">
+                    {[...Array(rev.rating)].map((_, i) => (
+                      <Star key={i} size={14} fill="currentColor" />
+                    ))}
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-text">{rev.name}</h4>
-                    <span className="text-[10px] text-muted">{rev.role}</span>
+                  <p className="text-xs text-muted leading-relaxed italic">"{rev.comment}"</p>
+                  <div className="flex items-center gap-2 border-t border-border/50 pt-3 mt-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-xs text-primary font-display">
+                      {rev.name[0]}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-text">{rev.name}</h4>
+                      <span className="text-[10px] text-muted">{rev.role}</span>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-full text-center p-8 bg-[#111827]/30 border border-border/60 rounded-xl">
+                <p className="text-sm text-muted font-body">No client reviews yet. Reviews will appear here once verified customers complete service bookings.</p>
+              </div>
+            )}
           </div>
         </div>
 
