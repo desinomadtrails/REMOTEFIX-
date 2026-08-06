@@ -1,18 +1,68 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8787";
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem("rf_token");
-  
+  let token = localStorage.getItem("rf_token");
+
   const headers = new Headers(options.headers || {});
   headers.set("Content-Type", "application/json");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
   });
+
+  // Handle expired Access Tokens with automatic silent Refresh Token rotation
+  if (
+    response.status === 401 &&
+    !endpoint.includes("/api/auth/login") &&
+    !endpoint.includes("/api/auth/refresh") &&
+    !endpoint.includes("/api/auth/register")
+  ) {
+    const refreshToken = localStorage.getItem("rf_refresh_token");
+    if (refreshToken) {
+      try {
+        const refreshRes = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          if (refreshData.success && refreshData.token) {
+            localStorage.setItem("rf_token", refreshData.token);
+            if (refreshData.refreshToken) {
+              localStorage.setItem("rf_refresh_token", refreshData.refreshToken);
+            }
+            headers.set("Authorization", `Bearer ${refreshData.token}`);
+            // Retry original request with new token
+            response = await fetch(`${API_BASE_URL}${endpoint}`, {
+              ...options,
+              headers,
+            });
+          } else {
+            localStorage.removeItem("rf_token");
+            localStorage.removeItem("rf_refresh_token");
+            localStorage.removeItem("rf_user");
+            window.dispatchEvent(new Event("auth:logout"));
+          }
+        } else {
+          localStorage.removeItem("rf_token");
+          localStorage.removeItem("rf_refresh_token");
+          localStorage.removeItem("rf_user");
+          window.dispatchEvent(new Event("auth:logout"));
+        }
+      } catch {
+        localStorage.removeItem("rf_token");
+        localStorage.removeItem("rf_refresh_token");
+        localStorage.removeItem("rf_user");
+        window.dispatchEvent(new Event("auth:logout"));
+      }
+    }
+  }
 
   const data = await response.json();
 
@@ -39,8 +89,52 @@ export const api = {
     });
   },
 
+  async logout() {
+    const refreshToken = localStorage.getItem("rf_refresh_token");
+    return request<any>("/api/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+  },
+
+  async refresh() {
+    const refreshToken = localStorage.getItem("rf_refresh_token");
+    return request<any>("/api/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+  },
+
   async getMe() {
     return request<any>("/api/auth/me");
+  },
+
+  async forgotPassword(email: string) {
+    return request<any>("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async resetPassword(body: { token: string; newPassword: string }) {
+    return request<any>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async verifyEmail(body: { token?: string; otp?: string; email?: string }) {
+    return request<any>("/api/auth/verify-email", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async resendOtp(email: string) {
+    return request<any>("/api/auth/resend-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
   },
 
   async oauthLogin(body: any) {

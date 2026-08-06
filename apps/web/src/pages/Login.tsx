@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useNavigate, useLocation, Link } from "react-router";
 import { Shield, Key, Mail, ArrowRight } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
+import { useAuth } from "../context/AuthContext.js";
 import { api } from "../services/api.js";
 import { SEO } from "../components/SEO.js";
 
@@ -10,62 +10,57 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, getRedirectPath } = useAuth();
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: any) => {
-      return api.login(credentials);
-    },
-    onSuccess: (data: any) => {
-      localStorage.setItem("rf_token", data.token);
-      localStorage.setItem("rf_user", JSON.stringify(data.user));
-      
-      // Redirect based on role
-      if (data.user.role === "admin") {
-        // Admin goes to customer portal or admin dashboard
-        navigate("/customer");
-      } else if (data.user.role === "engineer") {
-        navigate("/engineer");
-      } else {
-        navigate("/customer");
-      }
-      
-      // Force refresh to reload header states
-      window.location.reload();
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to log in. Please check your credentials.");
-    },
-  });
+  const from = (location.state as any)?.from?.pathname;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setErrorMsg("");
-    loginMutation.mutate({ email, password });
+    setIsSubmitting(true);
+
+    try {
+      const loggedInUser = await login({ email, password });
+      const targetPath = from || getRedirectPath(loggedInUser.role);
+      navigate(targetPath, { replace: true });
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to log in. Please check your credentials.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Social login mock handler
-  const handleSocialLogin = (provider: "google" | "microsoft") => {
+  const handleSocialLogin = async (provider: "google" | "microsoft") => {
     setErrorMsg("");
-    // Simulate OAuth callback
-    const mockOauthPayload = {
-      provider,
-      token: `mock_oauth_token_${provider}_${Date.now()}`,
-      fullName: provider === "google" ? "Google User" : "Microsoft Partner",
-      email: provider === "google" ? "google.user@example.com" : "microsoft.partner@example.com",
-    };
+    setIsSubmitting(true);
+    try {
+      const mockOauthPayload = {
+        provider,
+        token: `mock_oauth_token_${provider}_${Date.now()}`,
+        fullName: provider === "google" ? "Google User" : "Microsoft Partner",
+        email: provider === "google" ? "google.user@example.com" : "microsoft.partner@example.com",
+      };
 
-    api.oauthLogin(mockOauthPayload)
-      .then((data) => {
+      const data = await api.oauthLogin(mockOauthPayload);
+      if (data.success && data.token && data.user) {
         localStorage.setItem("rf_token", data.token);
+        if (data.refreshToken) {
+          localStorage.setItem("rf_refresh_token", data.refreshToken);
+        }
         localStorage.setItem("rf_user", JSON.stringify(data.user));
-        navigate("/customer");
+        const targetPath = from || getRedirectPath(data.user.role);
+        navigate(targetPath, { replace: true });
         window.location.reload();
-      })
-      .catch((err) => {
-        setErrorMsg(err.message || "Social login failed.");
-      });
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Social login failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -124,7 +119,7 @@ export const Login: React.FC = () => {
             <Key className="absolute left-3.5 top-10.5 text-muted w-4.5 h-4.5" />
           </div>
 
-          <Button variant="primary" type="submit" isLoading={loginMutation.isPending} className="w-full flex justify-center gap-1.5 mt-2">
+          <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full flex justify-center gap-1.5 mt-2">
             Sign In
             <ArrowRight size={16} />
           </Button>
@@ -135,7 +130,6 @@ export const Login: React.FC = () => {
             <div className="flex-grow border-t border-border/40"></div>
           </div>
 
-          {/* Social Sign-In buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="secondary"

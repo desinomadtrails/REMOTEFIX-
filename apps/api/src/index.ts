@@ -181,6 +181,10 @@ app.route("/api/invoices", invoicesRouter);
 app.route("/api/payments", paymentsRouter);
 app.route("/api/technician-workflow", technicianWorkflowRouter);
 app.route("/api/assets", assetsRouter);
+// Require authentication and admin role for all admin routes
+import { requireAuth, requireAdmin } from "./middleware/auth.js";
+app.use("/api/admin/*", requireAuth, requireAdmin);
+
 app.route("/api/admin/assets", assetsRouter);
 app.route("/api/admin/organizations", organizationsRouter);
 app.route("/api/admin/sla", slaRouter);

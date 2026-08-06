@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { useMutation } from "@tanstack/react-query";
 import { Shield, Mail, Key, User, Phone, Building, MapPin } from "lucide-react";
 import { Button, Card, Input } from "@remotefix/ui";
-import { api } from "../services/api.js";
+import { useAuth } from "../context/AuthContext.js";
 import { SEO } from "../components/SEO.js";
 
 export const Register: React.FC = () => {
@@ -14,35 +13,31 @@ export const Register: React.FC = () => {
   const [companyName, setCompanyName] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
-  const registerMutation = useMutation({
-    mutationFn: async (registerData: any) => {
-      return api.register(registerData);
-    },
-    onSuccess: (data: any) => {
-      localStorage.setItem("rf_token", data.token);
-      localStorage.setItem("rf_user", JSON.stringify(data.user));
-      navigate("/customer");
-      window.location.reload();
-    },
-    onError: (err: any) => {
-      setErrorMsg(err.message || "Failed to create account. Please check inputs.");
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !fullName || !phone) return;
     setErrorMsg("");
-    registerMutation.mutate({
-      email,
-      password,
-      fullName,
-      phone,
-      companyName: companyName || undefined,
-      billingAddress: billingAddress || undefined,
-    });
+    setIsSubmitting(true);
+
+    try {
+      await register({
+        email,
+        password,
+        fullName,
+        phone,
+        companyName: companyName || undefined,
+        billingAddress: billingAddress || undefined,
+      });
+      navigate("/customer", { replace: true });
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to create account. Please check your inputs.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,7 +143,7 @@ export const Register: React.FC = () => {
             <MapPin className="absolute left-3.5 top-10.5 text-muted w-4.5 h-4.5" />
           </div>
 
-          <Button variant="primary" type="submit" isLoading={registerMutation.isPending} className="w-full flex justify-center mt-2">
+          <Button variant="primary" type="submit" isLoading={isSubmitting} className="w-full flex justify-center mt-2">
             Create Account
           </Button>
 

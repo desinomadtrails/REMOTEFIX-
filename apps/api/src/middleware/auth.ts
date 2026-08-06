@@ -85,3 +85,6 @@ export function requireRole(allowedRoles: UserRole[]): MiddlewareHandler<AppEnv>
     await next();
   };
 }
+
+export const requireAdmin = requireRole(["admin", "super_admin", "org_admin"]);
+

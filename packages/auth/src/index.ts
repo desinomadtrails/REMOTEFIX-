@@ -91,40 +91,31 @@ export async function verifyJWT(token: string, secret: string): Promise<Record<s
   }
 }
 
+import bcrypt from "bcryptjs";
+
 // ==========================================
-// PASSWORD HASHING (PBKDF2/SHA-256)
+// PASSWORD HASHING (BCRYPT 12 SALT ROUNDS + LEGACY FALLBACK)
 // ==========================================
 
-export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, "0")).join("");
-  const passwordBuffer = new TextEncoder().encode(password);
-  
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    passwordBuffer,
-    "PBKDF2",
-    false,
-    ["deriveBits"]
-  );
-  
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt: salt,
-      iterations: 100000,
-      hash: "SHA-256"
-    },
-    baseKey,
-    256
-  );
-  
-  const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("");
-  
-  return `pbkdf2_sha256$100000$${saltHex}$${hashHex}`;
+export async function hashPassword(password: string, rounds = 12): Promise<string> {
+  return bcrypt.hash(password, rounds);
 }
 
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  if (!storedHash) return false;
+
+  if (storedHash.startsWith("pbkdf2_sha256$")) {
+    return verifyPbkdf2Password(password, storedHash);
+  }
+
+  try {
+    return await bcrypt.compare(password, storedHash);
+  } catch {
+    return false;
+  }
+}
+
+async function verifyPbkdf2Password(password: string, storedHash: string): Promise<boolean> {
   const parts = storedHash.split("$");
   if (parts.length !== 4 || parts[0] !== "pbkdf2_sha256") {
     return false;
@@ -158,11 +149,42 @@ export async function verifyPassword(password: string, storedHash: string): Prom
     );
     
     const hashHex = Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("");
-    
     return hashHex === storedHashHex;
   } catch {
     return false;
   }
+}
+
+// ==========================================
+// CONVENIENCE TOKEN SIGNERS (15M / 30D)
+// ==========================================
+
+/** Signs 15-minute short-lived Access Token */
+export async function signAccessToken(payload: Record<string, any>, secret: string): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  return signJWT(
+    {
+      ...payload,
+      type: "access",
+      iat: now,
+      exp: now + 15 * 60, // 15 minutes
+    },
+    secret
+  );
+}
+
+/** Signs 30-day long-lived Refresh Token */
+export async function signRefreshTokenPayload(payload: Record<string, any>, secret: string): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  return signJWT(
+    {
+      ...payload,
+      type: "refresh",
+      iat: now,
+      exp: now + 30 * 24 * 60 * 60, // 30 days
+    },
+    secret
+  );
 }
 
 // ==========================================

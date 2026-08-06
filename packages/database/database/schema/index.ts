@@ -148,10 +148,14 @@ export const users = mssqlTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("password_hash", { length: 255 }), // Can be null for OAuth login
   fullName: varchar("full_name", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  mobile: varchar("mobile", { length: 20 }),
   role: varchar("role", { length: 50 }).notNull(), // Legacy role string or system role name
   status: varchar("status", { length: 20 }).notNull().default("active"), // 'active' | 'suspended' | 'pending'
   emailVerified: bit("email_verified").notNull().default(false),
   emailVerifiedAt: datetime2("email_verified_at"),
+  lastLoginAt: datetime2("last_login_at"),
   googleId: varchar("google_id", { length: 255 }),
   microsoftId: varchar("microsoft_id", { length: 255 }),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
@@ -162,6 +166,7 @@ export const users = mssqlTable("users", {
   index("idx_users_status").on(table.status),
   index("idx_users_org_id").on(table.organizationId),
   index("idx_users_role_id").on(table.roleId),
+  index("idx_users_mobile").on(table.mobile),
 ]);
 
 // ==========================================
@@ -467,11 +472,28 @@ export const refreshTokens = mssqlTable("refresh_tokens", {
   userAgent: varchar("user_agent", { length: 500 }),
   ipAddress: varchar("ip_address", { length: 45 }),
   isRevoked: bit("is_revoked").notNull().default(false),
+  revokedAt: datetime2("revoked_at"),
   expiresAt: datetime2("expires_at").notNull(),
   createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
 }, (table) => [
   index("idx_refresh_tokens_user_id").on(table.userId),
   index("idx_refresh_tokens_token_hash").on(table.tokenHash),
+]);
+
+// ==========================================
+// 16. OTP VERIFICATIONS TABLE (Production Auth)
+// ==========================================
+export const otpVerifications = mssqlTable("otp_verifications", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  otp: varchar("otp", { length: 20 }).notNull(),
+  purpose: varchar("purpose", { length: 50 }).notNull().default("email_verification"), // 'email_verification' | 'password_reset' | 'login_2fa'
+  isUsed: bit("is_used").notNull().default(false),
+  expiresAt: datetime2("expires_at").notNull(),
+  createdAt: datetime2("created_at").notNull().default(sql`(getdate())`),
+}, (table) => [
+  index("idx_otp_email").on(table.email),
+  index("idx_otp_purpose").on(table.purpose),
 ]);
 
 // ==========================================
