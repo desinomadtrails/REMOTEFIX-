@@ -30,7 +30,7 @@ import { aiRagRouter } from "./routes/aiRag.js";
 import { aiPredictiveRouter } from "./routes/aiPredictive.js";
 import { aiWorkflowsRouter } from "./routes/aiWorkflows.js";
 import { aiMultiAgentRouter } from "./routes/aiMultiAgent.js";
-import { getDb } from "./db.js";
+import { getDb, getDbAsync } from "./db.js";
 import { services } from "@remotefix/database";
 import { count } from "drizzle-orm";
 import { AppEnv } from "./middleware/auth.js";
@@ -122,18 +122,11 @@ app.use("*", securityHeaders);
 
 // 3.5. Database Connection Warmup
 app.use("*", async (c, next) => {
-  if (c.req.path.startsWith("/api")) {
-    if (c.env && c.env.DATABASE_URL) {
+  if (c.req.path.startsWith("/api") || c.req.path.startsWith("/health")) {
+    const dbUrl = (c.env && c.env.DATABASE_URL) || process.env.DATABASE_URL || "";
+    if (dbUrl) {
       try {
-        const db = getDb(c.env.DATABASE_URL);
-        const pool = db.$client;
-        if (pool.connecting && !pool.connected) {
-          while (pool.connecting && !pool.connected) {
-            await new Promise((resolve) => setTimeout(resolve, 50));
-          }
-        } else if (!pool.connected && !pool.connecting) {
-          await pool.connect();
-        }
+        await getDbAsync(dbUrl);
       } catch (err) {
         console.error("❌ Failed to warm up database pool:", err);
       }
