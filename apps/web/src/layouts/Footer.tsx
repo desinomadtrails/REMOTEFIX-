@@ -21,19 +21,37 @@ export const Footer: React.FC = () => {
               Enterprise-grade IT support, custom networking, virus removals, and storage setups. Secure remote repairs and expert on-site consultations.
             </p>
             <div className="flex gap-4 mt-2">
-              <a href="#" className="text-muted hover:text-primary transition-colors">
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Twitter"
+                className="text-muted hover:text-primary transition-colors"
+              >
                 <Twitter size={18} />
               </a>
-              <a href="#" className="text-muted hover:text-primary transition-colors">
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+                className="text-muted hover:text-primary transition-colors"
+              >
                 <Linkedin size={18} />
               </a>
-              <a href="#" className="text-muted hover:text-primary transition-colors">
+              <a
+                href="https://github.com/desinomadtrails/REMOTEFIX-"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub"
+                className="text-muted hover:text-primary transition-colors"
+              >
                 <Github size={18} />
               </a>
             </div>
           </div>
 
-          {/* Quick links */}
+          {/* Quick Platform Links */}
           <div>
             <h4 className="text-sm font-semibold font-display text-text uppercase tracking-wider mb-4">
               Platform
@@ -41,7 +59,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3 font-body text-sm">
               <li>
                 <Link to="/services" className="text-muted hover:text-text transition-colors">
-                  Services List
+                  Services Catalog
                 </Link>
               </li>
               <li>
@@ -51,7 +69,12 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/book" className="text-muted hover:text-text transition-colors font-medium text-primary">
-                  Book A Service
+                  Book A Support Session
+                </Link>
+              </li>
+              <li>
+                <Link to="/track" className="text-muted hover:text-text transition-colors">
+                  Track Ticket Status
                 </Link>
               </li>
               <li>
@@ -62,7 +85,7 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Company & Resources */}
+          {/* Resources & Company */}
           <div>
             <h4 className="text-sm font-semibold font-display text-text uppercase tracking-wider mb-4">
               Resources
@@ -75,28 +98,43 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/about" className="text-muted hover:text-text transition-colors">
-                  About Us
+                  About RemoteFix
                 </Link>
               </li>
               <li>
                 <Link to="/careers" className="text-muted hover:text-text transition-colors">
-                  Careers
+                  Careers & Hiring
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-muted hover:text-text transition-colors">
+                <Link to="/knowledge-base" className="text-muted hover:text-text transition-colors">
                   Knowledge Base
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-muted hover:text-text transition-colors">
+                  Contact Support
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Legal & Account */}
           <div>
             <h4 className="text-sm font-semibold font-display text-text uppercase tracking-wider mb-4">
-              Legal
+              Account & Legal
             </h4>
             <ul className="space-y-3 font-body text-sm">
+              <li>
+                <Link to="/login" className="text-muted hover:text-text transition-colors">
+                  Client Portal Sign In
+                </Link>
+              </li>
+              <li>
+                <Link to="/register" className="text-muted hover:text-text transition-colors">
+                  Create Account
+                </Link>
+              </li>
               <li>
                 <Link to="/privacy" className="text-muted hover:text-text transition-colors">
                   Privacy Policy
