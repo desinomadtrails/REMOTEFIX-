@@ -41,8 +41,9 @@ healthRouter.get("/", async (c) => {
       dbLatencyMs = await executePingQuery(db, 5000);
       dbStatus = "connected";
     } catch (err: any) {
+      console.error("❌ Database health ping error:", err);
       dbStatus = "error";
-      dbError = err.message || String(err);
+      dbError = "Database service unreachable or timed out";
     }
   } else {
     dbStatus = "not_configured";
@@ -86,7 +87,8 @@ healthRouter.get("/readiness", async (c) => {
     await executePingQuery(db, 5000);
     return c.json({ status: "ready", database: "connected", timestamp: new Date().toISOString() }, 200);
   } catch (err: any) {
-    return c.json({ status: "not_ready", database: "disconnected", error: err.message || String(err) }, 503);
+    console.error("❌ Database readiness check failed:", err);
+    return c.json({ status: "not_ready", database: "disconnected", error: "Database service unreachable" }, 503);
   }
 });
 

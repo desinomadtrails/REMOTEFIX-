@@ -93,6 +93,13 @@ export const DepartmentCreateSchema = z.object({
 });
 export type DepartmentCreateInput = z.infer<typeof DepartmentCreateSchema>;
 
+export const FeedbackCreateSchema = z.object({
+  bookingId: z.string().min(1, "Booking ID is required"),
+  rating: z.number().int().min(1).max(5, "Rating must be between 1 and 5"),
+  comment: z.string().optional(),
+});
+export type FeedbackCreateInput = z.infer<typeof FeedbackCreateSchema>;
+
 // Auth Schemas
 export const LoginSchema = z.object({
   email: z.string().email("Invalid email address"),

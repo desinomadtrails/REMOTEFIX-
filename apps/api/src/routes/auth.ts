@@ -20,6 +20,12 @@ import {
   hashToken,
 } from "@remotefix/auth";
 import { requireAuth, AppEnv } from "../middleware/auth.js";
+import {
+  loginRateLimiter,
+  registerRateLimiter,
+  forgotPasswordRateLimiter,
+  refreshRateLimiter,
+} from "../middleware/rateLimiter.js";
 import { sendEmail, EmailTemplates } from "../services/emailService.js";
 
 const authRouter = new Hono<AppEnv>();
@@ -123,7 +129,7 @@ async function issueTokenPair(
 // ==========================================
 // 1. REGISTER CUSTOMER (/api/auth/register)
 // ==========================================
-authRouter.post("/register", async (c) => {
+authRouter.post("/register", registerRateLimiter, async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const reqInfo = {
     userAgent: c.req.header("User-Agent") || null,
@@ -248,7 +254,7 @@ authRouter.post("/register", async (c) => {
 // ==========================================
 // 2. EMAIL / PASSWORD LOGIN (/api/auth/login)
 // ==========================================
-authRouter.post("/login", async (c) => {
+authRouter.post("/login", loginRateLimiter, async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const reqInfo = {
     userAgent: c.req.header("User-Agent") || null,
@@ -360,7 +366,7 @@ authRouter.post("/login", async (c) => {
 // ==========================================
 // 3. REFRESH TOKEN ACCESS (/api/auth/refresh)
 // ==========================================
-authRouter.post("/refresh", async (c) => {
+authRouter.post("/refresh", refreshRateLimiter, async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const reqInfo = {
     userAgent: c.req.header("User-Agent") || null,
@@ -448,7 +454,7 @@ authRouter.post("/refresh", async (c) => {
 // ==========================================
 // 4. FORGOT PASSWORD (/api/auth/forgot-password)
 // ==========================================
-authRouter.post("/forgot-password", async (c) => {
+authRouter.post("/forgot-password", forgotPasswordRateLimiter, async (c) => {
   const db = getDb(c.env.DATABASE_URL);
   const reqInfo = {
     userAgent: c.req.header("User-Agent") || null,

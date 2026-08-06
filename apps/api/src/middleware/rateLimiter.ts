@@ -3,9 +3,9 @@ import { MiddlewareHandler } from "hono";
 interface RateLimitInfo {
   count: number;
   resetTime: number;
+  backoffMultiplier: number;
 }
 
-// Separate maps per route group for per-route limits
 const rateLimitMaps = new Map<string, Map<string, RateLimitInfo>>();
 
 function getMap(bucket: string): Map<string, RateLimitInfo> {
@@ -15,15 +15,34 @@ function getMap(bucket: string): Map<string, RateLimitInfo> {
   return rateLimitMaps.get(bucket)!;
 }
 
+function parseEnvInt(envVal: any, defaultVal: number): number {
+  if (!envVal) return defaultVal;
+  const parsed = parseInt(String(envVal), 10);
+  return isNaN(parsed) || parsed <= 0 ? defaultVal : parsed;
+}
+
 /**
- * Rate limiter factory.
- * @param limit     Max requests per window
- * @param windowMs  Window duration in ms
- * @param bucket    Optional bucket name to isolate limits per route group
+ * Configurable rate limiter factory with exponential backoff.
+ * @param envKey        Environment variable key for limit threshold
+ * @param defaultLimit Default limit if env variable is unset
+ * @param bucket       Isolated bucket name per endpoint
  */
-export function rateLimiter(limit = 100, windowMs = 60000, bucket = "global"): MiddlewareHandler {
+export function configurableRateLimiter(
+  envKey: string,
+  defaultLimit: number,
+  bucket: string
+): MiddlewareHandler {
   return async (c, next) => {
-    // Prefer Cloudflare's real IP header, then standard forwarded header
+    const windowSeconds = parseEnvInt(
+      c.env?.RATE_LIMIT_WINDOW_SECONDS || process.env.RATE_LIMIT_WINDOW_SECONDS,
+      60
+    );
+    const limit = parseEnvInt(
+      c.env?.[envKey] || process.env[envKey],
+      defaultLimit
+    );
+    const windowMs = windowSeconds * 1000;
+
     const ip =
       c.req.header("CF-Connecting-IP") ||
       c.req.header("X-Forwarded-For")?.split(",")[0].trim() ||
@@ -33,37 +52,49 @@ export function rateLimiter(limit = 100, windowMs = 60000, bucket = "global"): M
     const map = getMap(bucket);
     let info = map.get(ip);
 
-    // Reset window if expired
     if (!info || now > info.resetTime) {
-      info = { count: 0, resetTime: now + windowMs };
+      info = { count: 0, resetTime: now + windowMs, backoffMultiplier: 1 };
     }
 
     info.count++;
-    map.set(ip, info);
-
-    // Expose rate limit headers per RFC 6585
-    c.header("X-RateLimit-Limit", limit.toString());
-    c.header("X-RateLimit-Remaining", Math.max(0, limit - info.count).toString());
-    c.header("X-RateLimit-Reset", Math.ceil(info.resetTime / 1000).toString());
-    c.header("Retry-After", Math.ceil((info.resetTime - now) / 1000).toString());
 
     if (info.count > limit) {
+      // Calculate exponential backoff multiplier (capped at 3,600 seconds)
+      const excess = info.count - limit;
+      const backoffSeconds = Math.min(3600, windowSeconds * Math.pow(2, Math.min(excess, 6)));
+      info.resetTime = now + backoffSeconds * 1000;
+      map.set(ip, info);
+
+      c.header("X-RateLimit-Limit", limit.toString());
+      c.header("X-RateLimit-Remaining", "0");
+      c.header("X-RateLimit-Reset", Math.ceil(info.resetTime / 1000).toString());
+      c.header("Retry-After", backoffSeconds.toString());
+
       return c.json(
         {
           success: false,
-          error: "Too many requests. Please slow down and try again later.",
-          retryAfter: Math.ceil((info.resetTime - now) / 1000),
+          error: "Too many requests. Rate limit exceeded. Please slow down and try again later.",
+          retryAfterSeconds: backoffSeconds,
         },
         429
       );
     }
 
+    map.set(ip, info);
+
+    c.header("X-RateLimit-Limit", limit.toString());
+    c.header("X-RateLimit-Remaining", (limit - info.count).toString());
+    c.header("X-RateLimit-Reset", Math.ceil(info.resetTime / 1000).toString());
+
     await next();
   };
 }
 
-/** Strict limiter for auth endpoints (10 req/min to prevent brute-force) */
-export const authRateLimiter = rateLimiter(10, 60000, "auth");
-
-/** Standard API limiter (150 req/min) */
-export const apiRateLimiter = rateLimiter(150, 60000, "api");
+// Configurable endpoint-specific limiters
+export const loginRateLimiter = configurableRateLimiter("RATE_LIMIT_LOGIN", 5, "login");
+export const registerRateLimiter = configurableRateLimiter("RATE_LIMIT_REGISTER", 3, "register");
+export const forgotPasswordRateLimiter = configurableRateLimiter("RATE_LIMIT_FORGOT_PASSWORD", 2, "forgot_password");
+export const refreshRateLimiter = configurableRateLimiter("RATE_LIMIT_REFRESH", 10, "refresh");
+export const authRateLimiter = configurableRateLimiter("RATE_LIMIT_AUTH", 10, "auth");
+export const publicRateLimiter = configurableRateLimiter("RATE_LIMIT_PUBLIC", 30, "public");
+export const apiRateLimiter = configurableRateLimiter("RATE_LIMIT_API", 150, "api");
