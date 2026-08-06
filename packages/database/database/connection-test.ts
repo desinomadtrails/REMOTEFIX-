@@ -6,9 +6,9 @@ async function testConnection() {
   console.log(`📍 Host: ${connectionConfig.server}`);
   console.log(`📍 Database: ${connectionConfig.database}`);
   console.log(`📍 User: ${connectionConfig.user}`);
-  
+
   const pool = new mssql.ConnectionPool(connectionConfig);
-  
+
   try {
     const start = Date.now();
     await pool.connect();
@@ -17,7 +17,7 @@ async function testConnection() {
     console.log(`✅ Azure SQL Database connection verified successfully!`);
     console.log(`⏱️  Latency: ${duration}ms`);
     console.log(`====================================================\n`);
-    
+
     await pool.close();
     process.exit(0);
   } catch (err: any) {

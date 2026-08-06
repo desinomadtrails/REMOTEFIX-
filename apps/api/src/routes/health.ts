@@ -1,22 +1,44 @@
 import { Hono } from "hono";
-import { getDb } from "../db.js";
+import { getDbAsync, getDb, getDbStatusDetails } from "../db.js";
+import { getDbConfig } from "@remotefix/database";
 import { AppEnv } from "../middleware/auth.js";
 
 const healthRouter = new Hono<AppEnv>();
 
-// 1. General Health Check
+async function executePingQuery(db: any, timeoutMs = 5000): Promise<number> {
+  const start = Date.now();
+  let timer: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Database ping query timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  try {
+    const queryPromise = db.$client.request().query("SELECT 1 as ping");
+    await Promise.race([queryPromise, timeoutPromise]);
+    return Date.now() - start;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// 1. General Health Check Endpoint
 healthRouter.get("/", async (c) => {
   const startTime = Date.now();
   let dbStatus = "unknown";
   let dbLatencyMs = 0;
   let dbError: string | undefined = undefined;
 
-  if (c.env && c.env.DATABASE_URL) {
+  const dbUrl = (c.env && c.env.DATABASE_URL) || process.env.DATABASE_URL || "";
+  const dbConfig = getDbConfig(dbUrl);
+
+  const host = dbConfig.server || process.env.DB_HOST || "not_configured";
+  const database = dbConfig.database || process.env.DB_NAME || "not_configured";
+  const userConfigured = Boolean(dbConfig.user || process.env.DB_USER);
+
+  if (host !== "not_configured" && host !== "") {
     try {
-      const dbPingStart = Date.now();
-      const db = getDb(c.env.DATABASE_URL);
-      await db.$client.request().query("SELECT 1 as ping");
-      dbLatencyMs = Date.now() - dbPingStart;
+      const db = await getDbAsync(dbUrl);
+      dbLatencyMs = await executePingQuery(db, 5000);
       dbStatus = "connected";
     } catch (err: any) {
       dbStatus = "error";
@@ -38,6 +60,9 @@ healthRouter.get("/", async (c) => {
       checks: {
         database: {
           status: dbStatus,
+          host,
+          database,
+          userConfigured,
           latencyMs: dbLatencyMs,
           error: dbError,
         },
@@ -48,20 +73,22 @@ healthRouter.get("/", async (c) => {
   );
 });
 
-// 2. Kubernetes Liveness Probe
+// 2. Liveness Probe (Always returns 200 OK for process health)
 healthRouter.get("/liveness", (c) => {
   return c.json({ status: "alive", timestamp: new Date().toISOString() }, 200);
 });
 
-// 3. Kubernetes Readiness Probe
+// 3. Readiness Probe (Checks database readiness)
 healthRouter.get("/readiness", async (c) => {
+  const dbUrl = (c.env && c.env.DATABASE_URL) || process.env.DATABASE_URL || "";
   try {
-    const db = getDb(c.env.DATABASE_URL);
-    await db.$client.request().query("SELECT 1 as ping");
+    const db = await getDbAsync(dbUrl);
+    await executePingQuery(db, 5000);
     return c.json({ status: "ready", database: "connected", timestamp: new Date().toISOString() }, 200);
   } catch (err: any) {
-    return c.json({ status: "not_ready", database: "disconnected", error: err.message }, 503);
+    return c.json({ status: "not_ready", database: "disconnected", error: err.message || String(err) }, 503);
   }
 });
 
 export { healthRouter };
+
