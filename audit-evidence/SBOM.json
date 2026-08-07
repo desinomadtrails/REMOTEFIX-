@@ -1,0 +1,406 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:t80y75btcn",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-08-07T08:19:38.899Z",
+    "component": {
+      "type": "application",
+      "name": "remotefix",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "name": "react",
+      "version": "^19.0.0",
+      "scope": "apps/web"
+    },
+    {
+      "name": "react-dom",
+      "version": "^19.0.0",
+      "scope": "apps/web"
+    },
+    {
+      "name": "react-router",
+      "version": "^7.1.1",
+      "scope": "apps/web"
+    },
+    {
+      "name": "lucide-react",
+      "version": "^0.473.0",
+      "scope": "apps/web"
+    },
+    {
+      "name": "framer-motion",
+      "version": "^12.0.0",
+      "scope": "apps/web"
+    },
+    {
+      "name": "gsap",
+      "version": "^3.12.5",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@tanstack/react-query",
+      "version": "^5.62.7",
+      "scope": "apps/web"
+    },
+    {
+      "name": "react-hook-form",
+      "version": "^7.54.2",
+      "scope": "apps/web"
+    },
+    {
+      "name": "zod",
+      "version": "^3.24.1",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@hookform/resolvers",
+      "version": "^3.9.1",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@remotefix/types",
+      "version": "*",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@remotefix/ui",
+      "version": "*",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@remotefix/utils",
+      "version": "*",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@types/react",
+      "version": "^19.0.7",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "^19.0.3",
+      "scope": "apps/web"
+    },
+    {
+      "name": "vite",
+      "version": "^6.0.7",
+      "scope": "apps/web"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@tailwindcss/vite",
+      "version": "^4.0.0",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@vitejs/plugin-react",
+      "version": "^4.3.4",
+      "scope": "apps/web"
+    },
+    {
+      "name": "@hono/node-server",
+      "version": "^2.0.11",
+      "scope": "apps/api"
+    },
+    {
+      "name": "@remotefix/auth",
+      "version": "*",
+      "scope": "apps/api"
+    },
+    {
+      "name": "@remotefix/database",
+      "version": "*",
+      "scope": "apps/api"
+    },
+    {
+      "name": "@remotefix/types",
+      "version": "*",
+      "scope": "apps/api"
+    },
+    {
+      "name": "@remotefix/utils",
+      "version": "*",
+      "scope": "apps/api"
+    },
+    {
+      "name": "hono",
+      "version": "^4.7.4",
+      "scope": "apps/api"
+    },
+    {
+      "name": "tsx",
+      "version": "^4.23.1",
+      "scope": "apps/api"
+    },
+    {
+      "name": "@cloudflare/workers-types",
+      "version": "^4.20241218.0",
+      "scope": "apps/api"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "apps/api"
+    },
+    {
+      "name": "wrangler",
+      "version": "^4.113.0",
+      "scope": "apps/api"
+    },
+    {
+      "name": "react",
+      "version": "^19.0.0",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "react-dom",
+      "version": "^19.0.0",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "react-router",
+      "version": "^7.1.1",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "lucide-react",
+      "version": "^0.473.0",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "framer-motion",
+      "version": "^12.0.0",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "gsap",
+      "version": "^3.12.5",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@tanstack/react-query",
+      "version": "^5.62.7",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "react-hook-form",
+      "version": "^7.54.2",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "zod",
+      "version": "^3.24.1",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@hookform/resolvers",
+      "version": "^3.9.1",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@remotefix/types",
+      "version": "*",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@remotefix/ui",
+      "version": "*",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@remotefix/utils",
+      "version": "*",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@types/react",
+      "version": "^19.0.7",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "^19.0.3",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "vite",
+      "version": "^6.0.7",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@tailwindcss/vite",
+      "version": "^4.0.0",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@vitejs/plugin-react",
+      "version": "^4.3.4",
+      "scope": "apps/admin"
+    },
+    {
+      "name": "@remotefix/auth",
+      "version": "*",
+      "scope": "apps/mobile"
+    },
+    {
+      "name": "@remotefix/types",
+      "version": "*",
+      "scope": "apps/mobile"
+    },
+    {
+      "name": "@remotefix/utils",
+      "version": "*",
+      "scope": "apps/mobile"
+    },
+    {
+      "name": "@types/node",
+      "version": "^26.1.1",
+      "scope": "apps/mobile"
+    },
+    {
+      "name": "@types/react",
+      "version": "^19.0.8",
+      "scope": "apps/mobile"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "apps/mobile"
+    },
+    {
+      "name": "@remotefix/types",
+      "version": "*",
+      "scope": "packages/auth"
+    },
+    {
+      "name": "bcryptjs",
+      "version": "^3.0.2",
+      "scope": "packages/auth"
+    },
+    {
+      "name": "@types/bcryptjs",
+      "version": "^2.4.6",
+      "scope": "packages/auth"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "packages/auth"
+    },
+    {
+      "name": "@remotefix/types",
+      "version": "*",
+      "scope": "packages/database"
+    },
+    {
+      "name": "dotenv",
+      "version": "^17.4.2",
+      "scope": "packages/database"
+    },
+    {
+      "name": "drizzle-orm",
+      "version": "^1.0.0-rc.4",
+      "scope": "packages/database"
+    },
+    {
+      "name": "mssql",
+      "version": "^11.0.1",
+      "scope": "packages/database"
+    },
+    {
+      "name": "zod",
+      "version": "^3.25.76",
+      "scope": "packages/database"
+    },
+    {
+      "name": "@types/mssql",
+      "version": "^9.1.11",
+      "scope": "packages/database"
+    },
+    {
+      "name": "drizzle-kit",
+      "version": "^1.0.0-rc.4",
+      "scope": "packages/database"
+    },
+    {
+      "name": "tsx",
+      "version": "^4.23.1",
+      "scope": "packages/database"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "packages/database"
+    },
+    {
+      "name": "zod",
+      "version": "^3.24.1",
+      "scope": "packages/types"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "packages/types"
+    },
+    {
+      "name": "lucide-react",
+      "version": "^0.473.0",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "clsx",
+      "version": "^2.1.1",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "tailwind-merge",
+      "version": "^3.0.1",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "framer-motion",
+      "version": "^12.0.0",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "gsap",
+      "version": "^3.12.5",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "@types/react",
+      "version": "^19.0.7",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "@types/react-dom",
+      "version": "^19.0.3",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "packages/ui"
+    },
+    {
+      "name": "typescript",
+      "version": "^5.7.3",
+      "scope": "packages/utils"
+    }
+  ]
+}
