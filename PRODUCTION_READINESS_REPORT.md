@@ -55,7 +55,7 @@ RemoteFix has undergone a comprehensive architectural refactoring, security hard
 
 1. **Azure SQL Database:**
    ```env
-   DATABASE_URL="Server=remotefix-sql.database.windows.net;Database=remotefix;User Id=adminremotefix;Password=Ashoka@123;Encrypt=true;"
+   DATABASE_URL="Server=remotefix-sql.database.windows.net;Database=remotefix;User Id=adminremotefix;Password=<REDACTED_DB_PASSWORD>;Encrypt=true;"
    ```
 
 2. **Cloudflare Worker Secrets:**
