@@ -2,7 +2,7 @@
 
 ## Database Engine
 - **Engine:** Azure SQL Database (Serverless / Standard tier)
-- **Host:** `remotefix-sql.database.windows.net`
+- **Host:** `your-database.database.windows.net`
 - **Database:** `remotefix`
 
 ---
